@@ -7,7 +7,8 @@
     "home": "Scan",
     "history": "History",
     "settings": "Settings",
-    "clean": "Clean"
+    "clean": "Clean",
+    "dedupe": "Duplicates"
   },
   "common": {
     "next": "Next",
@@ -137,7 +138,8 @@
     "no_scan": "No scan results yet.",
     "scan_running": "Another scan is still running.",
     "rules": "The clean-up rules could not be loaded.",
-    "no_evaluation": "Check what can be cleaned first."
+    "no_evaluation": "Check what can be cleaned first.",
+    "plan": "The removal plan is not valid."
   },
   "scan": {
     "title": "Scan",
@@ -247,5 +249,46 @@
     "group_node_modules": "JavaScript projects",
     "group_package_cache": "Package manager caches",
     "group_xcode": "Xcode"
+  },
+  "dedupe": {
+    "title": "Duplicates",
+    "intro": "Find files whose contents are identical. One copy is always kept; the rest can go to the Trash.",
+    "target_label": "Search in folder",
+    "pick_folder": "Choose a folder…",
+    "start": "Find duplicates",
+    "stage_1": "Collecting files of the same size",
+    "stage_2": "Comparing the start and end of files",
+    "stage_3": "Comparing full file contents",
+    "searching_title": "Finding duplicates in {{path}}",
+    "cancel": "Cancel",
+    "cancelled_note": "The search was stopped. The results below are incomplete.",
+    "empty_title": "No duplicate files",
+    "empty_body": "No two files with identical contents were found in this folder.",
+    "headline": "{{size}} can be freed",
+    "headline_sub": "{{groups}} groups, {{files}} duplicate files out of {{seen}} checked",
+    "pairs_title": "By folder",
+    "pairs_body": "These folders contain the same files.",
+    "pair_line": "{{count}} shared files, {{size}}",
+    "groups_title": "Duplicate groups",
+    "strategy": "Keep",
+    "strategy_original": "Most original name",
+    "strategy_oldest": "Oldest",
+    "strategy_newest": "Newest",
+    "keep_this": "Keep this one",
+    "kept": "Kept",
+    "will_remove": "Moved to Trash",
+    "copies": "{{count}} copies, {{size}} each",
+    "show_more": "Show {{count}} more groups",
+    "primary": "Remove duplicates, free {{size}}",
+    "preview_title": "Move duplicates to the Trash?",
+    "preview_body": "{{files}} files from {{groups}} groups, {{size}}. One copy per group stays. Everything can be restored from the Trash or History.",
+    "confirm": "Move to Trash",
+    "running": "Moving…",
+    "done_title": "Done",
+    "done_body": "{{size}} freed. {{ok}} files moved, {{skipped}} skipped, {{failed}} failed.",
+    "keep_missing": "Group skipped: the kept file no longer exists",
+    "new_search": "Search another folder",
+    "no_preview": "No preview",
+    "new_badge": "New"
   }
 }

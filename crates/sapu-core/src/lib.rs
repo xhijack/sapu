@@ -8,6 +8,7 @@
 //! - Core never formats text for display; it emits data and [`progress`] events.
 
 pub mod cleaner;
+pub mod dedupe;
 pub mod error;
 pub mod eta;
 pub mod platform;

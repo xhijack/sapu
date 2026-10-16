@@ -7,7 +7,8 @@
     "home": "Pindai",
     "history": "Riwayat",
     "settings": "Pengaturan",
-    "clean": "Bersih"
+    "clean": "Bersih",
+    "dedupe": "Duplikat"
   },
   "common": {
     "next": "Lanjut",
@@ -137,7 +138,8 @@
     "no_scan": "Belum ada hasil pemindaian.",
     "scan_running": "Pemindaian lain masih berjalan.",
     "rules": "Aturan pembersihan tidak bisa dimuat.",
-    "no_evaluation": "Periksa dulu apa yang bisa dibersihkan."
+    "no_evaluation": "Periksa dulu apa yang bisa dibersihkan.",
+    "plan": "Rencana penghapusan tidak valid."
   },
   "scan": {
     "title": "Pindai",
@@ -247,5 +249,46 @@
     "group_node_modules": "Proyek JavaScript",
     "group_package_cache": "Cache package manager",
     "group_xcode": "Xcode"
+  },
+  "dedupe": {
+    "title": "Duplikat",
+    "intro": "Cari file yang isinya sama persis. Satu salinan selalu disimpan; sisanya bisa dipindahkan ke Trash.",
+    "target_label": "Cari di folder",
+    "pick_folder": "Pilih folder…",
+    "start": "Cari duplikat",
+    "stage_1": "Mengumpulkan file dengan ukuran sama",
+    "stage_2": "Membandingkan awal dan akhir file",
+    "stage_3": "Membandingkan isi file sepenuhnya",
+    "searching_title": "Mencari duplikat di {{path}}",
+    "cancel": "Batalkan",
+    "cancelled_note": "Pencarian dihentikan. Hasil di bawah ini belum lengkap.",
+    "empty_title": "Tidak ada file ganda",
+    "empty_body": "Tidak ditemukan dua file dengan isi yang sama persis di folder ini.",
+    "headline": "{{size}} bisa dibebaskan",
+    "headline_sub": "{{groups}} grup, {{files}} file ganda dari {{seen}} file diperiksa",
+    "pairs_title": "Per folder",
+    "pairs_body": "Folder-folder ini berisi file yang sama.",
+    "pair_line": "{{count}} file sama, {{size}}",
+    "groups_title": "Grup duplikat",
+    "strategy": "Yang disimpan",
+    "strategy_original": "Nama paling asli",
+    "strategy_oldest": "Yang paling lama",
+    "strategy_newest": "Yang paling baru",
+    "keep_this": "Simpan yang ini",
+    "kept": "Disimpan",
+    "will_remove": "Dipindahkan ke Trash",
+    "copies": "{{count}} salinan, {{size}} per file",
+    "show_more": "Tampilkan {{count}} grup lagi",
+    "primary": "Hapus duplikat, bebaskan {{size}}",
+    "preview_title": "Pindahkan duplikat ke Trash?",
+    "preview_body": "{{files}} file dari {{groups}} grup, {{size}}. Satu salinan per grup tetap disimpan. Semua bisa dipulihkan dari Trash atau Riwayat.",
+    "confirm": "Pindahkan ke Trash",
+    "running": "Memindahkan…",
+    "done_title": "Selesai",
+    "done_body": "{{size}} dibebaskan. {{ok}} file dipindahkan, {{skipped}} dilewati, {{failed}} gagal.",
+    "keep_missing": "Grup dilewati: file yang disimpan sudah tidak ada",
+    "new_search": "Cari di folder lain",
+    "no_preview": "Tidak ada pratinjau",
+    "new_badge": "Baru"
   }
 }

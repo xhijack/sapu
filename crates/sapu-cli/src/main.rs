@@ -2,6 +2,7 @@
 //! Dry-run by default; `--apply` executes (S4).
 
 mod clean;
+mod dupes;
 mod scan;
 
 use std::io::IsTerminal;
@@ -34,6 +35,8 @@ enum Command {
     Scan(scan::ScanArgs),
     /// Find and remove what is safe to clean (dry-run unless --apply).
     Clean(clean::CleanArgs),
+    /// Find identical files (dry-run unless --apply).
+    Dupes(dupes::DupesArgs),
 }
 
 #[derive(Args)]
@@ -83,6 +86,7 @@ fn main() -> anyhow::Result<()> {
         Command::Trash(a) => trash(a),
         Command::Scan(a) => scan::run(a),
         Command::Clean(a) => clean::run(a),
+        Command::Dupes(a) => dupes::run(a),
     }
 }
 

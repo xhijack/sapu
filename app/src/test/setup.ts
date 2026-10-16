@@ -4,6 +4,7 @@ import i18n from "../i18n";
 import { mock } from "../lib/api";
 import { scanMock } from "../lib/scanApi";
 import { cleanMock } from "../lib/cleanApi";
+import { dedupeMock } from "../lib/dedupeApi";
 
 // jsdom reports en-US; the app follows the system locale, so pin it to Indonesian.
 Object.defineProperty(window.navigator, "language", { value: "id-ID", configurable: true });
@@ -12,6 +13,7 @@ beforeEach(async () => {
   mock.reset();
   scanMock.reset();
   cleanMock.reset();
+  dedupeMock.reset();
   await i18n.changeLanguage("id");
 });
 

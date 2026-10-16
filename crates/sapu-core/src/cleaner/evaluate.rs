@@ -242,10 +242,12 @@ fn find_dirs_named(
             }
         });
     for e in walker.into_iter().filter_map(Result::ok) {
-        if e.depth() > 0 && e.file_type().is_dir() && e.file_name() == name {
-            if let Some(c) = candidate(&e.path()) {
-                out.push(c);
-            }
+        if e.depth() > 0
+            && e.file_type().is_dir()
+            && e.file_name() == name
+            && let Some(c) = candidate(&e.path())
+        {
+            out.push(c);
         }
     }
 }

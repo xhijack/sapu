@@ -19,6 +19,8 @@ fs4.workspace = true
 toml.workspace = true
 include_dir.workspace = true
 glob.workspace = true
+blake3.workspace = true
+rayon.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

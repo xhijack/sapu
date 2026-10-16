@@ -9,6 +9,7 @@ use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
 mod clean;
+mod dedupe;
 mod scan;
 
 /// Errors cross the IPC boundary as a stable code plus a message; the
@@ -122,6 +123,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(std::sync::Arc::new(scan::ScanSession::default()))
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
+        .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
         .invoke_handler(tauri::generate_handler![
             scan::scan_targets,
             scan::pick_folder,
@@ -138,6 +140,13 @@ pub fn run() {
             scan::trash_paths,
             clean::clean_evaluate,
             clean::clean_execute,
+            dedupe::dedupe_start,
+            dedupe::dedupe_cancel,
+            dedupe::dedupe_summary,
+            dedupe::dedupe_groups,
+            dedupe::dedupe_folder_pairs,
+            dedupe::dedupe_execute,
+            dedupe::file_preview,
             app_info,
             disk_access_status,
             settings_get,

@@ -269,3 +269,56 @@ export interface CleanRunReport {
   skipped: number;
   failed: number;
 }
+
+// ---- Dedupe (Tahap 3) ----
+
+export interface DupFile {
+  path: string;
+  mtime: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+  name_score: number;
+}
+
+export interface DuplicateGroup {
+  id: number;
+  size: number;
+  hash: string;
+  files: DupFile[];
+  wasted_bytes: number;
+}
+
+export interface FolderPair {
+  a: string;
+  b: string;
+  files: number;
+  bytes: number;
+}
+
+export interface DedupeSummary {
+  root: string;
+  files_seen: number;
+  candidates: number;
+  groups: number;
+  duplicate_files: number;
+  wasted_bytes: number;
+  cancelled: boolean;
+  stage_reached: number;
+}
+
+export type KeepStrategy = { kind: "oldest" } | { kind: "newest" } | { kind: "original_name" } | { kind: "in_folder"; folders: string[] };
+
+export interface DedupeProgressPayload extends ScanProgressPayload {
+  stage: { current: number; total: number };
+}
+
+export type GroupOutcome = { kind: "done"; group_id: number; session: CleanSession } | { kind: "keep_missing"; group_id: number; keep: string };
+
+export interface DedupeRunReport {
+  dry_run: boolean;
+  outcomes: GroupOutcome[];
+  bytes_freed: number;
+  disposed: number;
+  skipped: number;
+  failed: number;
+}
+
+export type FilePreview = { kind: "image"; data_url: string } | { kind: "text"; excerpt: string } | { kind: "none" };
