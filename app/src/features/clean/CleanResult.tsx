@@ -1,0 +1,65 @@
+import { useTranslation } from "react-i18next";
+import { CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatBytes } from "@/lib/format";
+import type { CleanRunReport } from "@/lib/types";
+import type { RuleRow } from "./rows";
+
+interface Props {
+  result: CleanRunReport;
+  rows: RuleRow[];
+  onSeeHistory: () => void;
+  onBack: () => void;
+}
+
+export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
+  const { t, i18n } = useTranslation();
+  const name = (id: string) => rows.find((r) => r.id === id)?.name ?? id;
+  return (
+    <div className="grid max-w-3xl gap-6">
+      <h1 className="flex items-center gap-2 text-2xl font-semibold">
+        <CheckCircle2 aria-hidden className="h-6 w-6 text-risk-safe-fg" />
+        {t("clean.done_title")}
+      </h1>
+      <p className="num text-lg">
+        {result.dry_run
+          ? t("clean.done_dry")
+          : t("clean.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
+      </p>
+      <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+        {result.outcomes.map((o, i) => (
+          <li key={`${o.rule_id}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">
+            <span className="min-w-0">
+              <span className="block font-medium">{name(o.rule_id)}</span>
+              {o.kind === "command" && (
+                <span className="path block truncate text-fg-muted" title={o.outcome.command_line}>
+                  {o.outcome.command_line}
+                </span>
+              )}
+              {o.kind === "skipped" && <span className="block text-sm text-fg-muted">{o.reason}</span>}
+            </span>
+            <span className="shrink-0 text-sm">
+              {o.kind === "files" && (
+                <span className={o.session.failed > 0 ? "text-risk-danger-fg" : "text-fg-muted"}>
+                  {t("clean.outcome_removed", { count: o.session.disposed })}
+                  {o.session.skipped > 0 && `, ${o.session.skipped} ${t("clean.outcome_skipped").toLowerCase()}`}
+                  {o.session.failed > 0 && `, ${o.session.failed} ${t("clean.outcome_failed").toLowerCase()}`}
+                </span>
+              )}
+              {o.kind === "command" && <span className={o.outcome.success ? "text-fg-muted" : "text-risk-danger-fg"}>{o.outcome.success ? t("clean.outcome_ran") : t("clean.outcome_failed")}</span>}
+              {o.kind === "skipped" && <span className="text-fg-muted">{t("clean.outcome_skipped")}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onSeeHistory}>
+          {t("clean.see_history")}
+        </Button>
+        <Button variant="ghost" onClick={onBack}>
+          {t("clean.reevaluate")}
+        </Button>
+      </div>
+    </div>
+  );
+}

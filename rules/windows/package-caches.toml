@@ -1,0 +1,23 @@
+[rule]
+id = "windows-package-caches"
+name = { id = "Cache package manager", en = "Package manager caches" }
+description = { id = "Unduhan npm, pip, Cargo, dan Go yang disimpan untuk instalasi berikutnya. Diunduh ulang bila perlu.", en = "Downloads kept by npm, pip, Cargo and Go for the next install. Downloaded again when needed." }
+risk = "green"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "${LOCALAPPDATA}/npm-cache"
+kind = "dir_contents"
+[[match]]
+path = "${LOCALAPPDATA}/pip/Cache"
+kind = "dir_contents"
+[[match]]
+path = "${USERPROFILE}/.cargo/registry/cache"
+kind = "dir_contents"
+[[match]]
+path = "${USERPROFILE}/.cargo/registry/src"
+kind = "dir_contents"
+[[match]]
+path = "${LOCALAPPDATA}/go-build"
+kind = "dir_contents"

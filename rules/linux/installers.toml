@@ -1,0 +1,24 @@
+[rule]
+id = "linux-old-installers"
+name = { id = "Installer lama di Downloads", en = "Old installers in Downloads" }
+description = { id = "File .deb, .rpm, .AppImage, dan .iso yang diunduh lebih dari 30 hari lalu.", en = ".deb, .rpm, .AppImage and .iso files downloaded more than 30 days ago." }
+risk = "yellow"
+profile = "general"
+group = "installers"
+
+[[match]]
+path = "~/Downloads/*.deb"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Downloads/*.rpm"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Downloads/*.AppImage"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Downloads/*.iso"
+kind = "files"
+min_age_days = 30

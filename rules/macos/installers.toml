@@ -1,0 +1,20 @@
+[rule]
+id = "macos-old-installers"
+name = { id = "Installer lama di Downloads", en = "Old installers in Downloads" }
+description = { id = "File .dmg, .pkg, dan .iso yang diunduh lebih dari 30 hari lalu. Biasanya aplikasinya sudah terpasang.", en = ".dmg, .pkg and .iso files downloaded more than 30 days ago. The app is usually installed already." }
+risk = "yellow"
+profile = "general"
+group = "installers"
+
+[[match]]
+path = "~/Downloads/*.dmg"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Downloads/*.pkg"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Downloads/*.iso"
+kind = "files"
+min_age_days = 30

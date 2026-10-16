@@ -1,0 +1,11 @@
+[rule]
+id = "windows-thumbnails"
+name = { id = "Cache thumbnail", en = "Thumbnail cache" }
+description = { id = "Gambar kecil pratinjau file milik Explorer. Dibuat ulang saat folder dibuka.", en = "Explorer's small preview images of files. Recreated when a folder is opened." }
+risk = "green"
+profile = "general"
+group = "thumbnails"
+
+[[match]]
+path = "${LOCALAPPDATA}/Microsoft/Windows/Explorer/thumbcache_*.db"
+kind = "files"

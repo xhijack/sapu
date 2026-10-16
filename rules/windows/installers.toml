@@ -1,0 +1,20 @@
+[rule]
+id = "windows-old-installers"
+name = { id = "Installer lama di Downloads", en = "Old installers in Downloads" }
+description = { id = "File .exe, .msi, dan .iso yang diunduh lebih dari 30 hari lalu. Biasanya programnya sudah terpasang.", en = ".exe, .msi and .iso files downloaded more than 30 days ago. The program is usually installed already." }
+risk = "yellow"
+profile = "general"
+group = "installers"
+
+[[match]]
+path = "${USERPROFILE}/Downloads/*.exe"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "${USERPROFILE}/Downloads/*.msi"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "${USERPROFILE}/Downloads/*.iso"
+kind = "files"
+min_age_days = 30

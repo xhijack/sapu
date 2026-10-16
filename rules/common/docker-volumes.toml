@@ -1,0 +1,15 @@
+[rule]
+id = "docker-volumes-orphan"
+name = { id = "Volume Docker yatim", en = "Orphaned Docker volumes" }
+description = { id = "Volume yang tidak dipakai container mana pun. Bisa berisi data database lama. Periksa dulu.", en = "Volumes no container uses. They may hold old database data. Check first." }
+risk = "yellow"
+profile = "developer"
+group = "docker"
+
+[command]
+program = "docker"
+args = ["volume", "prune", "-f"]
+requires = "docker"
+estimate = ["docker", "system", "df", "--format", "{{.Type}}	{{.Reclaimable}}"]
+estimate_filter = "Local Volumes"
+confirm_separately = true

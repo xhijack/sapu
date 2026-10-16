@@ -196,3 +196,76 @@ export interface ScanProgressPayload {
   elapsed_secs: number;
   eta: Eta;
 }
+
+// ---- Clean (Tahap 2) ----
+
+export type Risk = "green" | "yellow";
+
+export interface Localized {
+  id: string;
+  en: string;
+}
+
+export interface RuleInfo {
+  id: string;
+  name: Localized;
+  description: Localized;
+  risk: Risk;
+  group: string;
+  permanent: boolean;
+}
+
+export interface Candidate {
+  path: string;
+  size: number;
+  is_dir: boolean;
+  mtime: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+}
+
+export interface Finding {
+  rule_id: string;
+  risk: Risk;
+  profile: Profile;
+  group: string;
+  permanent: boolean;
+  scope: string;
+  items: Candidate[];
+  bytes: number;
+  skipped_protected: number;
+}
+
+export interface CommandFinding {
+  rule_id: string;
+  risk: Risk;
+  profile: Profile;
+  group: string;
+  command_line: string;
+  available: boolean;
+  confirm_separately: boolean;
+  estimate_bytes: number | null;
+}
+
+export interface CleanReport {
+  findings: Finding[];
+  commands: CommandFinding[];
+}
+
+export interface CleanEvaluation {
+  report: CleanReport;
+  rules: RuleInfo[];
+  preselected: string[];
+}
+
+export type RuleOutcome =
+  | { kind: "files"; rule_id: string; session: CleanSession }
+  | { kind: "command"; rule_id: string; outcome: { command_line: string; success: boolean; stdout: string; stderr: string } }
+  | { kind: "skipped"; rule_id: string; reason: string };
+
+export interface CleanRunReport {
+  dry_run: boolean;
+  outcomes: RuleOutcome[];
+  bytes_freed: number;
+  disposed: number;
+  skipped: number;
+  failed: number;
+}

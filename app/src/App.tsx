@@ -5,6 +5,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
 import { ScanView } from "@/features/scan/ScanView";
+import { CleanView } from "@/features/clean/CleanView";
 import { HistoryView } from "@/features/history/HistoryView";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { api } from "@/lib/api";
@@ -77,6 +78,7 @@ export default function App() {
   return (
     <Shell screen={screen} onNavigate={setScreen}>
       {screen === "home" && <ScanView />}
+      {screen === "clean" && <CleanView profile={settings.profile} onSeeHistory={() => setScreen("history")} />}
       {screen === "history" && <HistoryView />}
       {screen === "settings" && (
         <SettingsView settings={settings} onChange={save} onRerunOnboarding={() => setShowWizard(true)} />

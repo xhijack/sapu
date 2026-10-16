@@ -1,0 +1,11 @@
+[rule]
+id = "xcode-derived-data"
+name = { id = "Xcode DerivedData", en = "Xcode DerivedData" }
+description = { id = "Hasil build dan indeks Xcode. Dibuat ulang saat proyek dibuka atau di-build lagi.", en = "Xcode build output and indexes. Recreated when a project is opened or built again." }
+risk = "green"
+profile = "developer"
+group = "xcode"
+
+[[match]]
+path = "~/Library/Developer/Xcode/DerivedData"
+kind = "dir_contents"

@@ -1,0 +1,12 @@
+[rule]
+id = "macos-old-logs"
+name = { id = "Log lama", en = "Old logs" }
+description = { id = "Catatan aktivitas aplikasi yang lebih tua dari 30 hari. Hanya berguna untuk mencari penyebab masalah lama.", en = "App activity records older than 30 days. Only useful for diagnosing old problems." }
+risk = "green"
+profile = "general"
+group = "logs"
+
+[[match]]
+path = "~/Library/Logs"
+kind = "dir_contents"
+min_age_days = 30

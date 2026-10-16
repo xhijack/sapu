@@ -1,0 +1,14 @@
+[rule]
+id = "docker-build-cache"
+name = { id = "Cache build Docker", en = "Docker build cache" }
+description = { id = "Lapisan build yang disimpan untuk mempercepat build berikutnya. Build berikutnya akan lebih lama sekali.", en = "Build layers kept to speed up the next build. The next build will be slower once." }
+risk = "green"
+profile = "developer"
+group = "docker"
+
+[command]
+program = "docker"
+args = ["builder", "prune", "-f"]
+requires = "docker"
+estimate = ["docker", "system", "df", "--format", "{{.Type}}	{{.Reclaimable}}"]
+estimate_filter = "Build Cache"

@@ -6,7 +6,8 @@
   "nav": {
     "home": "Scan",
     "history": "History",
-    "settings": "Settings"
+    "settings": "Settings",
+    "clean": "Clean"
   },
   "common": {
     "next": "Next",
@@ -134,7 +135,9 @@
     "serde": "The data could not be read.",
     "opener": "Could not open system settings.",
     "no_scan": "No scan results yet.",
-    "scan_running": "Another scan is still running."
+    "scan_running": "Another scan is still running.",
+    "rules": "The clean-up rules could not be loaded.",
+    "no_evaluation": "Check what can be cleaned first."
   },
   "scan": {
     "title": "Scan",
@@ -201,5 +204,48 @@
     "temporary": "Temporary files",
     "development": "Development",
     "other": "Other"
+  },
+  "clean": {
+    "title": "Clean",
+    "intro": "Sapu looks for files that are safe to remove using clear rules. Nothing is removed until you press the button.",
+    "evaluating": "Checking what can be cleaned…",
+    "empty_title": "Nothing to clean",
+    "empty_body": "Every rule was checked and found nothing to clean for this profile.",
+    "reevaluate": "Check again",
+    "primary": "Clean {{size}} selected",
+    "primary_none": "Select what to clean",
+    "selected_summary": "{{count}} rules selected",
+    "items": "{{count}} items",
+    "protected_skipped": "{{count}} skipped because protected",
+    "command_note": "Runs through the official command: {{cmd}}",
+    "not_installed": "Not installed",
+    "estimate_unknown": "Size not known yet",
+    "permanent_note": "Deletes permanently. Cannot be restored.",
+    "preview_title": "Clean now?",
+    "preview_body": "{{rules}} rules, {{items}} items, about {{size}}. Files go to the Trash and are logged in History.",
+    "preview_permanent": "Includes emptying the Trash: its contents are gone for good. Tick to continue.",
+    "preview_permanent_ack": "I understand the Trash contents cannot be restored",
+    "preview_commands": "Commands that will run",
+    "preview_volume_warning": "Docker volumes can hold database data. Make sure none is still needed.",
+    "confirm": "Clean",
+    "running": "Cleaning…",
+    "done_title": "Done",
+    "done_body": "{{size}} freed. {{ok}} items moved, {{skipped}} skipped, {{failed}} failed.",
+    "done_dry": "Dry run finished, nothing changed.",
+    "see_history": "See History",
+    "outcome_removed": "{{count}} moved",
+    "outcome_ran": "Command ran",
+    "outcome_failed": "Failed",
+    "outcome_skipped": "Skipped",
+    "group_browser": "Browsers",
+    "group_system_temp": "Temporary files",
+    "group_logs": "Logs",
+    "group_thumbnails": "Thumbnails",
+    "group_trash": "Trash",
+    "group_installers": "Installers",
+    "group_docker": "Docker",
+    "group_node_modules": "JavaScript projects",
+    "group_package_cache": "Package manager caches",
+    "group_xcode": "Xcode"
   }
 }

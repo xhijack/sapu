@@ -8,6 +8,7 @@ use sapu_core::safety::{
 use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
+mod clean;
 mod scan;
 
 /// Errors cross the IPC boundary as a stable code plus a message; the
@@ -120,6 +121,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(std::sync::Arc::new(scan::ScanSession::default()))
+        .manage(std::sync::Arc::new(clean::CleanSession::default()))
         .invoke_handler(tauri::generate_handler![
             scan::scan_targets,
             scan::pick_folder,
@@ -134,6 +136,8 @@ pub fn run() {
             scan::scan_subtree,
             scan::reveal_path,
             scan::trash_paths,
+            clean::clean_evaluate,
+            clean::clean_execute,
             app_info,
             disk_access_status,
             settings_get,

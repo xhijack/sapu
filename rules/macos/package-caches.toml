@@ -1,0 +1,29 @@
+[rule]
+id = "macos-package-caches"
+name = { id = "Cache package manager", en = "Package manager caches" }
+description = { id = "Unduhan npm, Yarn, pip, Cargo, Go, dan Homebrew yang disimpan untuk instalasi berikutnya. Diunduh ulang bila perlu.", en = "Downloads kept by npm, Yarn, pip, Cargo, Go and Homebrew for the next install. Downloaded again when needed." }
+risk = "green"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "~/.npm/_cacache"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/Yarn"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/pip"
+kind = "dir_contents"
+[[match]]
+path = "~/.cargo/registry/cache"
+kind = "dir_contents"
+[[match]]
+path = "~/.cargo/registry/src"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/go-build"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/Homebrew"
+kind = "dir_contents"

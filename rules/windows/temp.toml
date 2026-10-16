@@ -1,0 +1,12 @@
+[rule]
+id = "windows-user-temp"
+name = { id = "File sementara Windows", en = "Windows temporary files" }
+description = { id = "Folder Temp milik akunmu, hanya file yang lebih tua dari 1 hari supaya program yang sedang berjalan tidak terganggu.", en = "Your account's Temp folder, only files older than 1 day so running programs are not disturbed." }
+risk = "green"
+profile = "general"
+group = "system_temp"
+
+[[match]]
+path = "${LOCALAPPDATA}/Temp"
+kind = "dir_contents"
+min_age_days = 1

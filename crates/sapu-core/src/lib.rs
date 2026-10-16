@@ -7,10 +7,12 @@
 //! - The only code path that removes files is [`safety`].
 //! - Core never formats text for display; it emits data and [`progress`] events.
 
+pub mod cleaner;
 pub mod error;
 pub mod eta;
 pub mod platform;
 pub mod progress;
+pub mod rules;
 pub mod safety;
 pub mod scanner;
 pub mod settings;

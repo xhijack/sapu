@@ -1,6 +1,7 @@
 //! `sapu` command line interface: a thin layer over `sapu-core`.
 //! Dry-run by default; `--apply` executes (S4).
 
+mod clean;
 mod scan;
 
 use std::io::IsTerminal;
@@ -31,6 +32,8 @@ enum Command {
     Trash(TrashArgs),
     /// Scan a folder and report what takes up space.
     Scan(scan::ScanArgs),
+    /// Find and remove what is safe to clean (dry-run unless --apply).
+    Clean(clean::CleanArgs),
 }
 
 #[derive(Args)]
@@ -79,6 +82,7 @@ fn main() -> anyhow::Result<()> {
         Command::History(a) => history(a),
         Command::Trash(a) => trash(a),
         Command::Scan(a) => scan::run(a),
+        Command::Clean(a) => clean::run(a),
     }
 }
 

@@ -6,7 +6,8 @@
   "nav": {
     "home": "Pindai",
     "history": "Riwayat",
-    "settings": "Pengaturan"
+    "settings": "Pengaturan",
+    "clean": "Bersih"
   },
   "common": {
     "next": "Lanjut",
@@ -134,7 +135,9 @@
     "serde": "Data tidak bisa dibaca.",
     "opener": "Tidak bisa membuka pengaturan sistem.",
     "no_scan": "Belum ada hasil pemindaian.",
-    "scan_running": "Pemindaian lain masih berjalan."
+    "scan_running": "Pemindaian lain masih berjalan.",
+    "rules": "Aturan pembersihan tidak bisa dimuat.",
+    "no_evaluation": "Periksa dulu apa yang bisa dibersihkan."
   },
   "scan": {
     "title": "Pindai",
@@ -201,5 +204,48 @@
     "temporary": "File sementara",
     "development": "Development",
     "other": "Lainnya"
+  },
+  "clean": {
+    "title": "Bersih",
+    "intro": "Sapu mencari file yang aman dihapus berdasarkan aturan yang jelas. Tidak ada yang dihapus sebelum kamu menekan tombol.",
+    "evaluating": "Memeriksa apa yang bisa dibersihkan…",
+    "empty_title": "Tidak ada yang perlu dibersihkan",
+    "empty_body": "Semua aturan sudah diperiksa dan tidak menemukan file yang bisa dibersihkan untuk profil ini.",
+    "reevaluate": "Periksa ulang",
+    "primary": "Bersihkan {{size}} yang dipilih",
+    "primary_none": "Pilih yang ingin dibersihkan",
+    "selected_summary": "{{count}} aturan dipilih",
+    "items": "{{count}} item",
+    "protected_skipped": "{{count}} dilewati karena dilindungi",
+    "command_note": "Dijalankan lewat perintah resmi: {{cmd}}",
+    "not_installed": "Tidak terpasang",
+    "estimate_unknown": "Ukuran belum diketahui",
+    "permanent_note": "Menghapus permanen. Tidak bisa dipulihkan.",
+    "preview_title": "Bersihkan sekarang?",
+    "preview_body": "{{rules}} aturan, {{items}} item, sekitar {{size}}. File dipindahkan ke Trash dan tercatat di Riwayat.",
+    "preview_permanent": "Termasuk mengosongkan Trash: isinya hilang permanen. Centang untuk melanjutkan.",
+    "preview_permanent_ack": "Saya paham, isi Trash tidak bisa dipulihkan",
+    "preview_commands": "Perintah yang akan dijalankan",
+    "preview_volume_warning": "Volume Docker bisa berisi data database. Pastikan tidak ada yang masih dibutuhkan.",
+    "confirm": "Bersihkan",
+    "running": "Membersihkan…",
+    "done_title": "Selesai",
+    "done_body": "{{size}} dibebaskan. {{ok}} item dipindahkan, {{skipped}} dilewati, {{failed}} gagal.",
+    "done_dry": "Simulasi selesai, tidak ada yang diubah.",
+    "see_history": "Lihat Riwayat",
+    "outcome_removed": "{{count}} dipindahkan",
+    "outcome_ran": "Perintah dijalankan",
+    "outcome_failed": "Gagal",
+    "outcome_skipped": "Dilewati",
+    "group_browser": "Browser",
+    "group_system_temp": "File sementara",
+    "group_logs": "Log",
+    "group_thumbnails": "Thumbnail",
+    "group_trash": "Trash",
+    "group_installers": "Installer",
+    "group_docker": "Docker",
+    "group_node_modules": "Proyek JavaScript",
+    "group_package_cache": "Cache package manager",
+    "group_xcode": "Xcode"
   }
 }

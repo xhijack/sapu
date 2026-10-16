@@ -1,0 +1,54 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { CleanView } from "./CleanView";
+import { cleanMock } from "@/lib/cleanApi";
+
+describe("CleanView", () => {
+  it("pre-selects green rules only and the button follows the selection", async () => {
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    const browser = await screen.findByRole("checkbox", { name: "Cache browser" });
+    expect(browser).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Log lama" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "File sementara aplikasi" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Kosongkan Trash" })).not.toBeChecked();
+    // 2.3 GB + 145 MB + 117 MB ≈ 2.6 GB
+    expect(screen.getByRole("button", { name: /Bersihkan 2,6 GB yang dipilih/ })).toBeInTheDocument();
+    expect(screen.queryByText(/docker/i)).toBeNull();
+  });
+
+  it("shows docker commands for developers, marks unavailable ones", async () => {
+    render(<CleanView profile="developer" onSeeHistory={vi.fn()} />);
+    expect(await screen.findByText("docker image prune -f", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Image Docker tak terpakai" })).toBeChecked();
+  });
+
+  it("previews before cleaning and requires the permanent acknowledgement for Trash", async () => {
+    const user = userEvent.setup();
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    await screen.findByRole("checkbox", { name: "Cache browser" });
+    await user.click(screen.getByRole("checkbox", { name: "Kosongkan Trash" }));
+    await user.click(screen.getByRole("button", { name: /Bersihkan/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Bersihkan sekarang?")).toBeInTheDocument();
+    const confirm = within(dialog).getByRole("button", { name: "Bersihkan" });
+    expect(confirm).toBeDisabled();
+    await user.click(within(dialog).getByRole("checkbox"));
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await screen.findByRole("heading", { name: "Selesai" });
+    expect(cleanMock.lastExecute).toEqual({ ruleIds: expect.arrayContaining(["macos-browser-caches", "macos-old-logs", "macos-trash"]), apply: true, permanentOk: true });
+    expect(screen.getByText(/dibebaskan/)).toBeInTheDocument();
+  });
+
+  it("nothing is executed when the preview is cancelled", async () => {
+    const user = userEvent.setup();
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    await screen.findByRole("checkbox", { name: "Cache browser" });
+    await user.click(screen.getByRole("button", { name: /Bersihkan/ }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Batal" }));
+    expect(cleanMock.lastExecute).toBeNull();
+  });
+});

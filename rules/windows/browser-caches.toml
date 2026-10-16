@@ -1,0 +1,20 @@
+[rule]
+id = "windows-browser-caches"
+name = { id = "Cache browser", en = "Browser caches" }
+description = { id = "File sementara Chrome, Edge, Firefox, dan Brave. Halaman web dimuat ulang dari internet.", en = "Temporary files of Chrome, Edge, Firefox and Brave. Pages are loaded from the internet again." }
+risk = "green"
+profile = "general"
+group = "browser"
+
+[[match]]
+path = "${LOCALAPPDATA}/Google/Chrome/User Data/*/Cache"
+kind = "dir"
+[[match]]
+path = "${LOCALAPPDATA}/Microsoft/Edge/User Data/*/Cache"
+kind = "dir"
+[[match]]
+path = "${LOCALAPPDATA}/Mozilla/Firefox/Profiles/*/cache2"
+kind = "dir"
+[[match]]
+path = "${LOCALAPPDATA}/BraveSoftware/Brave-Browser/User Data/*/Cache"
+kind = "dir"

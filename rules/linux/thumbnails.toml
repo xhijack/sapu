@@ -1,0 +1,11 @@
+[rule]
+id = "linux-thumbnails"
+name = { id = "Cache thumbnail", en = "Thumbnail cache" }
+description = { id = "Gambar kecil pratinjau file. Dibuat ulang saat folder dibuka.", en = "Small preview images of files. Recreated when a folder is opened." }
+risk = "green"
+profile = "general"
+group = "thumbnails"
+
+[[match]]
+path = "~/.cache/thumbnails"
+kind = "dir_contents"

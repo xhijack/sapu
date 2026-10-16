@@ -1,0 +1,20 @@
+[rule]
+id = "linux-browser-caches"
+name = { id = "Cache browser", en = "Browser caches" }
+description = { id = "File sementara Chrome, Chromium, Firefox, dan Brave. Halaman web dimuat ulang dari internet.", en = "Temporary files of Chrome, Chromium, Firefox and Brave. Pages are loaded from the internet again." }
+risk = "green"
+profile = "general"
+group = "browser"
+
+[[match]]
+path = "~/.cache/google-chrome"
+kind = "dir_contents"
+[[match]]
+path = "~/.cache/chromium"
+kind = "dir_contents"
+[[match]]
+path = "~/.cache/mozilla/firefox/*/cache2"
+kind = "dir"
+[[match]]
+path = "~/.cache/BraveSoftware"
+kind = "dir_contents"

@@ -1,0 +1,12 @@
+[rule]
+id = "linux-app-caches"
+name = { id = "File sementara aplikasi", en = "App temporary files" }
+description = { id = "Cache semua aplikasi di ~/.cache yang tidak diubah lebih dari 7 hari. Aplikasi membuatnya lagi saat dibutuhkan.", en = "Caches of every app in ~/.cache unchanged for more than 7 days. Apps recreate them when needed." }
+risk = "yellow"
+profile = "general"
+group = "system_temp"
+
+[[match]]
+path = "~/.cache"
+kind = "dir_contents"
+min_age_days = 7

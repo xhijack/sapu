@@ -1,0 +1,14 @@
+[rule]
+id = "linux-jvm-caches"
+name = { id = "Cache Gradle & Maven", en = "Gradle & Maven caches" }
+description = { id = "Dependensi Java/Android yang diunduh Gradle dan Maven. Build berikutnya mengunduh ulang.", en = "Java/Android dependencies downloaded by Gradle and Maven. The next build downloads them again." }
+risk = "yellow"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "~/.gradle/caches"
+kind = "dir_contents"
+[[match]]
+path = "~/.m2/repository"
+kind = "dir_contents"

@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Home, History, Settings as SettingsIcon } from "lucide-react";
+import { Home, Sparkles, History, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type Screen = "home" | "history" | "settings";
+export type Screen = "home" | "clean" | "history" | "settings";
 
 const ITEMS: { id: Screen; Icon: typeof Home }[] = [
   { id: "home", Icon: Home },
+  { id: "clean", Icon: Sparkles },
   { id: "history", Icon: History },
   { id: "settings", Icon: SettingsIcon },
 ];

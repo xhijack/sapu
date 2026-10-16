@@ -1,0 +1,12 @@
+[rule]
+id = "xcode-simulators-unavailable"
+name = { id = "Simulator iOS yang tidak tersedia", en = "Unavailable iOS simulators" }
+description = { id = "Simulator dari versi runtime yang sudah tidak terpasang. Dihapus lewat perintah resmi xcrun simctl.", en = "Simulators of runtimes no longer installed. Removed through the official xcrun simctl command." }
+risk = "green"
+profile = "developer"
+group = "xcode"
+
+[command]
+program = "xcrun"
+args = ["simctl", "delete", "unavailable"]
+requires = "xcrun"

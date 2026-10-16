@@ -1,0 +1,26 @@
+[rule]
+id = "linux-package-caches"
+name = { id = "Cache package manager", en = "Package manager caches" }
+description = { id = "Unduhan npm, Yarn, pip, Cargo, dan Go yang disimpan untuk instalasi berikutnya. Diunduh ulang bila perlu.", en = "Downloads kept by npm, Yarn, pip, Cargo and Go for the next install. Downloaded again when needed." }
+risk = "green"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "~/.npm/_cacache"
+kind = "dir_contents"
+[[match]]
+path = "~/.cache/yarn"
+kind = "dir_contents"
+[[match]]
+path = "~/.cache/pip"
+kind = "dir_contents"
+[[match]]
+path = "~/.cargo/registry/cache"
+kind = "dir_contents"
+[[match]]
+path = "~/.cargo/registry/src"
+kind = "dir_contents"
+[[match]]
+path = "~/.cache/go-build"
+kind = "dir_contents"

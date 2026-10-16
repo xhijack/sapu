@@ -1,0 +1,12 @@
+[rule]
+id = "macos-app-caches"
+name = { id = "File sementara aplikasi", en = "App temporary files" }
+description = { id = "Cache semua aplikasi di ~/Library/Caches yang tidak diubah lebih dari 7 hari. Aplikasi membuatnya lagi saat dibutuhkan; beberapa aplikasi perlu mengunduh ulang data.", en = "Caches of every app in ~/Library/Caches unchanged for more than 7 days. Apps recreate them when needed; some will re-download data." }
+risk = "yellow"
+profile = "general"
+group = "system_temp"
+
+[[match]]
+path = "~/Library/Caches"
+kind = "dir_contents"
+min_age_days = 7

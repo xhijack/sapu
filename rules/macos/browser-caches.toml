@@ -1,0 +1,23 @@
+[rule]
+id = "macos-browser-caches"
+name = { id = "Cache browser", en = "Browser caches" }
+description = { id = "File sementara Chrome, Firefox, Edge, Brave, dan Arc. Halaman web dimuat ulang dari internet.", en = "Temporary files of Chrome, Firefox, Edge, Brave and Arc. Pages are loaded from the internet again." }
+risk = "green"
+profile = "general"
+group = "browser"
+
+[[match]]
+path = "~/Library/Caches/Google/Chrome"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/Firefox/Profiles/*/cache2"
+kind = "dir"
+[[match]]
+path = "~/Library/Caches/Microsoft Edge"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/BraveSoftware"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/company.thebrowser.Browser"
+kind = "dir_contents"

@@ -50,11 +50,15 @@ pub struct CleanSession {
 
 impl CleanSession {
     pub(super) fn new_id() -> String {
+        // Clock resolution is coarse on some platforms; a counter keeps ids
+        // unique within one process.
+        static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        format!("{nanos:x}-{}", std::process::id())
+        let seq = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        format!("{nanos:x}-{}-{seq}", std::process::id())
     }
 
     pub(super) fn now_unix() -> u64 {

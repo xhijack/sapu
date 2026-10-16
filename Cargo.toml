@@ -19,6 +19,9 @@ dirs = "6"
 tempfile = "3"
 jwalk = "0.8"
 fs4 = "0.13"
+toml = "0.9"
+include_dir = "0.7"
+glob = "0.3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

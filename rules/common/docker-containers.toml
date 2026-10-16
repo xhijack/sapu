@@ -1,0 +1,14 @@
+[rule]
+id = "docker-containers-stopped"
+name = { id = "Container Docker yang berhenti", en = "Stopped Docker containers" }
+description = { id = "Container yang sudah tidak berjalan. Data di dalam container ikut hilang; volume tidak disentuh.", en = "Containers that are no longer running. Data inside them is lost; volumes are untouched." }
+risk = "yellow"
+profile = "developer"
+group = "docker"
+
+[command]
+program = "docker"
+args = ["container", "prune", "-f"]
+requires = "docker"
+estimate = ["docker", "system", "df", "--format", "{{.Type}}	{{.Reclaimable}}"]
+estimate_filter = "Containers"
