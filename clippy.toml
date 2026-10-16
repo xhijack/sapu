@@ -1,0 +1,12 @@
+# The only place allowed to call these is crates/sapu-core/src/safety/dispose.rs
+# (see CLAUDE.md "Aturan arsitektur" #2). Enforced together with scripts/check-forbidden-fs.sh.
+disallowed-methods = [
+  { path = "std::fs::remove_file", reason = "file removal must go through sapu_core::safety" },
+  { path = "std::fs::remove_dir", reason = "file removal must go through sapu_core::safety" },
+  { path = "std::fs::remove_dir_all", reason = "file removal must go through sapu_core::safety" },
+  { path = "trash::delete", reason = "file removal must go through sapu_core::safety" },
+  { path = "trash::delete_all", reason = "file removal must go through sapu_core::safety" },
+]
+
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

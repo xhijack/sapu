@@ -1,0 +1,11 @@
+/target
+**/*.rs.bk
+node_modules/
+dist/
+.DS_Store
+# local tooling state
+.claude-flow/
+.swarm/
+ruvector.db
+.claude/*
+!.claude/settings.json

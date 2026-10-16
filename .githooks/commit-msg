@@ -1,0 +1,7 @@
+#!/bin/sh
+# Strip AI attribution lines from the commit message (see CLAUDE.md).
+sed -i.bak \
+  -e '/^Co-[Aa]uthored-[Bb]y: Claude/d' \
+  -e '/Generated with \[\{0,1\}Claude Code/d' \
+  -e '/^Claude-Session:/d' \
+  "$1" && rm -f "$1.bak"

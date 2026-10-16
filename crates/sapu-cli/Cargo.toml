@@ -1,0 +1,21 @@
+[package]
+name = "sapu-cli"
+description = "Command line interface for Sapu (thin layer over sapu-core)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "sapu"
+path = "src/main.rs"
+
+[dependencies]
+sapu-core = { path = "../sapu-core" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+serde_json.workspace = true
+
+[lints]
+workspace = true
