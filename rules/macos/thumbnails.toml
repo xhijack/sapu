@@ -1,0 +1,17 @@
+[rule]
+id = "macos-thumbnails"
+name = { id = "Cache thumbnail", en = "Thumbnail cache" }
+description = { id = "Gambar kecil pratinjau dari Finder dan aplikasi foto. Dibuat ulang saat folder dibuka.", en = "Small preview images from Finder and photo apps. Recreated when a folder is opened." }
+risk = "green"
+profile = "general"
+group = "thumbnails"
+
+[[match]]
+path = "~/Library/Caches/com.apple.QuickLook.thumbnailcache"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/com.apple.finder"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Caches/com.apple.iconservices.store"
+kind = "dir_contents"

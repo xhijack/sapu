@@ -1,0 +1,20 @@
+[rule]
+id = "linux-old-logs"
+name = { id = "Log lama", en = "Old logs" }
+description = { id = "Log sesi grafis dan crash yang lebih tua dari 30 hari.", en = "Session and crash logs older than 30 days." }
+risk = "green"
+profile = "general"
+group = "logs"
+
+[[match]]
+path = "~/.local/share/xorg/*.log*"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/.xsession-errors*"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/.cache/abrt"
+kind = "dir_contents"
+min_age_days = 30

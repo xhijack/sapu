@@ -246,3 +246,142 @@ mod user_dir_tests {
 
     use crate::rules::Risk;
 }
+
+/// Behavioural test for every shipped rule: build a fake home with the
+/// rule's own paths, run the evaluator, and prove the rule finds exactly
+/// the files under those paths and nothing else (PRD Tahap 2 acceptance).
+#[cfg(test)]
+mod per_rule_tests {
+    use std::path::{Path, PathBuf};
+
+    use super::*;
+    use crate::cleaner::ProjectScanOptions;
+    use crate::cleaner::evaluate_with;
+    use crate::rules::{Env, MatchKind, Profile};
+    use crate::safety::ProtectedPaths;
+
+    /// Replace glob tokens with a concrete sample segment.
+    fn concretize(template: &str) -> String {
+        template
+            .split('/')
+            .map(|seg| {
+                if seg.contains(['*', '?', '[']) {
+                    seg.replace(['*', '?', '[', ']'], "x")
+                } else {
+                    seg.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("/")
+    }
+
+    fn fake_env(root: &Path) -> Env {
+        let home = root.join("home");
+        let mut env = Env::with_home(&home);
+        for (k, v) in [
+            ("LOCALAPPDATA", "appdata/Local"),
+            ("USERPROFILE", "home"),
+            ("SystemDrive", "C"),
+            ("ProgramData", "programdata"),
+        ] {
+            env.vars
+                .insert(k.into(), root.join(v).to_string_lossy().into_owned());
+        }
+        env
+    }
+
+    fn write(p: &Path) {
+        std::fs::create_dir_all(p.parent().expect("parent")).expect("mkdir");
+        std::fs::write(p, b"sapu-test").expect("write");
+        // Old enough for any min_age_days the rules use.
+        let t = std::time::SystemTime::now() - std::time::Duration::from_secs(400 * 86_400);
+        let _ = std::fs::File::options()
+            .write(true)
+            .open(p)
+            .and_then(|f| f.set_modified(t));
+    }
+
+    #[test]
+    fn every_match_finds_its_own_files_and_nothing_else() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let env = fake_env(tmp.path());
+        let decoy = tmp.path().join("home/Documents/keep-me.pdf");
+        write(&decoy);
+        let protected = ProtectedPaths::os_defaults();
+        let no_projects = ProjectScanOptions {
+            roots: Vec::new(),
+            ..Default::default()
+        };
+
+        let mut checked = 0;
+        for (file, rule) in load_all_embedded().expect("rules") {
+            let mut expected_files: Vec<PathBuf> = Vec::new();
+            for m in &rule.matches {
+                let Some(template) = m.path.as_deref() else {
+                    continue;
+                };
+                let concrete = concretize(template);
+                let Some(base) = env.expand(&concrete) else {
+                    continue;
+                };
+                match m.kind {
+                    MatchKind::DirContents => {
+                        for n in ["a.bin", "sub/b.bin"] {
+                            let p = base.join(n);
+                            write(&p);
+                        }
+                        // Folders carry their own mtime; age the sample subfolder too.
+                        let old = std::time::SystemTime::now()
+                            - std::time::Duration::from_secs(400 * 86_400);
+                        let _ =
+                            std::fs::File::open(base.join("sub")).and_then(|f| f.set_modified(old));
+                        expected_files.push(base.join("a.bin"));
+                        expected_files.push(base.join("sub"));
+                    }
+                    MatchKind::Dir => {
+                        write(&base.join("inner.bin"));
+                        expected_files.push(base.clone());
+                    }
+                    MatchKind::Files => {
+                        write(&base);
+                        expected_files.push(base.clone());
+                    }
+                    MatchKind::DirName => {}
+                }
+            }
+            if expected_files.is_empty() {
+                continue;
+            }
+            let set = RuleSet {
+                rules: vec![rule.clone()],
+            };
+            let report = evaluate_with(&set, Profile::Developer, &protected, &env, &no_projects);
+            let found: Vec<PathBuf> = report
+                .findings
+                .iter()
+                .filter(|f| f.rule_id == rule.id)
+                .flat_map(|f| f.items.iter().map(|c| c.path.clone()))
+                .collect();
+            for e in &expected_files {
+                assert!(
+                    found.contains(e),
+                    "{file}: expected {} to be found; found {found:?}",
+                    e.display()
+                );
+            }
+            assert!(
+                !found.contains(&decoy),
+                "{file}: must not touch files outside its paths"
+            );
+            for f in &found {
+                assert!(
+                    f.starts_with(tmp.path()),
+                    "{file}: escaped the fake tree: {}",
+                    f.display()
+                );
+            }
+            checked += 1;
+        }
+        assert!(checked >= 20, "checked {checked} rules");
+    }
+}

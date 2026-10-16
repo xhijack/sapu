@@ -1,0 +1,16 @@
+[rule]
+id = "windows-error-reports"
+name = { id = "Laporan error dan crash dump", en = "Error reports and crash dumps" }
+description = { id = "Laporan Windows Error Reporting dan dump crash aplikasi yang lebih tua dari 30 hari.", en = "Windows Error Reporting files and app crash dumps older than 30 days." }
+risk = "green"
+profile = "general"
+group = "logs"
+
+[[match]]
+path = "${LOCALAPPDATA}/Microsoft/Windows/WER"
+kind = "dir_contents"
+min_age_days = 30
+[[match]]
+path = "${LOCALAPPDATA}/CrashDumps"
+kind = "dir_contents"
+min_age_days = 30

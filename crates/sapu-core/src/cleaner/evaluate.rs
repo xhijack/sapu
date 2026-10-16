@@ -158,11 +158,26 @@ fn candidates_for(m: &Match, env: &Env, now: SystemTime) -> (PathBuf, Vec<Candid
 
     match m.kind {
         MatchKind::DirContents => {
-            let Some(dir) = env.expand(m.path.as_deref().unwrap_or("")) else {
-                return (PathBuf::new(), Vec::new());
-            };
-            let items = children(&dir).into_iter().filter(old_enough).collect();
-            (dir, items)
+            let template = m.path.as_deref().unwrap_or("");
+            let dirs = env.expand_glob(template);
+            let scope = dirs
+                .first()
+                .map(|d| {
+                    if dirs.len() == 1 {
+                        d.clone()
+                    } else {
+                        d.parent()
+                            .map(Path::to_path_buf)
+                            .unwrap_or_else(|| d.clone())
+                    }
+                })
+                .unwrap_or_default();
+            let items = dirs
+                .iter()
+                .flat_map(|d| children(d))
+                .filter(old_enough)
+                .collect();
+            (scope, items)
         }
         MatchKind::Dir | MatchKind::Files => {
             let template = m.path.as_deref().unwrap_or("");

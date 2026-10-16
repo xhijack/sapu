@@ -1,0 +1,12 @@
+[rule]
+id = "windows-recycle-bin"
+name = { id = "Kosongkan Recycle Bin", en = "Empty the Recycle Bin" }
+description = { id = "File yang sudah kamu buang. Setelah ini tidak bisa dipulihkan lagi.", en = "Files you already threw away. After this they cannot be restored." }
+risk = "yellow"
+profile = "general"
+group = "trash"
+permanent = true
+
+[[match]]
+path = "${SystemDrive}/$Recycle.Bin/*"
+kind = "dir_contents"

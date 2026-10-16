@@ -1,0 +1,11 @@
+[rule]
+id = "windows-pnpm-store"
+name = { id = "Store pnpm", en = "pnpm store" }
+description = { id = "Paket yang dibagikan antar proyek pnpm. Proyek aktif akan mengunduh ulang saat install berikutnya.", en = "Packages shared across pnpm projects. Active projects re-download them on the next install." }
+risk = "yellow"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "${LOCALAPPDATA}/pnpm/store"
+kind = "dir_contents"
