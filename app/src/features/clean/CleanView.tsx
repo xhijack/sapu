@@ -8,7 +8,8 @@ import { formatBytes } from "@/lib/format";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
 import type { CleanEvaluation, CleanRunReport, Profile } from "@/lib/types";
-import { buildRows } from "./rows";
+import { ARTEFACT_PREFIX, buildRows, type RuleRow } from "./rows";
+import { ProjectsSection } from "./ProjectsSection";
 import { cn } from "@/lib/utils";
 import { CleanPreview } from "./CleanPreview";
 import { CleanResult } from "./CleanResult";
@@ -28,7 +29,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
         .evaluate(profile)
         .then((ev) => {
           setEvaluation(ev);
-          setSelected(new Set(ev.preselected));
+          setSelected(new Set([...ev.preselected, ...ev.preselected_artefacts.map((p) => ARTEFACT_PREFIX + p)]));
         })
         .catch((e) => setError(errorMessage(e))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,7 +41,28 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   }, [load]);
 
   const rows = useMemo(() => (evaluation ? buildRows(evaluation, i18n.language) : []), [evaluation, i18n.language]);
-  const selectedRows = rows.filter((r) => selected.has(r.id));
+  const artefactRows: RuleRow[] = useMemo(
+    () =>
+      (evaluation?.report.projects ?? []).flatMap((p) =>
+        p.artefacts.map((a) => ({
+          id: ARTEFACT_PREFIX + a.path,
+          name: `${p.name}/${a.kind}`,
+          description: p.rebuild.join(" && "),
+          risk: a.risk,
+          group: "projects",
+          permanent: false,
+          bytes: a.bytes,
+          items: 1,
+          skippedProtected: 0,
+          commandLine: null,
+          available: true,
+          confirmSeparately: false,
+          artefactPath: a.path,
+        })),
+      ),
+    [evaluation],
+  );
+  const selectedRows = [...rows, ...artefactRows].filter((r) => selected.has(r.id));
   const selectedBytes = selectedRows.reduce((a, r) => a + (r.bytes ?? 0), 0);
 
   const toggle = (id: string) =>
@@ -94,11 +116,12 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
         <p className="mt-1 text-fg-muted">{t("clean.intro")}</p>
       </div>
 
-      {rows.length === 0 ? (
+      {rows.length === 0 && artefactRows.length === 0 ? (
         <EmptyState title={t("clean.empty_title")} body={t("clean.empty_body")} action={<Button variant="outline" size="sm" onClick={() => void load()}>{t("clean.reevaluate")}</Button>} />
       ) : (
         <>
           <div className="grid gap-6">
+            {evaluation.report.projects.length > 0 && <ProjectsSection projects={evaluation.report.projects} selected={selected} onToggle={toggle} />}
             {groups.map((g) => (
               <section key={g} className="grid gap-1">
                 <h2 className="text-sm font-medium text-fg-muted">{t(`clean.group_${g}`, { defaultValue: g })}</h2>

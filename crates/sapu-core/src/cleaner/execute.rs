@@ -15,8 +15,11 @@ use super::evaluate::CleanReport;
 
 /// Which rules to run. Defaults to every green finding.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Selection {
     pub rule_ids: HashSet<String>,
+    /// Project artefact folders (by path) to remove.
+    pub artefacts: HashSet<std::path::PathBuf>,
 }
 
 impl Selection {
@@ -34,6 +37,13 @@ impl Selection {
                         .filter(|c| c.risk == Risk::Green && c.available)
                         .map(|c| c.rule_id.clone()),
                 )
+                .collect(),
+            artefacts: report
+                .projects
+                .iter()
+                .flat_map(|p| p.artefacts.iter())
+                .filter(|a| a.risk == Risk::Green)
+                .map(|a| a.path.clone())
                 .collect(),
         }
     }
@@ -310,6 +320,7 @@ kind = "dir_contents"
         let report = evaluate(&rules, Profile::General, &protected, &Env::with_home(&home));
         let sel = Selection {
             rule_ids: ["trash".to_string()].into_iter().collect(),
+            ..Default::default()
         };
         let run =
             execute(&report, &rules, &sel, true, None, &safety, &mut NoProgress).expect("run");

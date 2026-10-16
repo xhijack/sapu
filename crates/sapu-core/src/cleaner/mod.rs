@@ -4,7 +4,9 @@
 mod command;
 mod evaluate;
 mod execute;
+mod projects;
 
 pub use command::{CommandOutcome, run_command};
-pub use evaluate::{Candidate, CleanReport, CommandFinding, Finding, evaluate};
+pub use evaluate::{Candidate, CleanReport, CommandFinding, Finding, evaluate, evaluate_with};
 pub use execute::{CleanRunReport, RuleOutcome, Selection, execute};
+pub use projects::{Artefact, Ecosystem, Project, ProjectScanOptions, find_projects};

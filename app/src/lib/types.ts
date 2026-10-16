@@ -267,19 +267,44 @@ export interface CommandFinding {
   estimate_bytes: number | null;
 }
 
+export type Ecosystem = "node" | "rust" | "python" | "go" | "dart" | "gradle" | "maven";
+
+export interface Artefact {
+  path: string;
+  kind: string;
+  bytes: number;
+  gitignored: boolean;
+  tracked: boolean | null;
+  risk: Risk;
+}
+
+export interface Project {
+  root: string;
+  name: string;
+  ecosystem: Ecosystem;
+  last_activity: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+  idle_days: number | null;
+  artefacts: Artefact[];
+  bytes: number;
+  rebuild: string[];
+}
+
 export interface CleanReport {
   findings: Finding[];
   commands: CommandFinding[];
+  projects: Project[];
 }
 
 export interface CleanEvaluation {
   report: CleanReport;
   rules: RuleInfo[];
   preselected: string[];
+  preselected_artefacts: string[];
 }
 
 export type RuleOutcome =
   | { kind: "files"; rule_id: string; session: CleanSession }
+  | { kind: "project"; root: string; session: CleanSession }
   | { kind: "command"; rule_id: string; outcome: { command_line: string; success: boolean; stdout: string; stderr: string } }
   | { kind: "skipped"; rule_id: string; reason: string };
 

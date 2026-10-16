@@ -15,6 +15,8 @@ interface Props {
 export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
   const { t, i18n } = useTranslation();
   const name = (id: string) => rows.find((r) => r.id === id)?.name ?? id;
+  const label = (o: CleanRunReport["outcomes"][number]) =>
+    o.kind === "project" ? t("clean.outcome_project", { name: o.root.split("/").pop() ?? o.root }) : name(o.rule_id);
   return (
     <div className="grid max-w-3xl gap-6">
       <h1 className="flex items-center gap-2 text-2xl font-semibold">
@@ -28,9 +30,9 @@ export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
       </p>
       <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
         {result.outcomes.map((o, i) => (
-          <li key={`${o.rule_id}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">
+          <li key={`${o.kind === "project" ? o.root : o.rule_id}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="min-w-0">
-              <span className="block font-medium">{name(o.rule_id)}</span>
+              <span className="block font-medium">{label(o)}</span>
               {o.kind === "command" && (
                 <span className="path block truncate text-fg-muted" title={o.outcome.command_line}>
                   {o.outcome.command_line}
@@ -39,7 +41,7 @@ export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
               {o.kind === "skipped" && <span className="block text-sm text-fg-muted">{o.reason}</span>}
             </span>
             <span className="shrink-0 text-sm">
-              {o.kind === "files" && (
+              {(o.kind === "files" || o.kind === "project") && (
                 <span className={o.session.failed > 0 ? "text-risk-danger-fg" : "text-fg-muted"}>
                   {t("clean.outcome_removed", { count: o.session.disposed })}
                   {o.session.skipped > 0 && `, ${o.session.skipped} ${t("clean.outcome_skipped").toLowerCase()}`}

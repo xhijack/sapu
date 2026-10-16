@@ -43,9 +43,12 @@ pub struct CommandFinding {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct CleanReport {
     pub findings: Vec<Finding>,
     pub commands: Vec<CommandFinding>,
+    /// Development projects with removable artefacts (developer profile).
+    pub projects: Vec<super::projects::Project>,
 }
 
 impl CleanReport {
@@ -58,15 +61,35 @@ impl CleanReport {
     }
 }
 
-/// Evaluate every rule for `profile`; developer profile includes general rules.
+/// Evaluate every rule for `profile`; developer profile includes general
+/// rules and the development-project analysis.
 pub fn evaluate(
     rules: &RuleSet,
     profile: Profile,
     protected: &ProtectedPaths,
     env: &Env,
 ) -> CleanReport {
+    evaluate_with(
+        rules,
+        profile,
+        protected,
+        env,
+        &super::projects::ProjectScanOptions::default(),
+    )
+}
+
+pub fn evaluate_with(
+    rules: &RuleSet,
+    profile: Profile,
+    protected: &ProtectedPaths,
+    env: &Env,
+    projects: &super::projects::ProjectScanOptions,
+) -> CleanReport {
     let now = SystemTime::now();
     let mut report = CleanReport::default();
+    if profile == Profile::Developer {
+        report.projects = super::projects::find_projects(projects, env, protected);
+    }
     for rule in &rules.rules {
         if rule.profile == Profile::Developer && profile == Profile::General {
             continue;

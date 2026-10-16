@@ -50,6 +50,9 @@ pub fn run(args: CleanArgs) -> anyhow::Result<()> {
         for c in report.commands.iter().filter(|c| c.available) {
             selection.rule_ids.insert(c.rule_id.clone());
         }
+        for a in report.projects.iter().flat_map(|p| p.artefacts.iter()) {
+            selection.artefacts.insert(a.path.clone());
+        }
     }
     let needs_permanent = report
         .findings
@@ -200,6 +203,40 @@ fn print_report(report: &CleanReport, sel: &Selection, rules: &sapu_core::rules:
             c.command_line,
             if c.available { "" } else { "  (not installed)" }
         );
+    }
+    if !report.projects.is_empty() {
+        println!("\nDevelopment projects");
+        for p in &report.projects {
+            println!(
+                "  {:<34} {:<7} idle {:>4} d  {:>9}  rebuild: {}",
+                p.name,
+                format!("{:?}", p.ecosystem).to_lowercase(),
+                p.idle_days
+                    .map(|d| d.to_string())
+                    .unwrap_or_else(|| "?".into()),
+                human_bytes(p.bytes),
+                p.rebuild.join(" && ")
+            );
+            for a in &p.artefacts {
+                println!(
+                    "    {} {:<7} {:>9}  {}{}",
+                    if sel.artefacts.contains(&a.path) {
+                        "[x]"
+                    } else {
+                        "[ ]"
+                    },
+                    risk(a.risk),
+                    human_bytes(a.bytes),
+                    a.kind,
+                    match (a.gitignored, a.tracked) {
+                        (true, Some(false)) => "  (gitignored, untracked)",
+                        (true, None) => "  (gitignored)",
+                        (false, _) => "  (NOT gitignored)",
+                        _ => "",
+                    }
+                );
+            }
+        }
     }
     println!(
         "\ngreen total {}   yellow total {}",

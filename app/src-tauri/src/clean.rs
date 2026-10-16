@@ -32,6 +32,7 @@ pub struct CleanEvaluation {
     report: CleanReport,
     rules: Vec<RuleInfo>,
     preselected: Vec<String>,
+    preselected_artefacts: Vec<std::path::PathBuf>,
 }
 
 fn rules() -> CmdResult<RuleSet> {
@@ -54,7 +55,9 @@ pub async fn clean_evaluate(
             &ProtectedPaths::os_defaults(),
             &Env::system(),
         );
-        let preselected = Selection::greens(&report).rule_ids.into_iter().collect();
+        let greens = Selection::greens(&report);
+        let preselected = greens.rule_ids.into_iter().collect();
+        let preselected_artefacts = greens.artefacts.into_iter().collect();
         let infos = rules
             .rules
             .iter()
@@ -74,6 +77,7 @@ pub async fn clean_evaluate(
             report,
             rules: infos,
             preselected,
+            preselected_artefacts,
         })
     })
     .await
@@ -87,6 +91,7 @@ pub async fn clean_execute(
     app: AppHandle,
     session: State<'_, Arc<CleanSession>>,
     rule_ids: Vec<String>,
+    artefacts: Vec<std::path::PathBuf>,
     apply: bool,
     permanent_ok: bool,
 ) -> CmdResult<CleanRunReport> {
@@ -100,6 +105,7 @@ pub async fn clean_execute(
         let rules = rules()?;
         let selection = Selection {
             rule_ids: rule_ids.into_iter().collect(),
+            artefacts: artefacts.into_iter().collect(),
         };
         let permanent =
             permanent_ok.then(PermanentConfirmation::i_understand_this_cannot_be_undone);

@@ -14,7 +14,11 @@ export interface RuleRow {
   commandLine: string | null;
   available: boolean;
   confirmSeparately: boolean;
+  /** Set for project artefacts: the folder path sent to the backend. */
+  artefactPath?: string;
 }
+
+export const ARTEFACT_PREFIX = "artefact:";
 
 export function buildRows(ev: CleanEvaluation, lang: string): RuleRow[] {
   const l = (x: { id: string; en: string }) => (lang.startsWith("en") ? x.en : x.id);

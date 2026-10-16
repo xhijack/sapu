@@ -38,7 +38,7 @@ describe("CleanView", () => {
     await user.click(confirm);
 
     await screen.findByRole("heading", { name: "Selesai" });
-    expect(cleanMock.lastExecute).toEqual({ ruleIds: expect.arrayContaining(["macos-browser-caches", "macos-old-logs", "macos-trash"]), apply: true, permanentOk: true });
+    expect(cleanMock.lastExecute).toMatchObject({ ruleIds: expect.arrayContaining(["macos-browser-caches", "macos-old-logs", "macos-trash"]), apply: true, permanentOk: true });
     expect(screen.getByText(/dibebaskan/)).toBeInTheDocument();
   });
 
@@ -50,5 +50,26 @@ describe("CleanView", () => {
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Batal" }));
     expect(cleanMock.lastExecute).toBeNull();
+  });
+});
+
+describe("CleanView projects", () => {
+  it("lists development projects, pre-selects green artefacts and sends them on clean", async () => {
+    const user = userEvent.setup();
+    render(<CleanView profile="developer" onSeeHistory={vi.fn()} />);
+    expect(await screen.findByText("landing-page-2024")).toBeInTheDocument();
+    expect(screen.getByText(/tidak disentuh 7 bulan/)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "landing-page-2024/node_modules" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "api/target" })).not.toBeChecked();
+    expect(screen.getByText("pnpm install && pnpm run build")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Bersihkan/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("landing-page-2024/node_modules")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Bersihkan" }));
+    await screen.findByRole("heading", { name: "Selesai" });
+    expect(cleanMock.lastExecute?.artefacts).toEqual(expect.arrayContaining(["/Users/you/dev/landing-page-2024/node_modules", "/Users/you/dev/landing-page-2024/.next"]));
+    expect(cleanMock.lastExecute?.ruleIds).not.toContain(expect.stringContaining("artefact:"));
+    expect(screen.getByText("Proyek landing-page-2024")).toBeInTheDocument();
   });
 });

@@ -46,7 +46,8 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
     setBusy(true);
     try {
       const r = await cleanApi.execute(
-        rows.map((r) => r.id),
+        rows.filter((r) => !r.artefactPath).map((r) => r.id),
+        rows.flatMap((r) => (r.artefactPath ? [r.artefactPath] : [])),
         true,
         hasPermanent && ack,
       );
