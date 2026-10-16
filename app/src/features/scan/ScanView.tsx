@@ -26,7 +26,12 @@ export function ScanView() {
       .status()
       .then((s) => {
         if (!live) return;
-        if (s.has_result && !s.running) scanApi.summary().then((sum) => live && setPhase({ kind: "done", summary: sum })).catch(() => undefined);
+        if (s.running && s.root) {
+          setPhase({ kind: "scanning", root: s.root });
+          setPaused(s.state === "paused");
+        } else if (s.has_result) {
+          scanApi.summary().then((sum) => live && setPhase({ kind: "done", summary: sum })).catch(() => undefined);
+        }
       })
       .catch(() => undefined);
     return () => {

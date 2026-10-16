@@ -132,6 +132,8 @@ export interface CategorySummary {
 
 export interface ScanSummary {
   root: string;
+  disk_total_bytes: number | null;
+  disk_free_bytes: number | null;
   started_at_unix: number;
   finished_at_unix: number;
   cancelled: boolean;
@@ -180,6 +182,7 @@ export interface ScanStatus {
   running: boolean;
   state: ScanRunState | null;
   has_result: boolean;
+  root: string | null;
 }
 
 export interface ScanTargets {
@@ -322,3 +325,24 @@ export interface DedupeRunReport {
 }
 
 export type FilePreview = { kind: "image"; data_url: string } | { kind: "text"; excerpt: string } | { kind: "none" };
+
+// ---- System (home dashboard) ----
+
+export interface DiskInfo {
+  name: string;
+  mount: string;
+  total_bytes: number;
+  available_bytes: number;
+  removable: boolean;
+  file_system: string;
+}
+
+export interface SystemSnapshot {
+  cpu_percent: number | null;
+  cpu_count: number;
+  mem_total_bytes: number;
+  mem_used_bytes: number;
+  swap_used_bytes: number;
+  disks: DiskInfo[];
+  os_name: string;
+}

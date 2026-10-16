@@ -10,6 +10,7 @@ import type {
   ProtectedEntry,
   RestoreReport,
   Settings,
+  SystemSnapshot,
 } from "./types";
 
 type Invoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
@@ -45,6 +46,18 @@ export const mock = {
     { path: "/System", protection: "Subtree", reason: "os-system" },
     { path: "/Users/you/.ssh", protection: "Subtree", reason: "credentials" },
   ] as ProtectedEntry[],
+  system: {
+    cpu_percent: 23.5,
+    cpu_count: 10,
+    mem_total_bytes: 16 * 1024 ** 3,
+    mem_used_bytes: 9.92 * 1024 ** 3,
+    swap_used_bytes: 1.1 * 1024 ** 3,
+    disks: [
+      { name: "Macintosh HD", mount: "/", total_bytes: 494 * 1024 ** 3, available_bytes: 61 * 1024 ** 3, removable: false, file_system: "apfs" },
+      { name: "Backup", mount: "/Volumes/Backup", total_bytes: 2 * 1024 ** 4, available_bytes: 0.8 * 1024 ** 4, removable: true, file_system: "exfat" },
+    ],
+    os_name: "macOS 26.0",
+  } as SystemSnapshot,
   reset() {
     this.settings = { ...defaultSettings };
     this.history = [];
@@ -73,7 +86,10 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
       }
       return { restored: [], not_found_in_trash: [] } as T;
     case "open_disk_access_settings":
+    case "reveal_app_binary":
       return undefined as T;
+    case "system_snapshot":
+      return mock.system as T;
     default:
       throw { code: "unknown_command", message: cmd } satisfies CommandError;
   }
@@ -96,6 +112,8 @@ export const api = {
   historyList: () => invoke<CleanSession[]>("history_list"),
   historyRestore: (id: string) => invoke<RestoreReport>("history_restore", { id }),
   openDiskAccessSettings: () => invoke<void>("open_disk_access_settings"),
+  revealAppBinary: () => invoke<void>("reveal_app_binary"),
+  systemSnapshot: () => invoke<SystemSnapshot>("system_snapshot"),
 };
 
 export function isCommandError(e: unknown): e is CommandError {

@@ -165,7 +165,10 @@ pub fn scan(
         "scan finished"
     );
 
+    let (disk_total_bytes, disk_free_bytes) = super::disk::capacity(&root).unzip();
     Ok(ScanResult {
+        disk_total_bytes,
+        disk_free_bytes,
         root,
         started_at_unix: started,
         finished_at_unix: finished,
@@ -232,7 +235,7 @@ impl From<&std::fs::Metadata> for Stat {
         #[cfg(unix)]
         use std::os::unix::fs::MetadataExt;
         Self {
-            size: m.len(),
+            size: crate::platform::disk_usage_of(m),
             mtime: m.modified().ok(),
             #[cfg(unix)]
             dev: m.dev(),
@@ -294,6 +297,11 @@ mod tests {
         tempfile::tempdir_in(base).expect("tempdir")
     }
 
+    /// Sizes are what the disk holds, not the logical length.
+    fn on_disk(p: &Path) -> u64 {
+        crate::platform::disk_usage_of(&std::fs::symlink_metadata(p).expect("meta"))
+    }
+
     fn opts(root: &Path) -> ScanOptions {
         ScanOptions {
             root: root.to_path_buf(),
@@ -308,22 +316,32 @@ mod tests {
         let tmp = tempdir();
         let r = tmp.path();
         write(&r.join("a.txt"), 100);
-        write(&r.join("sub/b.mp4"), 1000);
-        write(&r.join("sub/deep/c.jpg"), 10);
+        write(&r.join("sub/b.mp4"), 20_000);
+        write(&r.join("sub/deep/c.jpg"), 5_000);
+        let (a, b, c) = (
+            on_disk(&r.join("a.txt")),
+            on_disk(&r.join("sub/b.mp4")),
+            on_disk(&r.join("sub/deep/c.jpg")),
+        );
+        assert!(
+            b > c && c >= a,
+            "block sizes must differ for ordering: {a} {b} {c}"
+        );
 
         let res = scan(&opts(r), &ScanControl::new(), &mut NoProgress).expect("scan");
-        assert_eq!(res.total_bytes, 1110);
+        assert_eq!(res.total_bytes, a + b + c);
         assert_eq!(res.file_count, 3);
         assert!(!res.cancelled);
+        assert!(res.disk_total_bytes.is_some_and(|t| t > res.total_bytes));
         let root_abs = std::path::absolute(r).expect("abs");
-        assert_eq!(res.dirs[&root_abs].total_bytes, 1110);
-        assert_eq!(res.dirs[&root_abs.join("sub")].total_bytes, 1010);
-        assert_eq!(res.dirs[&root_abs.join("sub")].own_bytes, 1000);
+        assert_eq!(res.dirs[&root_abs].total_bytes, a + b + c);
+        assert_eq!(res.dirs[&root_abs.join("sub")].total_bytes, b + c);
+        assert_eq!(res.dirs[&root_abs.join("sub")].own_bytes, b);
         assert_eq!(res.dirs[&root_abs.join("sub/deep")].total_files, 1);
 
         let cats = res.categories();
         assert_eq!(cats[0].category, Category::Video);
-        assert_eq!(cats[0].bytes, 1000);
+        assert_eq!(cats[0].bytes, b);
 
         let top = res.top_files(&FileFilter::default(), 2);
         assert_eq!(top.len(), 2);
@@ -334,7 +352,7 @@ mod tests {
         assert!(dirs.iter().all(|d| d.path != root_abs));
 
         let tree = res.subtree(&root_abs, 2, 10).expect("tree");
-        assert_eq!(tree.bytes, 1110);
+        assert_eq!(tree.bytes, a + b + c);
         assert_eq!(tree.children[0].name, "sub");
         assert_eq!(tree.children[0].children[0].name, "b.mp4");
     }
@@ -344,7 +362,7 @@ mod tests {
         let tmp = tempdir();
         let r = tmp.path();
         write(&r.join("old.mp4"), 50);
-        write(&r.join("new.pdf"), 500);
+        write(&r.join("new.pdf"), 20_000);
         let two_years_ago = SystemTime::now() - std::time::Duration::from_secs(2 * 365 * 86_400);
         std::fs::File::options()
             .write(true)
@@ -365,7 +383,7 @@ mod tests {
         assert!(old[0].path.ends_with("old.mp4"));
         let big = res.top_files(
             &FileFilter {
-                min_bytes: 100,
+                min_bytes: 10_000,
                 ..Default::default()
             },
             10,
@@ -403,11 +421,10 @@ mod tests {
             res.total_bytes < 100_000,
             "symlink target size must not be counted"
         );
-        assert!(
-            res.total_bytes >= 1000 && res.total_bytes < 2000,
-            "hardlink counted once: {}",
-            res.total_bytes
-        );
+        let expected = on_disk(&r.join("real.bin"))
+            + on_disk(&r.join("to-outside"))
+            + on_disk(&r.join("to-big"));
+        assert_eq!(res.total_bytes, expected, "hardlink counted once");
     }
 
     #[cfg(unix)]
@@ -477,7 +494,7 @@ mod tests {
         .expect("scan");
         let last = last.expect("event");
         assert_eq!(last.items_done, 1);
-        assert_eq!(last.bytes_total, Some(5));
+        assert_eq!(last.bytes_total, Some(on_disk(&tmp.path().join("a"))));
     }
 
     #[test]

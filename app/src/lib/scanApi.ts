@@ -77,6 +77,8 @@ export const scanMock = {
 
 const mockSummary = (root: string): ScanSummary => ({
   root,
+  disk_total_bytes: 494 * GB,
+  disk_free_bytes: 61 * GB,
   started_at_unix: 1_792_000_000,
   finished_at_unix: 1_792_000_100,
   cancelled: scanMock.state === "cancelled",
@@ -190,7 +192,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
       scanMock.state = "cancelled";
       return undefined as T;
     case "scan_status":
-      return { running: scanMock.state === "running" || scanMock.state === "paused", state: scanMock.state, has_result: !!scanMock.summary } as T;
+      return { running: scanMock.state === "running" || scanMock.state === "paused", state: scanMock.state, has_result: !!scanMock.summary, root: scanMock.state ? "/Users/you" : null } as T;
     case "scan_summary":
       if (!scanMock.summary) throw { code: "no_scan", message: "no scan" };
       return scanMock.summary as T;

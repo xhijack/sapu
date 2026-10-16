@@ -50,3 +50,16 @@ describe("Wizard", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveAttribute("data-status", "denied"));
   });
 });
+
+describe("Wizard language first", () => {
+  it("switches the UI language immediately from step 1", async () => {
+    const user = userEvent.setup();
+    const onFinish = vi.fn();
+    render(<Wizard settings={defaultSettings} onFinish={onFinish} />);
+    expect(screen.getByText("Langkah 1 dari 6")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "English" }));
+    expect(await screen.findByText("Step 1 of 6")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Skip, I know this" }));
+    expect(onFinish).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
+  });
+});

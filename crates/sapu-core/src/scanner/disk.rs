@@ -2,16 +2,21 @@
 
 use std::path::Path;
 
-/// Bytes in use on the volume that contains `path`, or `None` when the
-/// OS does not answer (network drives, missing path).
-pub fn used_bytes(path: &Path) -> Option<u64> {
+/// `(total, available)` bytes of the volume that contains `path`, or
+/// `None` when the OS does not answer (network drives, missing path).
+pub fn capacity(path: &Path) -> Option<(u64, u64)> {
     let mut p = path;
     loop {
         if let (Ok(total), Ok(avail)) = (fs4::total_space(p), fs4::available_space(p)) {
-            return Some(total.saturating_sub(avail));
+            return Some((total, avail));
         }
         p = p.parent()?;
     }
+}
+
+/// Bytes in use on the volume that contains `path`.
+pub fn used_bytes(path: &Path) -> Option<u64> {
+    capacity(path).map(|(total, avail)| total.saturating_sub(avail))
 }
 
 #[cfg(test)]

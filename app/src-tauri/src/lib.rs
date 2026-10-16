@@ -1,7 +1,9 @@
 //! Tauri commands. Each one is a thin call into `sapu-core`; no business
 //! logic lives here (CLAUDE.md rule 1).
 
-use sapu_core::platform::{DevTool, DiskAccess, detect_dev_tools, full_disk_access};
+use sapu_core::platform::{
+    DevTool, DiskAccess, SystemMonitor, SystemSnapshot, detect_dev_tools, full_disk_access,
+};
 use sapu_core::safety::{
     CleanSession, HistoryStore, ProtectedEntry, ProtectedPaths, RestoreReport,
 };
@@ -98,6 +100,33 @@ fn history_restore(id: String) -> CmdResult<RestoreReport> {
     Ok(HistoryStore::open_default()?.restore_session(&id)?)
 }
 
+/// Live disks / CPU / memory for the home dashboard.
+#[tauri::command]
+fn system_snapshot(
+    monitor: tauri::State<'_, std::sync::Mutex<SystemMonitor>>,
+) -> CmdResult<SystemSnapshot> {
+    let mut m = monitor
+        .lock()
+        .map_err(|_| CommandError::new("io", "system monitor poisoned"))?;
+    Ok(m.snapshot())
+}
+
+/// Reveals the running binary in the file manager so the user can drag it
+/// into the Full Disk Access list (dev builds are not registered apps).
+#[tauri::command]
+fn reveal_app_binary(app: tauri::AppHandle) -> CmdResult<()> {
+    let exe = std::env::current_exe().map_err(|e| CommandError::new("io", e.to_string()))?;
+    // Inside an .app bundle, point at the bundle rather than Contents/MacOS/<bin>.
+    let target = exe
+        .ancestors()
+        .find(|p| p.extension().is_some_and(|e| e == "app"))
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or(exe);
+    app.opener()
+        .reveal_item_in_dir(&target)
+        .map_err(|e| CommandError::new("opener", e.to_string()))
+}
+
 /// Opens the OS privacy settings where Full Disk Access is granted.
 #[tauri::command]
 fn open_disk_access_settings(app: tauri::AppHandle) -> CmdResult<()> {
@@ -118,12 +147,20 @@ fn open_disk_access_settings(app: tauri::AppHandle) -> CmdResult<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Logs from core (`sapu_core`) and this crate; override with RUST_LOG.
+    let filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("sapu_core=info,sapu_app_lib=info"));
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .try_init();
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(std::sync::Arc::new(scan::ScanSession::default()))
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
+        .manage(std::sync::Mutex::new(SystemMonitor::new()))
         .invoke_handler(tauri::generate_handler![
             scan::scan_targets,
             scan::pick_folder,
@@ -148,6 +185,8 @@ pub fn run() {
             dedupe::dedupe_execute,
             dedupe::file_preview,
             app_info,
+            system_snapshot,
+            reveal_app_binary,
             disk_access_status,
             settings_get,
             settings_set,

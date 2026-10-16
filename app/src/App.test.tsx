@@ -18,6 +18,7 @@ describe("App", () => {
     mock.settings = { ...mock.settings, onboarding_done: true };
     render(<App />);
     await screen.findByRole("navigation");
+    expect(await screen.findByText("Macintosh HD")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Riwayat" }));
     expect(await screen.findByText("Belum ada pembersihan")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Pengaturan" }));

@@ -47,7 +47,11 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
   return (
     <div className="grid max-w-5xl gap-8">
       <header className="grid gap-1">
-        <p className="num text-4xl font-semibold tracking-tight">{t("scan.result_total", { size: formatBytes(summary.total_bytes, i18n.language) })}</p>
+        <p className="num text-4xl font-semibold tracking-tight">
+          {summary.disk_total_bytes
+            ? t("scan.result_total_of", { size: formatBytes(summary.total_bytes, i18n.language), total: formatBytes(summary.disk_total_bytes, i18n.language) })
+            : t("scan.result_total", { size: formatBytes(summary.total_bytes, i18n.language) })}
+        </p>
         <p className="path truncate text-fg-muted" title={summary.root}>
           {summary.root}
         </p>
@@ -56,9 +60,10 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
         </p>
         {summary.cancelled && <p className="text-sm text-risk-review-fg">{t("scan.cancelled_note")}</p>}
         {summary.denied_count > 0 && <p className="text-sm text-fg-muted">{t("scan.denied_note", { count: summary.denied_count })}</p>}
+        <p className="text-xs text-fg-muted">{t("scan.size_note")}</p>
       </header>
 
-      <DiskStrip categories={summary.categories} total={summary.total_bytes} />
+      <DiskStrip categories={summary.categories} total={summary.total_bytes} diskTotal={summary.disk_total_bytes} diskFree={summary.disk_free_bytes} />
 
       {notice && (
         <p role="status" className="rounded-md bg-surface-muted px-3 py-2 text-sm">

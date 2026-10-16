@@ -187,7 +187,11 @@ fn candidate(p: &Path) -> Option<Candidate> {
     let is_dir = meta.is_dir() && !meta.file_type().is_symlink();
     Some(Candidate {
         path: p.to_path_buf(),
-        size: if is_dir { dir_size(p) } else { meta.len() },
+        size: if is_dir {
+            dir_size(p)
+        } else {
+            crate::platform::disk_usage_of(&meta)
+        },
         is_dir,
         mtime: meta.modified().ok(),
     })
@@ -211,7 +215,7 @@ pub(crate) fn dir_size(dir: &Path) -> u64 {
         .filter_map(Result::ok)
         .filter(|e| !e.file_type().is_dir())
         .filter_map(|e| std::fs::symlink_metadata(e.path()).ok())
-        .map(|m| m.len())
+        .map(|m| crate::platform::disk_usage_of(&m))
         .sum()
 }
 
@@ -282,6 +286,10 @@ mod tests {
         std::fs::write(p, vec![b'x'; n]).expect("write");
     }
 
+    fn on_disk(p: &Path) -> u64 {
+        crate::platform::disk_usage_of(&std::fs::symlink_metadata(p).expect("meta"))
+    }
+
     fn age(p: &Path, days: u64) {
         let t = SystemTime::now() - Duration::from_secs(days * 86_400);
         std::fs::File::options()
@@ -327,9 +335,11 @@ kind = "dir_contents"
         let f = &report.findings[0];
         assert_eq!(f.scope, home.join("Library/Caches/App"));
         assert_eq!(f.items.len(), 2);
-        assert_eq!(f.bytes, 150);
+        let expected = on_disk(&home.join("Library/Caches/App/a.bin"))
+            + on_disk(&home.join("Library/Caches/App/sub/b.bin"));
+        assert_eq!(f.bytes, expected);
         assert_eq!(f.skipped_protected, 1);
-        assert_eq!(report.bytes_by_risk(Risk::Green), 150);
+        assert_eq!(report.bytes_by_risk(Risk::Green), expected);
     }
 
     #[test]
@@ -429,7 +439,9 @@ skip = ["Library", ".*"]
             "only the untouched project, nested node_modules not listed twice: {items:?}"
         );
         assert!(items[0].path.ends_with("old-proj/node_modules"));
-        assert_eq!(items[0].size, 1005);
+        let expected = on_disk(&home.join("dev/old-proj/node_modules/x/index.js"))
+            + on_disk(&home.join("dev/old-proj/node_modules/x/node_modules/y/i.js"));
+        assert_eq!(items[0].size, expected);
     }
 
     #[test]

@@ -4,11 +4,12 @@
     "tagline": "Free up disk space, safely."
   },
   "nav": {
-    "home": "Scan",
+    "home": "Home",
     "history": "History",
     "settings": "Settings",
     "clean": "Clean",
-    "dedupe": "Duplicates"
+    "dedupe": "Duplicates",
+    "scan": "Scan"
   },
   "common": {
     "next": "Next",
@@ -62,9 +63,9 @@
     "access_granted": "Access granted",
     "access_denied": "Access not granted yet",
     "access_unknown": "Could not determine access status",
-    "access_steps_macos_1": "Click the button above to open System Settings.",
-    "access_steps_macos_2": "Turn on the switch next to Sapu.",
-    "access_steps_macos_3": "Come back here. The status updates automatically.",
+    "access_steps_macos_1": "Click the button above to open System Settings at Full Disk Access.",
+    "access_steps_macos_2": "If Sapu is not in the list, click + and pick the Sapu app. The button below shows where it is.",
+    "access_steps_macos_3": "Turn on the switch next to Sapu, then come back here. The status updates automatically.",
     "safety_title": "Nothing disappears for good",
     "safety_trash": "Everything removed goes to the Trash / Recycle Bin, never deleted outright.",
     "safety_history": "Every clean-up is logged in History, so you can restore it.",
@@ -81,12 +82,31 @@
     "scan_title": "Ready to start",
     "scan_body": "The first scan shows what is taking up space. Nothing is removed at this stage.",
     "scan_cta": "Start scan",
-    "scan_unavailable": "Scanning arrives in the next version. For now, explore History and Settings."
+    "scan_unavailable": "Scanning arrives in the next version. For now, explore History and Settings.",
+    "language_title": "Bahasa / Language",
+    "language_body": "Choose the display language. You can change it any time in Settings.",
+    "access_reveal_app": "Show app location",
+    "access_dev_note": "The development build runs as a plain program, so it has to be added manually with the + button."
   },
   "home": {
     "title": "Home",
-    "empty_title": "No scan yet",
-    "empty_body": "Scanning is being built. Settings and History are ready to use.",
+    "intro": "How this computer is doing right now.",
+    "disks": "Disks",
+    "disk_used_of": "{{used}} used of {{total}}",
+    "disk_free": "{{free}} free",
+    "disk_removable": "External",
+    "cpu": "Processor",
+    "cpu_cores": "{{count}} cores",
+    "memory": "Memory",
+    "swap": "Swap used {{size}}",
+    "measuring": "Measuring…",
+    "actions": "Start here",
+    "action_scan": "Scan the disk",
+    "action_scan_hint": "See what takes up space.",
+    "action_clean": "Clean what is safe",
+    "action_clean_hint": "Temporary files and caches, by rule.",
+    "action_dedupe": "Find duplicates",
+    "action_dedupe_hint": "Files with identical contents.",
     "rerun_onboarding": "Open the welcome guide again"
   },
   "history": {
@@ -195,7 +215,11 @@
     "trash_protected": "This location is protected and cannot be moved.",
     "trash_skipped": "Changed since the scan",
     "stale_note": "Some items were moved. Scan again to refresh the numbers.",
-    "error_running": "Another scan is still running."
+    "error_running": "Another scan is still running.",
+    "result_total_of": "{{size}} used of {{total}}",
+    "strip_free": "Free",
+    "strip_other_volume": "Outside this folder",
+    "size_note": "Sizes are the space actually used on disk, not logical file sizes."
   },
   "category": {
     "video": "Video",

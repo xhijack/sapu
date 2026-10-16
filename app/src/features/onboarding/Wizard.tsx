@@ -16,7 +16,7 @@ interface Props {
 /** First-run wizard (PRD §9). Every step can be skipped; "skip" finishes
  *  the wizard with whatever has been chosen so far. */
 export function Wizard({ settings, onFinish }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<Settings>(settings);
   const [info, setInfo] = useState<AppInfo | null>(null);
@@ -39,7 +39,16 @@ export function Wizard({ settings, onFinish }: Props) {
         <p id="wizard-step" className="text-sm text-fg-muted">
           {t("progress.step_of", { current: step, total: TOTAL })}
         </p>
-        {step === 1 && <WelcomeStep />}
+        {step === 1 && (
+          <WelcomeStep
+            locale={draft.locale}
+            onLocale={(locale) => {
+              setDraft({ ...draft, locale });
+              void i18n.changeLanguage(locale);
+              document.documentElement.lang = locale;
+            }}
+          />
+        )}
         {step === 2 && <ProfileStep info={info} value={draft.profile} onChange={(profile) => setDraft({ ...draft, profile })} />}
         {step === 3 && <AccessStep info={info} />}
         {step === 4 && <SafetyStep />}

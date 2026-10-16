@@ -20,3 +20,13 @@ describe("DiskStrip", () => {
     expect(segs[0]?.getAttribute("title")).toContain("Video");
   });
 });
+
+describe("DiskStrip against the volume", () => {
+  it("adds other-volume and free segments when capacity is known", () => {
+    const { container } = render(<DiskStrip total={100} diskTotal={400} diskFree={200} categories={[{ category: "video", bytes: 100, files: 1 }]} />);
+    const seg = (name: string) => container.querySelector(`[data-category="${name}"]`) as HTMLElement | null;
+    expect(seg("video")?.style.width).toBe("25%");
+    expect(seg("free")?.style.width).toBe("50%");
+    expect(seg("other-volume")?.style.width).toBe("25%");
+  });
+});

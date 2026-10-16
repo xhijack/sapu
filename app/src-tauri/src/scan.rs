@@ -24,6 +24,8 @@ pub struct ScanSession {
     result: Mutex<Option<Arc<ScanResult>>>,
     control: Mutex<Option<ScanControl>>,
     running: AtomicBool,
+    /// Root of the scan in progress, so the UI can resume its view.
+    current_root: Mutex<Option<PathBuf>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -42,6 +44,7 @@ pub struct ScanStatus {
     running: bool,
     state: Option<ScanState>,
     has_result: bool,
+    root: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -97,6 +100,9 @@ pub fn scan_start(
     let control = ScanControl::new();
     if let Ok(mut c) = session.control.lock() {
         *c = Some(control.clone());
+    }
+    if let Ok(mut r) = session.current_root.lock() {
+        *r = Some(root.clone());
     }
     let session = Arc::clone(&session);
     std::thread::spawn(move || {
@@ -186,6 +192,7 @@ pub fn scan_status(session: State<'_, Arc<ScanSession>>) -> ScanStatus {
         running: session.running.load(Ordering::Acquire),
         state,
         has_result: session.result.lock().is_ok_and(|r| r.is_some()),
+        root: session.current_root.lock().ok().and_then(|r| r.clone()),
     }
 }
 

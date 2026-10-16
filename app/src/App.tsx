@@ -5,6 +5,7 @@ import { ErrorState, LoadingState } from "@/components/States";
 import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
 import { ScanView } from "@/features/scan/ScanView";
+import { HomeView } from "@/features/home/HomeView";
 import { CleanView } from "@/features/clean/CleanView";
 import { DedupeView } from "@/features/dedupe/DedupeView";
 import { HistoryView } from "@/features/history/HistoryView";
@@ -25,6 +26,13 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
+  // Views stay mounted once visited so a running scan or a selection
+  // survives navigation; only the active one is visible.
+  const [visited, setVisited] = useState<Set<Screen>>(new Set(["home"]));
+  const navigate = (s: Screen) => {
+    setVisited((v) => (v.has(s) ? v : new Set([...v, s])));
+    setScreen(s);
+  };
   const [showWizard, setShowWizard] = useState(false);
 
   const fetchSettings = useCallback(
@@ -77,14 +85,34 @@ export default function App() {
   }
 
   return (
-    <Shell screen={screen} onNavigate={setScreen}>
-      {screen === "home" && <ScanView />}
-      {screen === "clean" && <CleanView profile={settings.profile} onSeeHistory={() => setScreen("history")} />}
-      {screen === "dedupe" && <DedupeView onSeeHistory={() => setScreen("history")} />}
-      {screen === "history" && <HistoryView />}
-      {screen === "settings" && (
+    <Shell screen={screen} onNavigate={navigate}>
+      <Pane active={screen === "home"} mounted>
+        <HomeView onNavigate={navigate} />
+      </Pane>
+      <Pane active={screen === "scan"} mounted={visited.has("scan")}>
+        <ScanView />
+      </Pane>
+      <Pane active={screen === "clean"} mounted={visited.has("clean")}>
+        <CleanView profile={settings.profile} onSeeHistory={() => navigate("history")} />
+      </Pane>
+      <Pane active={screen === "dedupe"} mounted={visited.has("dedupe")}>
+        <DedupeView onSeeHistory={() => navigate("history")} />
+      </Pane>
+      <Pane active={screen === "history"} mounted={visited.has("history")}>
+        <HistoryView />
+      </Pane>
+      <Pane active={screen === "settings"} mounted={visited.has("settings")}>
         <SettingsView settings={settings} onChange={save} onRerunOnboarding={() => setShowWizard(true)} />
-      )}
+      </Pane>
     </Shell>
+  );
+}
+
+function Pane({ active, mounted, children }: { active: boolean; mounted: boolean; children: React.ReactNode }) {
+  if (!mounted) return null;
+  return (
+    <div hidden={!active} aria-hidden={!active}>
+      {children}
+    </div>
   );
 }

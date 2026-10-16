@@ -12,7 +12,7 @@ mod walk;
 
 pub use category::Category;
 pub use control::{ScanControl, ScanState};
-pub use disk::used_bytes;
+pub use disk::{capacity, used_bytes};
 pub use result::{
     AgeFilter, CategorySummary, DirStats, DirSummary, FileEntry, FileFilter, ScanResult,
     ScanSummary, TreeNode,

@@ -7,11 +7,28 @@ import { ChoiceGroup } from "@/components/ui/choice";
 import { api } from "@/lib/api";
 import type { AiMode, AppInfo, DiskAccess, Profile } from "@/lib/types";
 
-export function WelcomeStep() {
-  const { t } = useTranslation();
+/** Language comes first: everything after it is read in that language. */
+export function WelcomeStep({ locale, onLocale }: { locale: string | null; onLocale: (l: "id" | "en") => void }) {
+  const { t, i18n } = useTranslation();
+  const current = locale ?? (i18n.language.startsWith("en") ? "en" : "id");
   return (
     <>
-      <CardTitle>{t("onboarding.welcome_title")}</CardTitle>
+      <CardTitle>{t("onboarding.language_title")}</CardTitle>
+      <CardText>{t("onboarding.language_body")}</CardText>
+      <div role="radiogroup" aria-label={t("onboarding.language_title")} className="grid grid-cols-2 gap-3">
+        {(
+          [
+            { v: "id", label: "Bahasa Indonesia" },
+            { v: "en", label: "English" },
+          ] as const
+        ).map(({ v, label }) => (
+          <label key={v} className={current === v ? "flex cursor-pointer items-center justify-center rounded-xl border border-accent bg-surface px-4 py-3 font-medium" : "flex cursor-pointer items-center justify-center rounded-xl border border-border bg-surface px-4 py-3 hover:bg-surface-muted"}>
+            <input type="radio" name="language" value={v} checked={current === v} onChange={() => onLocale(v)} className="sr-only" />
+            {label}
+          </label>
+        ))}
+      </div>
+      <CardTitle className="mt-2">{t("onboarding.welcome_title")}</CardTitle>
       <CardText>{t("onboarding.welcome_body")}</CardText>
     </>
   );
@@ -72,6 +89,12 @@ export function AccessStep({ info }: { info: AppInfo | null }) {
             <li>{t("onboarding.access_steps_macos_2")}</li>
             <li>{t("onboarding.access_steps_macos_3")}</li>
           </ol>
+          <div>
+            <Button variant="secondary" size="sm" onClick={() => void api.revealAppBinary()}>
+              {t("onboarding.access_reveal_app")}
+            </Button>
+          </div>
+          {import.meta.env.DEV && <p className="text-xs text-fg-muted">{t("onboarding.access_dev_note")}</p>}
           <AccessStatus status={status} />
         </div>
       )}

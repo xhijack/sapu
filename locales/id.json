@@ -4,11 +4,12 @@
     "tagline": "Bersihkan ruang disk dengan aman."
   },
   "nav": {
-    "home": "Pindai",
+    "home": "Beranda",
     "history": "Riwayat",
     "settings": "Pengaturan",
     "clean": "Bersih",
-    "dedupe": "Duplikat"
+    "dedupe": "Duplikat",
+    "scan": "Pindai"
   },
   "common": {
     "next": "Lanjut",
@@ -62,9 +63,9 @@
     "access_granted": "Izin sudah diberikan",
     "access_denied": "Izin belum diberikan",
     "access_unknown": "Status izin belum bisa dipastikan",
-    "access_steps_macos_1": "Klik tombol di atas untuk membuka Pengaturan Sistem.",
-    "access_steps_macos_2": "Nyalakan sakelar di sebelah Sapu.",
-    "access_steps_macos_3": "Kembali ke sini. Status akan diperbarui otomatis.",
+    "access_steps_macos_1": "Klik tombol di atas untuk membuka Pengaturan Sistem di bagian Full Disk Access.",
+    "access_steps_macos_2": "Kalau Sapu belum ada di daftar, klik tombol + lalu pilih aplikasi Sapu. Tombol di bawah menunjukkan lokasinya.",
+    "access_steps_macos_3": "Nyalakan sakelar di sebelah Sapu, lalu kembali ke sini. Status diperbarui otomatis.",
     "safety_title": "Tidak ada yang hilang begitu saja",
     "safety_trash": "Semua yang dihapus dipindahkan ke Trash / Recycle Bin, bukan dihapus permanen.",
     "safety_history": "Setiap pembersihan dicatat di Riwayat, jadi kamu bisa memulihkannya.",
@@ -81,12 +82,31 @@
     "scan_title": "Siap untuk memulai",
     "scan_body": "Pemindaian pertama akan menunjukkan apa yang memakan ruang disk. Belum ada yang dihapus pada tahap ini.",
     "scan_cta": "Mulai pindai",
-    "scan_unavailable": "Pemindaian hadir di versi berikutnya. Untuk sekarang, jelajahi Riwayat dan Pengaturan."
+    "scan_unavailable": "Pemindaian hadir di versi berikutnya. Untuk sekarang, jelajahi Riwayat dan Pengaturan.",
+    "language_title": "Bahasa / Language",
+    "language_body": "Pilih bahasa tampilan. Bisa diubah kapan saja di Pengaturan.",
+    "access_reveal_app": "Tampilkan lokasi aplikasi",
+    "access_dev_note": "Versi pengembangan berjalan sebagai program biasa, jadi perlu ditambahkan manual lewat tombol +."
   },
   "home": {
     "title": "Beranda",
-    "empty_title": "Belum ada pemindaian",
-    "empty_body": "Fitur pindai sedang disiapkan. Pengaturan dan Riwayat sudah bisa digunakan.",
+    "intro": "Keadaan komputer ini sekarang.",
+    "disks": "Disk",
+    "disk_used_of": "{{used}} terpakai dari {{total}}",
+    "disk_free": "{{free}} kosong",
+    "disk_removable": "Eksternal",
+    "cpu": "Prosesor",
+    "cpu_cores": "{{count}} inti",
+    "memory": "Memori",
+    "swap": "Swap terpakai {{size}}",
+    "measuring": "Mengukur…",
+    "actions": "Mulai dari sini",
+    "action_scan": "Pindai disk",
+    "action_scan_hint": "Lihat apa yang memakan ruang.",
+    "action_clean": "Bersihkan yang aman",
+    "action_clean_hint": "File sementara dan cache berdasarkan aturan.",
+    "action_dedupe": "Cari file ganda",
+    "action_dedupe_hint": "File yang isinya sama persis.",
     "rerun_onboarding": "Buka panduan awal lagi"
   },
   "history": {
@@ -195,7 +215,11 @@
     "trash_protected": "Lokasi ini dilindungi dan tidak bisa dipindahkan.",
     "trash_skipped": "Berubah sejak dipindai",
     "stale_note": "Beberapa item sudah dipindahkan. Pindai ulang untuk memperbarui angka.",
-    "error_running": "Pemindaian lain masih berjalan."
+    "error_running": "Pemindaian lain masih berjalan.",
+    "result_total_of": "{{size}} dipakai dari {{total}}",
+    "strip_free": "Kosong",
+    "strip_other_volume": "Di luar folder ini",
+    "size_note": "Ukuran adalah ruang yang benar-benar terpakai di disk, bukan ukuran file logis."
   },
   "category": {
     "video": "Video",
