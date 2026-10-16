@@ -265,6 +265,15 @@ impl ScanSession {
     pub(crate) fn result_arc(&self) -> CmdResult<Arc<ScanResult>> {
         result(self)
     }
+
+    pub(crate) fn set_result(&self, r: ScanResult) {
+        if let Ok(mut slot) = self.result.lock() {
+            *slot = Some(Arc::new(r));
+        }
+        if let Ok(mut root) = self.current_root.lock() {
+            *root = None;
+        }
+    }
 }
 
 fn result(session: &ScanSession) -> CmdResult<Arc<ScanResult>> {

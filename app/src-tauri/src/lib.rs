@@ -11,6 +11,7 @@ use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
 mod ai;
+mod care;
 mod clean;
 mod dedupe;
 mod scan;
@@ -212,6 +213,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .manage(std::sync::Arc::new(scan::ScanSession::default()))
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
+        .manage(std::sync::Arc::new(care::CareSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
         .manage(std::sync::Mutex::new(SystemMonitor::new()))
         .setup(|app| {
@@ -254,6 +256,8 @@ pub fn run() {
             scan::scan_subtree,
             scan::reveal_path,
             scan::trash_paths,
+            care::care_run,
+            care::care_last,
             clean::clean_evaluate,
             clean::clean_execute,
             dedupe::dedupe_start,

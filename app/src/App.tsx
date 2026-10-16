@@ -6,6 +6,7 @@ import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
 import { ScanView } from "@/features/scan/ScanView";
 import { HomeView } from "@/features/home/HomeView";
+import { CareView } from "@/features/care/CareView";
 import { CleanView } from "@/features/clean/CleanView";
 import { DedupeView } from "@/features/dedupe/DedupeView";
 import { HistoryView } from "@/features/history/HistoryView";
@@ -87,7 +88,10 @@ export default function App() {
   return (
     <Shell screen={screen} onNavigate={navigate}>
       <Pane active={screen === "home"} mounted>
-        <HomeView onNavigate={navigate} onScanNow={() => navigate("scan")} />
+        <HomeView onNavigate={navigate} onScanNow={() => navigate("care")} />
+      </Pane>
+      <Pane active={screen === "care"} mounted={visited.has("care")}>
+        <CareView onNavigate={navigate} />
       </Pane>
       <Pane active={screen === "scan"} mounted={visited.has("scan")}>
         <ScanView />

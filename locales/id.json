@@ -10,7 +10,8 @@
     "settings": "Pengaturan",
     "clean": "Bersih",
     "dedupe": "Duplikat",
-    "scan": "Pindai"
+    "scan": "Pindai",
+    "care": "Rawat"
   },
   "common": {
     "next": "Lanjut",
@@ -135,7 +136,10 @@
     "freed_none": "Belum ada pembersihan. Mulai dari Pindai.",
     "recent_scans": "Pemindaian terakhir",
     "scan_line": "{{size}}, {{files}} file",
-    "cores_hint": "{{count}} inti, rata-rata {{avg}}%"
+    "cores_hint": "{{count}} inti, rata-rata {{avg}}%",
+    "hero_cta_care": "Rawat Mac saya",
+    "tile_care": "Rawat",
+    "tile_care_body": "Satu klik: pindai, periksa, dan bersihkan yang aman."
   },
   "history": {
     "title": "Riwayat pembersihan",
@@ -460,5 +464,37 @@
     "saved": "Pengaturan AI tersimpan",
     "copy_rule": "Salin aturan TOML",
     "copied_rule": "Aturan disalin. Lihat CONTRIBUTING.md untuk mengajukannya ke komunitas."
+  },
+  "care": {
+    "title": "Rawat",
+    "intro": "Satu klik: Sapu memindai folder Beranda, memeriksa aturan pembersihan, lalu memberi Skor Ruang dan langkah yang paling aman. Tidak ada yang dihapus sampai kamu menekan tombol.",
+    "start": "Rawat sekarang",
+    "stage_1": "Memindai folder Beranda",
+    "stage_2": "Memeriksa apa yang aman dibersihkan",
+    "running_title": "Merawat…",
+    "score_label": "Skor Ruang",
+    "score_great": "Disk kamu lega dan rapi.",
+    "score_good": "Cukup baik, ada sedikit yang bisa dirapikan.",
+    "score_fair": "Mulai sesak. Beberapa langkah di bawah akan membantu.",
+    "score_poor": "Disk hampir penuh. Mulai dari yang aman.",
+    "comp_free_space": "Ruang kosong",
+    "comp_safe_clutter": "File aman dibersihkan",
+    "comp_review_clutter": "Perlu diperiksa",
+    "comp_stale_projects": "Proyek lama",
+    "points": "{{points}}/{{max}}",
+    "rec_title": "Langkah berikutnya",
+    "rec_clean_safe": "Bersihkan {{size}} yang aman. Semua ke Trash dulu.",
+    "rec_review": "Periksa {{size}} yang mungkin masih dipakai di Bersih.",
+    "rec_stale": "{{count}} proyek development tidak disentuh lebih dari sebulan, {{size}}.",
+    "rec_largest": "Folder terbesar: {{name}} ({{size}}). Lihat di Pindai.",
+    "rec_full": "Hanya {{pct}}% ruang kosong. Prioritaskan membebaskan ruang.",
+    "cta_clean": "Bersihkan {{size}} yang aman",
+    "cta_nothing": "Tidak ada yang perlu dibersihkan sekarang",
+    "open_scan": "Buka hasil pindai",
+    "open_clean": "Buka Bersih",
+    "again": "Rawat lagi",
+    "done_title": "Selesai dirawat",
+    "done_body": "{{size}} dibebaskan. Skor Ruang akan diperbarui saat kamu merawat lagi.",
+    "last_care": "Terakhir dirawat {{date}}, skor {{score}}"
   }
 }

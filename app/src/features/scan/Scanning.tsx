@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Pause, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpaceRing } from "@/components/viz/SpaceRing";
-import { useCountUp } from "@/components/viz/useCountUp";
+import { useSmoothCounter } from "@/components/viz/useSmoothCounter";
 import { formatBytes, formatElapsed, formatEta } from "@/lib/format";
 import type { ScanProgressPayload } from "@/lib/types";
 
@@ -20,8 +20,8 @@ export function Scanning({ root, progress, paused, onPause, onResume, onCancel }
   const { t, i18n } = useTranslation();
   const fraction = progress?.fraction ?? null;
   const pct = fraction === null ? null : Math.floor(fraction * 100);
-  const files = useCountUp(progress?.items_done ?? 0, 400);
-  const bytes = useCountUp(progress?.bytes_done ?? 0, 400);
+  const files = useSmoothCounter(progress?.items_done ?? 0);
+  const bytes = useSmoothCounter(progress?.bytes_done ?? 0);
   return (
     <div className="grid max-w-[1040px] gap-10">
       <section aria-live="polite" className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">

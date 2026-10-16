@@ -487,3 +487,47 @@ export interface HistoryTotals {
   items_disposed: number;
   last_session_unix: number | null;
 }
+
+// ---- Care (R3) ----
+
+export interface ScoreComponent {
+  key: "free_space" | "safe_clutter" | "review_clutter" | "stale_projects";
+  points: number;
+  max: number;
+}
+
+export type Recommendation =
+  | { kind: "clean_safe"; bytes: number }
+  | { kind: "review_clutter"; bytes: number }
+  | { kind: "stale_projects"; count: number; bytes: number }
+  | { kind: "largest_folder"; path: string; bytes: number }
+  | { kind: "disk_nearly_full"; free_pct: number };
+
+export interface SpaceScore {
+  score: number;
+  components: ScoreComponent[];
+  free_pct: number;
+  safe_bytes: number;
+  review_bytes: number;
+  stale_project_bytes: number;
+  stale_projects: number;
+  recommendations: Recommendation[];
+}
+
+export interface CareReport {
+  score: SpaceScore;
+  scan: ScanSummary;
+  preselected: string[];
+  preselected_artefacts: string[];
+  finished_at_unix: number;
+}
+
+export interface CareProgressPayload {
+  stage: number;
+  total: number;
+  fraction: number | null;
+  items_done: number;
+  bytes_done: number;
+  elapsed_secs: number;
+  eta: Eta;
+}

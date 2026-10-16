@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Home, Search, Sparkles, Copy, History, Settings as SettingsIcon } from "lucide-react";
+import { Home, HeartPulse, Search, Sparkles, Copy, History, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type Screen = "home" | "scan" | "clean" | "dedupe" | "history" | "settings";
+export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "history" | "settings";
 
 const MAIN: { id: Screen; Icon: typeof Home }[] = [
   { id: "home", Icon: Home },
+  { id: "care", Icon: HeartPulse },
   { id: "scan", Icon: Search },
   { id: "clean", Icon: Sparkles },
   { id: "dedupe", Icon: Copy },

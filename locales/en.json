@@ -10,7 +10,8 @@
     "settings": "Settings",
     "clean": "Clean",
     "dedupe": "Duplicates",
-    "scan": "Scan"
+    "scan": "Scan",
+    "care": "Care"
   },
   "common": {
     "next": "Next",
@@ -135,7 +136,10 @@
     "freed_none": "No clean-ups yet. Start with Scan.",
     "recent_scans": "Recent scans",
     "scan_line": "{{size}}, {{files}} files",
-    "cores_hint": "{{count}} cores, average {{avg}}%"
+    "cores_hint": "{{count}} cores, average {{avg}}%",
+    "hero_cta_care": "Care for my Mac",
+    "tile_care": "Care",
+    "tile_care_body": "One click: scan, check, and clean what is safe."
   },
   "history": {
     "title": "Clean-up history",
@@ -460,5 +464,37 @@
     "saved": "AI settings saved",
     "copy_rule": "Copy TOML rule",
     "copied_rule": "Rule copied. See CONTRIBUTING.md to propose it to the community."
+  },
+  "care": {
+    "title": "Care",
+    "intro": "One click: Sapu scans your home folder, checks the clean-up rules, then gives a Space Score and the safest next steps. Nothing is removed until you press the button.",
+    "start": "Care now",
+    "stage_1": "Scanning your home folder",
+    "stage_2": "Checking what is safe to clean",
+    "running_title": "Caring…",
+    "score_label": "Space Score",
+    "score_great": "Your disk is roomy and tidy.",
+    "score_good": "Pretty good, a little can be tidied.",
+    "score_fair": "Getting crowded. The steps below will help.",
+    "score_poor": "The disk is nearly full. Start with what is safe.",
+    "comp_free_space": "Free space",
+    "comp_safe_clutter": "Safe clutter",
+    "comp_review_clutter": "Needs review",
+    "comp_stale_projects": "Stale projects",
+    "points": "{{points}}/{{max}}",
+    "rec_title": "Next steps",
+    "rec_clean_safe": "Clean {{size}} that is safe. Everything goes to the Trash first.",
+    "rec_review": "Review {{size}} that may still be in use, in Clean.",
+    "rec_stale": "{{count}} development projects untouched for over a month, {{size}}.",
+    "rec_largest": "Largest folder: {{name}} ({{size}}). Look in Scan.",
+    "rec_full": "Only {{pct}}% free. Make room first.",
+    "cta_clean": "Clean {{size}} safely",
+    "cta_nothing": "Nothing to clean right now",
+    "open_scan": "Open scan results",
+    "open_clean": "Open Clean",
+    "again": "Care again",
+    "done_title": "Care done",
+    "done_body": "{{size}} freed. The Space Score updates when you care again.",
+    "last_care": "Last cared {{date}}, score {{score}}"
   }
 }

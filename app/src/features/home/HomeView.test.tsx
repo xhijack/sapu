@@ -20,6 +20,8 @@ describe("HomeView", () => {
     expect(screen.getByText("Downloads")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Pindai disk sekarang" }));
     expect(nav).toHaveBeenCalledWith("scan");
+    await user.click(screen.getByRole("button", { name: "Rawat Mac saya" }));
+    expect(nav).toHaveBeenCalledWith("care");
     await user.click(screen.getByRole("button", { name: /^Duplikat/ }));
     expect(nav).toHaveBeenCalledWith("dedupe");
   });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, HardDrive, History, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
+import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
 import { api } from "@/lib/api";
 import { scanApi } from "@/lib/scanApi";
 import { formatBytes, formatDate } from "@/lib/format";
@@ -77,7 +77,11 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
             {main && <p className="num text-fg-muted">{t("home.hero_of", { total: formatBytes(main.total_bytes, lang), pct })}</p>}
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <Button size="lg" onClick={() => (onScanNow ? onScanNow() : onNavigate("scan"))}>
+            <Button size="lg" onClick={() => (onScanNow ? onScanNow() : onNavigate("care"))}>
+              <HeartPulse aria-hidden className="h-5 w-5" />
+              {t("home.hero_cta_care")}
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => onNavigate("scan")}>
               <Search aria-hidden className="h-5 w-5" />
               {t("home.hero_cta")}
             </Button>
@@ -92,7 +96,8 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
+        <Tile className="rise rise-1" tone="var(--gauge-warn)" icon={<HeartPulse className="h-5 w-5" />} title={t("home.tile_care")} body={t("home.tile_care_body")} onClick={() => onNavigate("care")} />
         <Tile className="rise rise-2" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("home.tile_scan")} body={t("home.tile_scan_body")} onClick={() => onNavigate("scan")} />
         <Tile className="rise rise-3" tone="var(--accent)" icon={<Sparkles className="h-5 w-5" />} title={t("home.tile_clean")} body={t("home.tile_clean_body")} onClick={() => onNavigate("clean")} />
         <Tile className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />

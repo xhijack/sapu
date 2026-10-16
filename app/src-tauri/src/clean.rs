@@ -20,6 +20,12 @@ pub struct CleanSession {
 }
 
 impl CleanSession {
+    pub(crate) fn set_report(&self, r: CleanReport) {
+        if let Ok(mut slot) = self.report.lock() {
+            *slot = Some(r);
+        }
+    }
+
     pub(crate) fn project(&self, root: &std::path::Path) -> Option<sapu_core::cleaner::Project> {
         self.report
             .lock()

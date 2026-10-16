@@ -6,6 +6,7 @@ import { scanMock } from "../lib/scanApi";
 import { cleanMock } from "../lib/cleanApi";
 import { dedupeMock } from "../lib/dedupeApi";
 import { aiMock } from "../lib/aiApi";
+import { careMock } from "../lib/careApi";
 
 // jsdom reports en-US; the app follows the system locale, so pin it to Indonesian.
 Object.defineProperty(window.navigator, "language", { value: "id-ID", configurable: true });
@@ -16,6 +17,7 @@ beforeEach(async () => {
   cleanMock.reset();
   dedupeMock.reset();
   aiMock.reset();
+  careMock.reset();
   await i18n.changeLanguage("id");
 });
 
