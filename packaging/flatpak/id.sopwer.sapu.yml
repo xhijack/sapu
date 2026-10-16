@@ -1,0 +1,29 @@
+# Flatpak manifest skeleton. Build the .deb with the release workflow first,
+# then point `url`/`sha256` at that artefact (or switch to a from-source
+# build with the Rust and Node SDK extensions).
+app-id: id.sopwer.sapu
+runtime: org.gnome.Platform
+runtime-version: "47"
+sdk: org.gnome.Sdk
+command: sapu-app
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=network            # only used when the optional AI mode is turned on
+  - --filesystem=home          # the app scans and cleans the user's files
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.secrets
+modules:
+  - name: sapu
+    buildsystem: simple
+    build-commands:
+      - ar x sapu.deb
+      - tar xf data.tar.*
+      - cp -r usr/* /app/
+    sources:
+      - type: file
+        url: https://github.com/xhijack/sapu/releases/download/vX.Y.Z/Sapu_X.Y.Z_amd64.deb
+        sha256: REPLACE_WITH_SHA256
+        dest-filename: sapu.deb

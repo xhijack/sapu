@@ -1,0 +1,24 @@
+{
+  "version": "X.Y.Z",
+  "description": "Smart Analyzer & Pruning Utility: scan, clean and dedupe your disk safely",
+  "homepage": "https://github.com/xhijack/sapu",
+  "license": "TBD",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/xhijack/sapu/releases/download/vX.Y.Z/sapu-cli-vX.Y.Z-x86_64-pc-windows-msvc.zip",
+      "hash": "REPLACE"
+    },
+    "arm64": {
+      "url": "https://github.com/xhijack/sapu/releases/download/vX.Y.Z/sapu-cli-vX.Y.Z-aarch64-pc-windows-msvc.zip",
+      "hash": "REPLACE"
+    }
+  },
+  "bin": "sapu.exe",
+  "checkver": "github",
+  "autoupdate": {
+    "architecture": {
+      "64bit": { "url": "https://github.com/xhijack/sapu/releases/download/v$version/sapu-cli-v$version-x86_64-pc-windows-msvc.zip" },
+      "arm64": { "url": "https://github.com/xhijack/sapu/releases/download/v$version/sapu-cli-v$version-aarch64-pc-windows-msvc.zip" }
+    }
+  }
+}

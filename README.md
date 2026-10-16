@@ -53,6 +53,10 @@ sapu history [restore <id>]                     # restore: Windows/Linux; macOS:
 
 Off by default. Local (Ollama or any OpenAI-compatible server) or cloud with your own key (OpenAI-compatible or Anthropic; keys stay in the OS keychain). Only metadata leaves the device, home folder and account name are masked, every request can be previewed first, and an AI answer can never produce a green label.
 
+## Releases
+
+Tagged versions build installers for macOS, Windows and Linux plus CLI archives through `.github/workflows/release.yml`; see `docs/release.md` for signing and package-manager templates in `packaging/`.
+
 ## License
 
 Not decided yet (see PRD §15 Q2).

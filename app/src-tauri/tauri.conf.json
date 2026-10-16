@@ -25,13 +25,45 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "app",
+      "dmg",
+      "msi",
+      "nsis",
+      "appimage",
+      "deb",
+      "rpm"
+    ],
+    "category": "Utility",
+    "shortDescription": "Free up disk space, safely.",
+    "longDescription": "Sapu shows what fills your disk, cleans what is safe to remove (always to the Trash first) and finds duplicate files. Open source, works offline, optional AI help with metadata only.",
+    "publisher": "Sapu contributors",
+    "copyright": "Sapu contributors",
+    "homepage": "https://github.com/xhijack/sapu",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": false,
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "hardenedRuntime": true
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    },
+    "linux": {
+      "deb": {
+        "section": "utils"
+      },
+      "rpm": {
+        "release": "1"
+      }
+    }
   }
 }
