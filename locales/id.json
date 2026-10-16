@@ -282,7 +282,19 @@
     "categories_title": "Per kategori",
     "ring_label": "Ruang per kategori",
     "result_used_of": "dipakai dari {{total}}",
-    "result_used": "dipakai"
+    "result_used": "dipakai",
+    "live_reading": "Sedang membaca",
+    "live_categories": "Kategori sejauh ini",
+    "live_top": "Folder terbesar sejauh ini",
+    "next_title": "Langkah berikutnya",
+    "next_clean": "Bersihkan yang aman",
+    "next_clean_body": "{{size}} bisa dibebaskan tanpa risiko, semua ke Trash dulu.",
+    "next_clean_checking": "Memeriksa aturan pembersihan…",
+    "next_clean_none": "Tidak ada yang perlu dibersihkan saat ini.",
+    "next_dupes": "Cari file ganda",
+    "next_dupes_body": "Periksa folder ini untuk file yang isinya sama persis.",
+    "next_largest": "Lihat yang terbesar",
+    "next_largest_body": "File dan folder paling besar, siap ditinjau satu per satu."
   },
   "category": {
     "video": "Video",

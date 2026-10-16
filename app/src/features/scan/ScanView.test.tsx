@@ -76,3 +76,19 @@ describe("ScanView P1", () => {
     expect(diff).toHaveTextContent(/terutama dari dev \(\+6,0 GB\), baru \(\+2,1 GB, baru\)/);
   });
 });
+
+describe("ScanView live + next steps", () => {
+  it("shows what is being read while scanning, and next steps with the safe size after", async () => {
+    const user = userEvent.setup();
+    scanMock.ticks = 40;
+    const nav = vi.fn();
+    render(<ScanView profile="general" onNavigate={nav} />);
+    await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
+    expect(await screen.findByText("Sedang membaca", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText("Folder terbesar sejauh ini")).toBeInTheDocument();
+    await screen.findByTestId("scan-total", {}, { timeout: 5000 });
+    expect(await screen.findByText(/2,6 GB bisa dibebaskan tanpa risiko/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Cari file ganda/ }));
+    expect(nav).toHaveBeenCalledWith("dedupe");
+  });
+});

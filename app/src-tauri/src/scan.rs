@@ -11,7 +11,7 @@ use sapu_core::progress::{FnSink, ProgressEvent};
 use sapu_core::safety::{DeletePlan, FileSnapshot, HistoryStore, ProtectedPaths, Safety};
 use sapu_core::scanner::{
     DirSummary, FileEntry, FileFilter, ScanControl, ScanOptions, ScanResult, ScanState, ScanStats,
-    ScanSummary, TreeNode, scan,
+    ScanSummary, TreeNode, scan_with_live,
 };
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_dialog::DialogExt;
@@ -192,7 +192,11 @@ pub fn scan_start(
             let _ = app2.emit("scan://progress", payload);
         });
 
-        match scan(&opts, &control, &mut sink) {
+        let app_live = app.clone();
+        let mut live = move |snap: sapu_core::scanner::LiveSnapshot| {
+            let _ = app_live.emit("scan://live", snap);
+        };
+        match scan_with_live(&opts, &control, &mut sink, &mut live) {
             Ok(result) => {
                 if let Some(dir) = &stats_dir
                     && !result.cancelled

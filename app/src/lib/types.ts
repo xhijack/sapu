@@ -209,6 +209,14 @@ export interface ScanTargets {
   disk: string;
 }
 
+export interface LiveSnapshot {
+  current_dir: string;
+  categories: [Category, number][];
+  top_dirs: [string, number][];
+  files: number;
+  bytes: number;
+}
+
 export interface ScanProgressPayload {
   fraction: number | null;
   items_done: number;

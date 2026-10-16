@@ -94,7 +94,7 @@ export default function App() {
         <CareView onNavigate={navigate} />
       </Pane>
       <Pane active={screen === "scan"} mounted={visited.has("scan")}>
-        <ScanView />
+        <ScanView profile={settings.profile} onNavigate={(s) => navigate(s)} />
       </Pane>
       <Pane active={screen === "clean"} mounted={visited.has("clean")}>
         <CleanView profile={settings.profile} onSeeHistory={() => navigate("history")} />

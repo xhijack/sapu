@@ -8,6 +8,7 @@ import type {
   ScanLogEntry,
   FileEntry,
   FileFilter,
+  LiveSnapshot,
   ScanProgressPayload,
   ScanStatus,
   ScanSummary,
@@ -55,6 +56,7 @@ export const scanApi = {
   reveal: (path: string) => invoke<void>("reveal_path", { path }),
   trash: (paths: string[], apply: boolean) => invoke<CleanSession>("trash_paths", { paths, apply }),
   onProgress: (cb: (p: ScanProgressPayload) => void) => listen<ScanProgressPayload>("scan://progress", cb),
+  onLive: (cb: (s: LiveSnapshot) => void) => listen<LiveSnapshot>("scan://live", cb),
   onDone: (cb: (s: ScanSummary) => void) => listen<ScanSummary>("scan://done", cb),
   onError: (cb: (e: { code: string; message: string }) => void) => listen("scan://error", cb),
 };
@@ -67,9 +69,11 @@ const emit = <T,>(event: string, detail: T) => mockBus.dispatchEvent(new CustomE
 const GB = 1024 ** 3;
 const MB = 1024 ** 2;
 
+const slow = typeof location !== "undefined" && location.search.includes("slow");
+
 export const scanMock = {
-  tickMs: 30,
-  ticks: 6,
+  tickMs: slow ? 800 : 30,
+  ticks: slow ? 14 : 6,
   state: null as ScanStatus["state"],
   summary: null as ScanSummary | null,
   reset() {
@@ -186,6 +190,22 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         }
         i += 1;
         const frac = Math.min(i / scanMock.ticks, 0.999);
+        emit<LiveSnapshot>("scan://live", {
+          current_dir: `${root}/Library/Caches/com.apple.Safari/WebKitCache/Version 16/Blobs/${i}`,
+          categories: [
+            ["development", 10 * GB * i],
+            ["video", 8 * GB * i],
+            ["photo", 4 * GB * i],
+            ["other", GB * i],
+          ],
+          top_dirs: [
+            [`${root}/dev/landing-page-2024/node_modules`, 1.4 * GB * i],
+            [`${root}/Movies`, 1.1 * GB * i],
+            [`${root}/Library/Caches`, 0.6 * GB * i],
+          ],
+          files: Math.floor(1_204_311 * frac),
+          bytes: total * frac,
+        });
         emit<ScanProgressPayload>("scan://progress", {
           fraction: frac,
           items_done: Math.floor(1_204_311 * frac),

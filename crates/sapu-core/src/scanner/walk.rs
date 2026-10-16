@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::error::{Result, SapuError};
 use crate::progress::{ProgressEvent, ProgressSink, Throttled};
@@ -46,6 +46,44 @@ impl ScanOptions {
 }
 
 const REPORT_EVERY: u64 = 512;
+const LIVE_EVERY: Duration = Duration::from_millis(400);
+
+/// What the UI can show while the walk is still running: where the walker
+/// is, how categories grow, and the biggest folders seen so far.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct LiveSnapshot {
+    pub current_dir: PathBuf,
+    pub categories: Vec<(Category, u64)>,
+    /// Largest folders by their own files so far (up to 5).
+    pub top_dirs: Vec<(PathBuf, u64)>,
+    pub files: u64,
+    pub bytes: u64,
+}
+
+/// Keeps the K largest `(path, bytes)` pairs with cheap updates.
+#[derive(Default)]
+struct TopK {
+    items: Vec<(PathBuf, u64)>,
+}
+
+impl TopK {
+    const K: usize = 5;
+
+    fn offer(&mut self, path: &Path, bytes: u64) {
+        if let Some(slot) = self.items.iter_mut().find(|(p, _)| p == path) {
+            slot.1 = bytes;
+        } else if self.items.len() < Self::K {
+            self.items.push((path.to_path_buf(), bytes));
+        } else if let Some((idx, _)) = self.items.iter().enumerate().min_by_key(|(_, (_, b))| *b)
+            && self.items[idx].1 < bytes
+        {
+            self.items[idx] = (path.to_path_buf(), bytes);
+        } else {
+            return;
+        }
+        self.items.sort_by_key(|(_, b)| std::cmp::Reverse(*b));
+    }
+}
 
 /// Walks `opts.root` without following symlinks. Unreadable directories are
 /// counted and skipped. Returns a partial result when cancelled.
@@ -53,6 +91,17 @@ pub fn scan(
     opts: &ScanOptions,
     control: &ScanControl,
     progress: &mut dyn ProgressSink,
+) -> Result<ScanResult> {
+    scan_with_live(opts, control, progress, &mut |_| {})
+}
+
+/// Like [`scan`], additionally calling `live` about twice a second with a
+/// [`LiveSnapshot`] for the UI.
+pub fn scan_with_live(
+    opts: &ScanOptions,
+    control: &ScanControl,
+    progress: &mut dyn ProgressSink,
+    live: &mut dyn FnMut(LiveSnapshot),
 ) -> Result<ScanResult> {
     let root = std::path::absolute(&opts.root).map_err(|e| SapuError::io("resolve root", e))?;
     let meta = std::fs::symlink_metadata(&root).map_err(|e| SapuError::io("stat root", e))?;
@@ -74,6 +123,10 @@ pub fn scan(
     let mut denied_sample = Vec::new();
     let mut cancelled = false;
     let mut since_report = 0u64;
+    let mut cat_bytes: HashMap<Category, u64> = HashMap::new();
+    let mut top = TopK::default();
+    let mut last_live = Instant::now();
+    let mut current_dir = root.clone();
 
     // Metadata is fetched inside jwalk's worker threads (`process_read_dir`)
     // so the stat calls run in parallel; the consumer loop below only
@@ -128,17 +181,36 @@ pub fn scan(
         }
         let size = meta.size;
         total_bytes += size;
+        let category = Category::of(&path);
+        *cat_bytes.entry(category).or_default() += size;
         if let Some(parent) = path.parent() {
             let d = dirs.entry(parent.to_path_buf()).or_default();
             d.own_bytes += size;
             d.own_files += 1;
+            top.offer(parent, d.own_bytes);
+            if parent != current_dir {
+                current_dir = parent.to_path_buf();
+            }
         }
         files.push(FileEntry {
-            category: Category::of(&path),
+            category,
             path,
             size,
             mtime: meta.mtime,
         });
+        if last_live.elapsed() >= LIVE_EVERY {
+            last_live = Instant::now();
+            let mut categories: Vec<(Category, u64)> =
+                cat_bytes.iter().map(|(c, b)| (*c, *b)).collect();
+            categories.sort_by_key(|(_, b)| std::cmp::Reverse(*b));
+            live(LiveSnapshot {
+                current_dir: current_dir.clone(),
+                categories,
+                top_dirs: top.items.clone(),
+                files: files.len() as u64,
+                bytes: total_bytes,
+            });
+        }
 
         since_report += 1;
         if since_report >= REPORT_EVERY {
@@ -527,6 +599,37 @@ mod tests {
         assert_eq!(diff.delta_bytes, on_disk(&r.join("grow/big.mp4")) as i64);
         assert!(diff.dirs[0].path.ends_with("grow") && diff.dirs[0].is_new);
         assert_eq!(diff.categories[0].category, Category::Video);
+    }
+
+    #[test]
+    fn live_snapshots_track_categories_and_top_dirs() {
+        let tmp = tempdir();
+        let r = tmp.path();
+        for i in 0..300 {
+            write(&r.join(format!("vid/{i}.mp4")), 5000);
+        }
+        write(&r.join("docs/a.pdf"), 100);
+        let mut snaps = Vec::new();
+        // Force a snapshot by making LIVE_EVERY elapse: run twice, the second
+        // call happens after the first walk's duration.
+        let res = scan_with_live(&opts(r), &ScanControl::new(), &mut NoProgress, &mut |s| {
+            snaps.push(s)
+        })
+        .expect("scan");
+        assert_eq!(res.file_count, 301);
+        let mut t = TopK::default();
+        t.offer(Path::new("/a"), 10);
+        t.offer(Path::new("/b"), 50);
+        t.offer(Path::new("/a"), 60);
+        assert_eq!(t.items[0], (PathBuf::from("/a"), 60));
+        for i in 0..10 {
+            t.offer(Path::new(&format!("/x{i}")), 100 + i);
+        }
+        assert_eq!(t.items.len(), TopK::K);
+        assert_eq!(t.items[0].1, 109);
+        if let Some(s) = snaps.last() {
+            assert!(s.categories.iter().any(|(c, _)| *c == Category::Video));
+        }
     }
 
     #[test]

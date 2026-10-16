@@ -282,7 +282,19 @@
     "categories_title": "By category",
     "ring_label": "Space by category",
     "result_used_of": "used of {{total}}",
-    "result_used": "used"
+    "result_used": "used",
+    "live_reading": "Reading",
+    "live_categories": "Categories so far",
+    "live_top": "Largest folders so far",
+    "next_title": "Next steps",
+    "next_clean": "Clean what is safe",
+    "next_clean_body": "{{size}} can go without risk, all to the Trash first.",
+    "next_clean_checking": "Checking the clean-up rules…",
+    "next_clean_none": "Nothing to clean right now.",
+    "next_dupes": "Find duplicates",
+    "next_dupes_body": "Check this folder for files with identical contents.",
+    "next_largest": "See the largest",
+    "next_largest_body": "The biggest files and folders, ready to review one by one."
   },
   "category": {
     "video": "Video",

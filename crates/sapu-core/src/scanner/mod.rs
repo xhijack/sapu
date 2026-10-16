@@ -20,4 +20,4 @@ pub use result::{
     ScanSummary, TreeNode,
 };
 pub use stats_cache::{CategoryDelta, DirDelta, ScanDiff, ScanLogEntry, ScanStats};
-pub use walk::{ScanOptions, scan};
+pub use walk::{LiveSnapshot, ScanOptions, scan, scan_with_live};

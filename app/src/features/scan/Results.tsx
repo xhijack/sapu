@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { SpaceRing, type RingSegment } from "@/components/viz/SpaceRing";
 import { useCountUp } from "@/components/viz/useCountUp";
 import { formatBytes, formatDate } from "@/lib/format";
-import type { Category, CleanSession, ScanSummary } from "@/lib/types";
+import type { Category, CleanSession, Profile, ScanSummary } from "@/lib/types";
+import { useEffect } from "react";
+import { cleanApi } from "@/lib/cleanApi";
+import { Tile } from "@/components/ui/tile";
+import { Copy, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryTiles } from "./CategoryTiles";
 import { LargestList } from "./LargestList";
@@ -22,11 +26,13 @@ type MapMode = "sunburst" | "treemap";
 
 interface Props {
   summary: ScanSummary;
+  profile?: Profile;
   onRescan: () => void;
   onNewScan: () => void;
+  onNavigate?: (s: "clean" | "dedupe") => void;
 }
 
-export function Results({ summary, onRescan, onNewScan }: Props) {
+export function Results({ summary, profile = "general", onRescan, onNewScan, onNavigate }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const [tab, setTab] = useState<Tab>("summary");
@@ -38,6 +44,27 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
   const [whatIs, setWhatIs] = useState<string | null>(null);
   const aiEnabled = useAiEnabled();
   const total = useCountUp(summary.total_bytes);
+  // What next: evaluate the clean rules right after a scan so the first
+  // action already carries a number.
+  const [safeBytes, setSafeBytes] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    cleanApi
+      .evaluate(profile)
+      .then((ev) => {
+        if (!live) return;
+        const ids = new Set(ev.preselected);
+        const bytes =
+          ev.report.findings.filter((f) => ids.has(f.rule_id)).reduce((a, f) => a + f.bytes, 0) +
+          ev.report.commands.filter((c) => ids.has(c.rule_id)).reduce((a, c) => a + (c.estimate_bytes ?? 0), 0) +
+          ev.report.projects.flatMap((p) => p.artefacts).filter((a) => ev.preselected_artefacts.includes(a.path)).reduce((a, x) => a + x.bytes, 0);
+        setSafeBytes(bytes);
+      })
+      .catch(() => live && setSafeBytes(null));
+    return () => {
+      live = false;
+    };
+  }, [profile, summary.finished_at_unix]);
 
   const diskTotal = summary.disk_total_bytes ?? summary.total_bytes;
   const free = summary.disk_free_bytes ?? 0;
@@ -98,6 +125,22 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
           </div>
         </div>
       </header>
+
+      <section className="grid gap-3">
+        <h2 className="text-sm font-semibold text-fg-muted">{t("scan.next_title")}</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Tile
+            className="rise rise-1"
+            tone="var(--accent)"
+            icon={<Sparkles className="h-5 w-5" />}
+            title={t("scan.next_clean")}
+            body={safeBytes === undefined ? t("scan.next_clean_checking") : safeBytes ? t("scan.next_clean_body", { size: formatBytes(safeBytes, lang) }) : t("scan.next_clean_none")}
+            onClick={() => onNavigate?.("clean")}
+          />
+          <Tile className="rise rise-2" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("scan.next_dupes")} body={t("scan.next_dupes_body")} onClick={() => onNavigate?.("dedupe")} />
+          <Tile className="rise rise-3" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("scan.next_largest")} body={t("scan.next_largest_body")} onClick={() => setTab("largest")} />
+        </div>
+      </section>
 
       {notice && (
         <p role="status" className="card-solid px-4 py-2 text-sm">
