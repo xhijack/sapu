@@ -37,6 +37,14 @@ unwrap_used = "warn"
 expect_used = "warn"
 disallowed_methods = "deny"
 
+# Smaller debug artifacts: line tables are enough for backtraces and keep
+# target/ from growing to tens of GB on a laptop.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
 [profile.release]
 lto = "thin"
 codegen-units = 1
