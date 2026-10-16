@@ -376,14 +376,14 @@ Telemetri, jika ada, harus **opt-in**, anonim, dan dijelaskan di onboarding.
 
 | # | Pertanyaan | Siapa | Blocking? |
 |---|------------|-------|-----------|
-| Q1 | Kepanjangan final SAPU (usulan saat ini: Smart Analyzer & Pruning Utility) dan ketersediaan domain. | Ramdani | Ya, sebelum rilis publik |
-| Q2 | Lisensi: MIT/Apache-2.0 (dual, konvensi Rust, ramah adopsi) atau GPL-3.0 (memastikan turunan tetap open source)? | Ramdani | Ya, sebelum repo publik |
+| Q1 | ~~Kepanjangan final SAPU~~ **Diputuskan 16 Okt 2026: nama tetap Sapu (Smart Analyzer & Pruning Utility).** Domain belum dicek. | Ramdani | Selesai |
+| Q2 | ~~Lisensi~~ **Diputuskan 16 Okt 2026: MIT OR Apache-2.0** (bebas diubah, didistribusikan, dan dijual ulang). | Ramdani | Selesai |
 | Q3 | Pendanaan sertifikat code signing (Apple Developer, sertifikat Windows) untuk proyek non-komersial: dana pribadi, sponsor, atau program seperti SignPath untuk OSS? | Ramdani | Ya, sebelum rilis publik |
-| Q4 | Siapa desainer UI/UX proyek ini? Desain sebaiknya dikerjakan sebelum implementasi GUI Tahap 1. | Ramdani | Ya, untuk Tahap 1 |
-| Q5 | Telemetri: tidak ada sama sekali, atau opt-in? | Ramdani | Tidak |
-| Q6 | Format file rules: TOML atau YAML? Bagaimana alur review rules komunitas? | Engineering | Tidak (sebelum Tahap 2) |
+| Q4 | ~~Desainer UI/UX~~ **Diputuskan: tanpa desainer, pakai arahan desain terdokumentasi; 16 Okt 2026 pemilik menilai hasil pertama terlalu biasa, redesign premium direncanakan.** | Ramdani | Selesai |
+| Q5 | ~~Telemetri~~ **Diputuskan 16 Okt 2026: tidak ada telemetri.** Bisa ditinjau ulang bila ada kebutuhan nyata. | Ramdani | Selesai |
+| Q6 | ~~Format rules~~ **Diputuskan: TOML; alur review di CONTRIBUTING.md.** | Engineering | Selesai |
 | Q7 | Model lokal mana yang direkomendasikan untuk A1/A2 (ukuran kecil, berjalan di laptop biasa)? | Engineering | Tidak (sebelum Mode AI) |
-| Q8 | Dukungan Linux: distro mana yang menjadi target utama pengujian? | Engineering | Tidak |
+| Q8 | ~~Dukungan Linux~~ **Diputuskan 16 Okt 2026: Ubuntu (deb/AppImage) dan keluarga CentOS/RHEL (rpm).** | Engineering | Selesai |
 
 ## 16. Glosarium
 

@@ -59,4 +59,4 @@ Tagged versions build installers for macOS, Windows and Linux plus CLI archives 
 
 ## License
 
-Not decided yet (see PRD §15 Q2).
+Dual-licensed under MIT or Apache-2.0, at your option. You may use, modify, redistribute and sell Sapu or derived works; keep the copyright and license notices.
