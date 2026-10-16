@@ -392,3 +392,83 @@ export interface SystemSnapshot {
   disks: DiskInfo[];
   os_name: string;
 }
+
+// ---- AI (PRD §12) ----
+
+export type AiModeKind = "off" | "local" | "cloud";
+export type CloudKind = "openai_compatible" | "anthropic";
+
+export interface AiConfig {
+  mode: AiModeKind;
+  local_url: string;
+  local_model: string;
+  cloud_kind: CloudKind;
+  cloud_url: string;
+  cloud_model: string;
+  anonymize: boolean;
+}
+
+export interface AiStatus {
+  enabled: boolean;
+  config: AiConfig;
+  has_key: boolean;
+}
+
+export interface AiPreview {
+  provider: string;
+  model: string;
+  system: string;
+  user: string;
+}
+
+export type Verdict = "keep" | "check_first";
+
+export interface WhatIsAnswer {
+  summary: string;
+  likely_owner: string;
+  verdict: Verdict;
+  consequence: string;
+  confidence: number;
+  reason: string;
+}
+
+export interface ArtefactVerdict {
+  kind: string;
+  regenerable: boolean;
+  verdict: Verdict;
+  explanation: string;
+  rebuild: string;
+  confidence: number;
+}
+
+export interface ArtefactAnswer {
+  project_summary: string;
+  artefacts: ArtefactVerdict[];
+}
+
+export interface SearchFilter {
+  category: string | null;
+  min_bytes: number | null;
+  min_age_days: number | null;
+  max_age_days: number | null;
+  extensions: string[];
+  name_contains: string | null;
+  description: string;
+}
+
+export interface ReportAnswer {
+  what_fills: string;
+  start_here: string;
+  leave_alone: string;
+}
+
+export interface AiResult<T> {
+  answer: T | null;
+  preview: AiPreview;
+}
+
+export interface AiSearchResult {
+  filter: SearchFilter;
+  files: FileEntry[];
+  preview: AiPreview;
+}

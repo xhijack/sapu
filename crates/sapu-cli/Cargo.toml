@@ -13,6 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 sapu-core = { path = "../sapu-core" }
+sapu-ai = { path = "../sapu-ai" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 serde_json.workspace = true

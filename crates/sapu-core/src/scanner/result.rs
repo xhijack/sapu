@@ -79,6 +79,13 @@ pub struct FileFilter {
     pub min_bytes: u64,
     pub category: Option<Category>,
     pub age: AgeFilter,
+    /// Exact day bounds (AI search); combined with `age` when both are set.
+    pub min_age_days: Option<u64>,
+    pub max_age_days: Option<u64>,
+    /// Lowercase, without dot. Empty = any.
+    pub extensions: Vec<String>,
+    /// Case-insensitive substring of the file name.
+    pub name_contains: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -127,13 +134,44 @@ impl ScanResult {
     }
 
     pub fn top_files(&self, filter: &FileFilter, n: usize) -> Vec<FileEntry> {
-        let cutoff = filter.age.cutoff(SystemTime::now());
+        let now = SystemTime::now();
+        let cutoff = filter.age.cutoff(now);
+        let min_cut = filter
+            .min_age_days
+            .and_then(|d| now.checked_sub(Duration::from_secs(d * 86_400)));
+        let max_cut = filter
+            .max_age_days
+            .and_then(|d| now.checked_sub(Duration::from_secs(d * 86_400)));
+        let needle = filter
+            .name_contains
+            .as_ref()
+            .map(|n| n.to_lowercase())
+            .filter(|n| !n.is_empty());
         let mut v: Vec<&FileEntry> = self
             .files
             .iter()
             .filter(|f| f.size >= filter.min_bytes)
             .filter(|f| filter.category.is_none_or(|c| f.category == c))
             .filter(|f| cutoff.is_none_or(|cut| f.mtime.is_some_and(|m| m <= cut)))
+            .filter(|f| min_cut.is_none_or(|cut| f.mtime.is_some_and(|m| m <= cut)))
+            .filter(|f| max_cut.is_none_or(|cut| f.mtime.is_some_and(|m| m >= cut)))
+            .filter(|f| {
+                filter.extensions.is_empty()
+                    || f.path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .is_some_and(|e| {
+                            filter.extensions.iter().any(|x| x.eq_ignore_ascii_case(e))
+                        })
+            })
+            .filter(|f| {
+                needle.as_ref().is_none_or(|n| {
+                    f.path
+                        .file_name()
+                        .and_then(|x| x.to_str())
+                        .is_some_and(|x| x.to_lowercase().contains(n.as_str()))
+                })
+            })
             .collect();
         v.sort_by(|a, b| b.size.cmp(&a.size).then_with(|| a.path.cmp(&b.path)));
         v.into_iter().take(n).cloned().collect()

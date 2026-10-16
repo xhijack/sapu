@@ -6,5 +6,7 @@ mod load;
 mod schema;
 
 pub use expand::Env;
-pub use load::{RuleSet, load_embedded, parse_rules};
+pub use load::{
+    RuleSet, load_embedded, load_with_user_dir, parse_rules, save_user_rule, user_rules_dir,
+};
 pub use schema::{Command, Localized, Match, MatchKind, Profile, Risk, Rule, RuleError};

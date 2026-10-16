@@ -6,6 +6,7 @@
 mod category;
 mod control;
 mod disk;
+mod facts;
 mod result;
 mod stats_cache;
 mod walk;
@@ -13,6 +14,7 @@ mod walk;
 pub use category::Category;
 pub use control::{ScanControl, ScanState};
 pub use disk::{capacity, used_bytes};
+pub use facts::{PathFacts, describe};
 pub use result::{
     AgeFilter, CategorySummary, DirStats, DirSummary, FileEntry, FileFilter, ScanResult,
     ScanSummary, TreeNode,

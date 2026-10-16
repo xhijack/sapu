@@ -6,7 +6,9 @@ use crate::support::{notify_done, record_rate};
 use sapu_core::cleaner::{CleanReport, CleanRunReport, Selection, evaluate, execute};
 use sapu_core::eta::OpKind;
 use sapu_core::progress::NoProgress;
-use sapu_core::rules::{Env, Localized, Profile, Risk, RuleSet, load_embedded};
+use sapu_core::rules::{
+    Env, Localized, Profile, Risk, RuleSet, load_with_user_dir, user_rules_dir,
+};
 use sapu_core::safety::{HistoryStore, PermanentConfirmation, ProtectedPaths, Safety};
 use tauri::{AppHandle, State};
 
@@ -15,6 +17,19 @@ use crate::{CmdResult, CommandError};
 #[derive(Default)]
 pub struct CleanSession {
     report: Mutex<Option<CleanReport>>,
+}
+
+impl CleanSession {
+    pub(crate) fn project(&self, root: &std::path::Path) -> Option<sapu_core::cleaner::Project> {
+        self.report
+            .lock()
+            .ok()?
+            .as_ref()?
+            .projects
+            .iter()
+            .find(|p| p.root == root)
+            .cloned()
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -36,7 +51,8 @@ pub struct CleanEvaluation {
 }
 
 fn rules() -> CmdResult<RuleSet> {
-    load_embedded(std::env::consts::OS).map_err(|e| CommandError::new("rules", e.to_string()))
+    load_with_user_dir(std::env::consts::OS, user_rules_dir().as_deref())
+        .map_err(|e| CommandError::new("rules", e.to_string()))
 }
 
 /// Evaluate rules for `profile`. Runs on a worker thread (async command)

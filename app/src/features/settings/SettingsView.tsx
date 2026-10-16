@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardText, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import type { AiMode, ProtectedEntry, Profile, Settings, Theme } from "@/lib/types";
+import type { ProtectedEntry, Profile, Settings, Theme } from "@/lib/types";
+import { AiSettings } from "@/features/ai/AiSettings";
 
 interface Props {
   settings: Settings;
@@ -82,17 +83,6 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
             { value: "dark", label: t("settings.theme_dark") },
           ]}
         />
-        <Select<AiMode>
-          id="ai"
-          label={t("settings.ai")}
-          value={settings.ai_mode}
-          onChange={(ai_mode) => onChange({ ...settings, ai_mode })}
-          options={[
-            { value: "off", label: t("onboarding.ai_off") },
-            { value: "local", label: t("onboarding.ai_local") },
-            { value: "cloud", label: t("onboarding.ai_cloud") },
-          ]}
-        />
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" checked={settings.notify_when_done} onChange={(e) => onChange({ ...settings, notify_when_done: e.target.checked })} className="mt-0.5 h-4 w-4" />
           <span>
@@ -106,6 +96,7 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
           </Button>
         </div>
       </Card>
+      <AiSettings />
       <Card className="grid gap-3">
         <CardTitle>{t("settings.protected_title")}</CardTitle>
         <CardText>{t("settings.protected_body")}</CardText>

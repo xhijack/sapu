@@ -230,6 +230,12 @@ pub fn scan_status(session: State<'_, Arc<ScanSession>>) -> ScanStatus {
     }
 }
 
+impl ScanSession {
+    pub(crate) fn result_arc(&self) -> CmdResult<Arc<ScanResult>> {
+        result(self)
+    }
+}
+
 fn result(session: &ScanSession) -> CmdResult<Arc<ScanResult>> {
     session
         .result

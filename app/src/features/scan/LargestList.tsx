@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, FolderOpen, Trash2 } from "lucide-react";
+import { Copy, FolderOpen, HelpCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState } from "@/components/States";
 import { formatBytes, formatDate } from "@/lib/format";
@@ -21,9 +21,11 @@ interface Props {
   onTrash: (paths: string[]) => void;
   removed: Set<string>;
   onCopied: () => void;
+  /** When set, rows get an "Apa ini?" action (AI enabled). */
+  onWhatIs?: (path: string) => void;
 }
 
-export function LargestList({ initialCategory = null, onTrash, removed, onCopied }: Props) {
+export function LargestList({ initialCategory = null, onTrash, removed, onCopied, onWhatIs }: Props) {
   const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState<FileFilter>({ min_bytes: 0, category: initialCategory, age: "any" });
   const [files, setFiles] = useState<FileEntry[] | null>(null);
@@ -69,6 +71,11 @@ export function LargestList({ initialCategory = null, onTrash, removed, onCopied
 
   const rowActions = (path: string) => (
     <span className="flex shrink-0 gap-1">
+      {onWhatIs && (
+        <Button variant="ghost" size="sm" aria-label={t("ai.whatis")} title={t("ai.whatis")} onClick={() => onWhatIs(path)}>
+          <HelpCircle aria-hidden className="h-4 w-4" />
+        </Button>
+      )}
       <Button variant="ghost" size="sm" aria-label={t("scan.action_reveal")} title={t("scan.action_reveal")} onClick={() => void scanApi.reveal(path)}>
         <FolderOpen aria-hidden className="h-4 w-4" />
       </Button>

@@ -6,7 +6,7 @@ use anyhow::{Context, bail};
 use clap::{Args, ValueEnum};
 use sapu_core::cleaner::{CleanReport, RuleOutcome, Selection, evaluate, execute};
 use sapu_core::progress::NoProgress;
-use sapu_core::rules::{Env, Profile, Risk, load_embedded};
+use sapu_core::rules::{Env, Profile, Risk, load_with_user_dir, user_rules_dir};
 use sapu_core::safety::{HistoryStore, PermanentConfirmation, ProtectedPaths, Safety};
 
 use crate::human_bytes;
@@ -38,7 +38,8 @@ pub fn run(args: CleanArgs) -> anyhow::Result<()> {
         ProfileArg::General => Profile::General,
         ProfileArg::Dev => Profile::Developer,
     };
-    let rules = load_embedded(std::env::consts::OS).context("load rules")?;
+    let rules = load_with_user_dir(std::env::consts::OS, user_rules_dir().as_deref())
+        .context("load rules")?;
     let protected = ProtectedPaths::os_defaults();
     let report = evaluate(&rules, profile, &protected, &Env::system());
 

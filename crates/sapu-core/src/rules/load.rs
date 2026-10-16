@@ -148,3 +148,101 @@ mod tests {
 
     use crate::rules::MatchKind;
 }
+
+/// `<config dir>/sapu/rules`: the user's own and community rules.
+pub fn user_rules_dir() -> Option<std::path::PathBuf> {
+    dirs::config_dir().map(|d| d.join("sapu").join("rules"))
+}
+
+/// Embedded rules plus every `*.toml` in `user_dir` (if it exists). A
+/// broken user rule is skipped with a warning rather than failing the set.
+pub fn load_with_user_dir(
+    os: &str,
+    user_dir: Option<&std::path::Path>,
+) -> Result<RuleSet, RuleError> {
+    let mut set = load_embedded(os)?;
+    let Some(dir) = user_dir else { return Ok(set) };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return Ok(set);
+    };
+    let mut extra = Vec::new();
+    for entry in rd.filter_map(Result::ok) {
+        let path = entry.path();
+        if path.extension().is_none_or(|e| e != "toml") {
+            continue;
+        }
+        let name = path.display().to_string();
+        match std::fs::read_to_string(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|t| Rule::parse(&name, &t).map_err(|e| e.to_string()))
+        {
+            Ok(rule) if rule.applies_to_os(os) => extra.push(rule),
+            Ok(_) => {}
+            Err(e) => tracing::warn!(error = %e, "skipping user rule"),
+        }
+    }
+    // Later files override embedded rules with the same id.
+    for rule in extra {
+        set.rules.retain(|r| r.id != rule.id);
+        set.rules.push(rule);
+    }
+    set.rules.sort_by(|a, b| a.id.cmp(&b.id));
+    Ok(set)
+}
+
+/// Writes a user rule that marks the contents of `path` as removable with
+/// a yellow label (AI answers never produce green, PRD AI-2). Returns the file written.
+pub fn save_user_rule(
+    user_dir: &std::path::Path,
+    id: &str,
+    name: (&str, &str),
+    description: (&str, &str),
+    path: &std::path::Path,
+) -> std::io::Result<std::path::PathBuf> {
+    std::fs::create_dir_all(user_dir)?;
+    let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
+    let text = format!(
+        "[rule]\nid = \"{id}\"\nname = {{ id = \"{}\", en = \"{}\" }}\ndescription = {{ id = \"{}\", en = \"{}\" }}\nrisk = \"yellow\"\nprofile = \"general\"\ngroup = \"user\"\n\n[[match]]\npath = \"{}\"\nkind = \"dir_contents\"\n",
+        esc(name.0),
+        esc(name.1),
+        esc(description.0),
+        esc(description.1),
+        esc(&path.to_string_lossy())
+    );
+    let file = user_dir.join(format!("{id}.toml"));
+    Rule::parse(&file.display().to_string(), &text)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
+    std::fs::write(&file, text)?;
+    Ok(file)
+}
+
+#[cfg(test)]
+mod user_dir_tests {
+    use super::*;
+
+    #[test]
+    fn user_rules_are_added_and_override_by_id() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let dir = tmp.path().join("rules");
+        let file = save_user_rule(
+            &dir,
+            "ai-spotify-cache",
+            ("Cache Spotify", "Spotify cache"),
+            ("Lagu offline diunduh ulang.", "Offline songs re-download."),
+            std::path::Path::new("/tmp/x/Caches/com.spotify.client"),
+        )
+        .expect("save");
+        assert!(file.exists());
+        std::fs::write(dir.join("broken.toml"), b"not = [toml").expect("write");
+        let set = load_with_user_dir("macos", Some(&dir)).expect("load");
+        let r = set.get("ai-spotify-cache").expect("user rule present");
+        assert_eq!(r.risk, Risk::Yellow);
+        assert_eq!(r.group, "user");
+        assert!(
+            set.get("macos-browser-caches").is_some(),
+            "embedded rules kept"
+        );
+    }
+
+    use crate::rules::Risk;
+}

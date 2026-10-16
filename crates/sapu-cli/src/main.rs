@@ -1,6 +1,7 @@
 //! `sapu` command line interface: a thin layer over `sapu-core`.
 //! Dry-run by default; `--apply` executes (S4).
 
+mod ai;
 mod clean;
 mod dupes;
 mod scan;
@@ -37,6 +38,8 @@ enum Command {
     Clean(clean::CleanArgs),
     /// Find identical files (dry-run unless --apply).
     Dupes(dupes::DupesArgs),
+    /// Optional AI helpers (metadata only, never contents).
+    Ai(ai::AiArgs),
 }
 
 #[derive(Args)]
@@ -87,6 +90,7 @@ fn main() -> anyhow::Result<()> {
         Command::Scan(a) => scan::run(a),
         Command::Clean(a) => clean::run(a),
         Command::Dupes(a) => dupes::run(a),
+        Command::Ai(a) => ai::run(a),
     }
 }
 

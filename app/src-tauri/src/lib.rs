@@ -10,6 +10,7 @@ use sapu_core::safety::{
 use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
+mod ai;
 mod clean;
 mod dedupe;
 mod scan;
@@ -190,6 +191,16 @@ pub fn run() {
             app_info,
             system_snapshot,
             support::estimate_duration,
+            ai::ai_status,
+            ai::ai_config_set,
+            ai::ai_set_api_key,
+            ai::ai_models,
+            ai::ai_test,
+            ai::ai_whatis,
+            ai::ai_artefact,
+            ai::ai_search,
+            ai::ai_report,
+            ai::ai_save_rule,
             reveal_app_binary,
             disk_access_status,
             settings_get,

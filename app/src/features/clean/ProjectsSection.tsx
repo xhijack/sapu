@@ -3,6 +3,8 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { formatBytes } from "@/lib/format";
 import type { Project } from "@/lib/types";
 import { ARTEFACT_PREFIX } from "./rows";
+import { AiArtefact } from "@/features/ai/AiArtefact";
+import { useAiEnabled } from "@/features/ai/useAiEnabled";
 
 interface Props {
   projects: Project[];
@@ -13,6 +15,7 @@ interface Props {
 /** One card per development project: idle time, rebuild command, artefacts. */
 export function ProjectsSection({ projects, selected, onToggle }: Props) {
   const { t, i18n } = useTranslation();
+  const aiEnabled = useAiEnabled();
   const idle = (p: Project) => {
     if (p.idle_days === null) return t("clean.project_idle_unknown");
     if (p.idle_days < 1) return t("clean.project_active");
@@ -57,6 +60,7 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
                 );
               })}
             </ul>
+            {aiEnabled && <AiArtefact root={p.root} />}
             {p.rebuild.length > 0 && (
               <p className="text-xs text-fg-muted">
                 {t("clean.project_rebuild", { cmd: "" })}

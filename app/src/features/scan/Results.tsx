@@ -9,6 +9,10 @@ import { DiskStrip } from "./DiskStrip";
 import { LargestList } from "./LargestList";
 import { Treemap } from "./Treemap";
 import { TrashDialog } from "./TrashDialog";
+import { AiReport } from "@/features/ai/AiReport";
+import { AiSearch } from "@/features/ai/AiSearch";
+import { WhatIsDialog } from "@/features/ai/WhatIsDialog";
+import { useAiEnabled } from "@/features/ai/useAiEnabled";
 
 type Tab = "summary" | "map" | "largest";
 
@@ -25,6 +29,8 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
   const [trashing, setTrashing] = useState<string[] | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
+  const [whatIs, setWhatIs] = useState<string | null>(null);
+  const aiEnabled = useAiEnabled();
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "summary", label: t("scan.tab_summary") },
@@ -98,6 +104,11 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
       </div>
 
       <div role="tabpanel">
+        {tab === "summary" && aiEnabled && (
+          <div className="mb-6">
+            <AiReport />
+          </div>
+        )}
         {tab === "summary" && (
           <CategoryList
             categories={summary.categories}
@@ -109,12 +120,18 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
           />
         )}
         {tab === "map" && <Treemap root={summary.root} />}
+        {tab === "largest" && aiEnabled && (
+          <div className="mb-6">
+            <AiSearch onTrash={setTrashing} />
+          </div>
+        )}
         {tab === "largest" && (
-          <LargestList key={category ?? "all"} initialCategory={category} onTrash={setTrashing} removed={removed} onCopied={() => setNotice(t("scan.copied"))} />
+          <LargestList key={category ?? "all"} initialCategory={category} onTrash={setTrashing} removed={removed} onCopied={() => setNotice(t("scan.copied"))} onWhatIs={aiEnabled ? setWhatIs : undefined} />
         )}
       </div>
 
       {trashing && <TrashDialog paths={trashing} onClose={onTrashClosed} />}
+      {whatIs && <WhatIsDialog path={whatIs} onClose={() => setWhatIs(null)} />}
     </div>
   );
 }
