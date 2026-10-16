@@ -1,0 +1,14 @@
+[rule]
+id = "macos-mail-downloads"
+name = { id = "Lampiran Mail yang pernah dibuka", en = "Opened Mail attachments" }
+description = { id = "Salinan lampiran yang dibuat saat kamu membuka lampiran di Mail. Lampiran aslinya tetap ada di email.", en = "Copies made when you open attachments in Mail. The originals stay in the email." }
+risk = "yellow"
+profile = "general"
+group = "mail"
+
+[[match]]
+path = "~/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"
+kind = "dir_contents"
+[[match]]
+path = "~/Library/Mail Downloads"
+kind = "dir_contents"

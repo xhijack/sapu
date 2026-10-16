@@ -1,0 +1,12 @@
+[rule]
+id = "windows-old-screenshots"
+name = { id = "Screenshot lama", en = "Old screenshots" }
+description = { id = "Tangkapan layar di Pictures\\Screenshots yang lebih tua dari 30 hari.", en = "Screenshots in Pictures\\Screenshots older than 30 days." }
+risk = "yellow"
+profile = "general"
+group = "screenshots"
+
+[[match]]
+path = "${USERPROFILE}/Pictures/Screenshots/*.png"
+kind = "files"
+min_age_days = 30

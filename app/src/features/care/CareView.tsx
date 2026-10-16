@@ -25,7 +25,7 @@ function scoreText(t: (k: string) => string, score: number) {
 }
 
 /** Smart Care: scan + evaluate in one click, then a score and the safest next steps. */
-export function CareView({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen) => void; autoStart?: number }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const errorMessage = useErrorMessage();
@@ -68,6 +68,14 @@ export function CareView({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       .then(() => setPhase({ kind: "running" }))
       .catch((e) => setError(errorMessage(e)));
   };
+
+  // Kicked from the tray's "Rawat sekarang".
+  useEffect(() => {
+    if (autoStart === 0) return;
+    const id = setTimeout(start, 0);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const cleanSafe = async (report: CareReport) => {
     setBusy(true);

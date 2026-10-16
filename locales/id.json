@@ -180,7 +180,9 @@
     "saved": "Tersimpan",
     "rerun_onboarding": "Buka panduan awal lagi",
     "notify": "Notifikasi saat operasi panjang selesai",
-    "notify_hint": "Berguna kalau kamu meninggalkan aplikasi saat memindai."
+    "notify_hint": "Berguna kalau kamu meninggalkan aplikasi saat memindai.",
+    "tray": "Monitor di menu bar",
+    "tray_hint": "Ikon kecil dengan ruang disk, memori, CPU, dan pintasan Rawat. Berlaku setelah Sapu dibuka ulang."
   },
   "errors": {
     "protected": "Lokasi ini dilindungi.",
@@ -372,7 +374,10 @@
     "days_other": "{{count}} hari",
     "months_one": "{{count}} bulan",
     "months_other": "{{count}} bulan",
-    "outcome_project": "Proyek {{name}}"
+    "outcome_project": "Proyek {{name}}",
+    "group_mail": "Mail",
+    "group_screenshots": "Screenshot",
+    "group_backups": "Backup perangkat"
   },
   "dedupe": {
     "title": "Duplikat",

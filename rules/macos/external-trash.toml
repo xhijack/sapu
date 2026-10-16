@@ -1,0 +1,12 @@
+[rule]
+id = "macos-external-trash"
+name = { id = "Trash di disk eksternal", en = "Trash on external disks" }
+description = { id = "File yang dibuang dari disk eksternal tetap memakai ruang di disk itu sampai dikosongkan. Setelah ini tidak bisa dipulihkan.", en = "Files trashed from external disks keep using space there until emptied. After this they cannot be restored." }
+risk = "yellow"
+profile = "general"
+group = "trash"
+permanent = true
+
+[[match]]
+path = "/Volumes/*/.Trashes/*"
+kind = "dir_contents"

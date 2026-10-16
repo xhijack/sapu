@@ -180,7 +180,9 @@
     "saved": "Saved",
     "rerun_onboarding": "Open the welcome guide again",
     "notify": "Notify when a long operation finishes",
-    "notify_hint": "Useful when you leave the app while it scans."
+    "notify_hint": "Useful when you leave the app while it scans.",
+    "tray": "Menu bar monitor",
+    "tray_hint": "A small icon with disk space, memory, CPU and a Care shortcut. Takes effect after Sapu restarts."
   },
   "errors": {
     "protected": "This location is protected.",
@@ -372,7 +374,10 @@
     "days_other": "{{count}} days",
     "months_one": "{{count}} month",
     "months_other": "{{count}} months",
-    "outcome_project": "Project {{name}}"
+    "outcome_project": "Project {{name}}",
+    "group_mail": "Mail",
+    "group_screenshots": "Screenshots",
+    "group_backups": "Device backups"
   },
   "dedupe": {
     "title": "Duplicates",

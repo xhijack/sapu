@@ -11,6 +11,7 @@ export interface Settings {
   ai_mode: AiMode;
   theme: Theme;
   notify_when_done: boolean;
+  menu_bar_monitor: boolean;
 }
 
 export type DiskAccess = "not_applicable" | "granted" | "denied" | "unknown";

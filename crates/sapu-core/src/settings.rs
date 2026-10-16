@@ -32,6 +32,8 @@ pub struct Settings {
     pub theme: Theme,
     /// System notification when a long scan/clean/dedupe finishes.
     pub notify_when_done: bool,
+    /// Menu bar / tray monitor with disk, memory and CPU (needs restart).
+    pub menu_bar_monitor: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
@@ -52,6 +54,7 @@ impl Default for Settings {
             ai_mode: AiMode::Off,
             theme: Theme::System,
             notify_when_done: true,
+            menu_bar_monitor: true,
         }
     }
 }
@@ -108,6 +111,7 @@ mod tests {
             ai_mode: AiMode::Local,
             theme: Theme::Dark,
             notify_when_done: false,
+            menu_bar_monitor: false,
         };
         s.save(&p).expect("save");
         assert_eq!(Settings::load(&p).expect("load"), s);

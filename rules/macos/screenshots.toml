@@ -1,0 +1,20 @@
+[rule]
+id = "macos-old-screenshots"
+name = { id = "Screenshot lama di Desktop", en = "Old screenshots on the Desktop" }
+description = { id = "Tangkapan layar dan rekaman layar di Desktop yang lebih tua dari 30 hari.", en = "Screenshots and screen recordings on the Desktop older than 30 days." }
+risk = "yellow"
+profile = "general"
+group = "screenshots"
+
+[[match]]
+path = "~/Desktop/Screenshot*.png"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Desktop/Screen Shot*.png"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Desktop/Screen Recording*.mov"
+kind = "files"
+min_age_days = 30

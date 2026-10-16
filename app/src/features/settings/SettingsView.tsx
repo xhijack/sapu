@@ -90,6 +90,13 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
             <span className="block text-fg-muted">{t("settings.notify_hint")}</span>
           </span>
         </label>
+        <label className="flex items-start gap-3 text-sm">
+          <input type="checkbox" checked={settings.menu_bar_monitor} onChange={(e) => onChange({ ...settings, menu_bar_monitor: e.target.checked })} className="mt-0.5 h-4 w-4" />
+          <span>
+            <span className="block font-medium">{t("settings.tray")}</span>
+            <span className="block text-fg-muted">{t("settings.tray_hint")}</span>
+          </span>
+        </label>
         <div>
           <Button variant="outline" size="sm" onClick={onRerunOnboarding}>
             {t("settings.rerun_onboarding")}

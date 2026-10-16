@@ -17,6 +17,7 @@ mod clean;
 mod dedupe;
 mod scan;
 mod support;
+mod tray;
 
 /// Errors cross the IPC boundary as a stable code plus a message; the
 /// frontend maps the code to a translated string.
@@ -239,6 +240,13 @@ pub fn run() {
                 }
                 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
                 let _ = window;
+            }
+            let tray_enabled = Settings::default_path()
+                .and_then(|p| Settings::load(&p))
+                .map(|s| s.menu_bar_monitor)
+                .unwrap_or(true);
+            if tray_enabled && let Err(e) = tray::install(app.handle()) {
+                tracing::warn!(error = %e, "tray unavailable");
             }
             Ok(())
         })

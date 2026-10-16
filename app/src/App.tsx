@@ -12,7 +12,7 @@ import { CleanView } from "@/features/clean/CleanView";
 import { DedupeView } from "@/features/dedupe/DedupeView";
 import { HistoryView } from "@/features/history/HistoryView";
 import { SettingsView } from "@/features/settings/SettingsView";
-import { api } from "@/lib/api";
+import { api, isTauri } from "@/lib/api";
 import { resolveLocale } from "@/i18n";
 import type { Settings } from "@/lib/types";
 
@@ -59,6 +59,22 @@ export default function App() {
     void fetchSettings();
   }, [fetchSettings]);
 
+  // Tray shortcut: bring Care up and start it.
+  const [careKick, setCareKick] = useState(0);
+  useEffect(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | null = null;
+    void import("@tauri-apps/api/event").then(({ listen }) =>
+      listen("tray://care", () => {
+        navigate("care");
+        setCareKick((k) => k + 1);
+      }).then((u) => {
+        unlisten = u;
+      }),
+    );
+    return () => unlisten?.();
+  }, []);
+
   useEffect(() => {
     if (!settings) return;
     const locale = resolveLocale(settings.locale);
@@ -92,7 +108,7 @@ export default function App() {
         <HomeView onNavigate={navigate} onScanNow={() => navigate("care")} />
       </Pane>
       <Pane active={screen === "care"} mounted={visited.has("care")}>
-        <CareView onNavigate={navigate} />
+        <CareView onNavigate={navigate} autoStart={careKick} />
       </Pane>
       <Pane active={screen === "scan"} mounted={visited.has("scan")}>
         <ScanView profile={settings.profile} onNavigate={(s) => navigate(s)} />

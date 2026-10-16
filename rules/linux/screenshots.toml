@@ -1,0 +1,16 @@
+[rule]
+id = "linux-old-screenshots"
+name = { id = "Screenshot lama", en = "Old screenshots" }
+description = { id = "Tangkapan layar di folder Gambar yang lebih tua dari 30 hari.", en = "Screenshots in Pictures older than 30 days." }
+risk = "yellow"
+profile = "general"
+group = "screenshots"
+
+[[match]]
+path = "~/Pictures/Screenshot*.png"
+kind = "files"
+min_age_days = 30
+[[match]]
+path = "~/Pictures/Screenshots/*.png"
+kind = "files"
+min_age_days = 30

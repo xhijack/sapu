@@ -32,6 +32,7 @@ export const defaultSettings: Settings = {
   ai_mode: "off",
   theme: "system",
   notify_when_done: true,
+  menu_bar_monitor: true,
 };
 
 /** Mock state, exported for tests. */

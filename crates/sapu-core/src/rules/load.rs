@@ -324,6 +324,11 @@ mod per_rule_tests {
                 let Some(base) = env.expand(&concrete) else {
                     continue;
                 };
+                if !base.starts_with(tmp.path()) {
+                    // Absolute system locations (e.g. /Volumes/*) cannot be
+                    // faked here; the protected-path test still covers them.
+                    continue;
+                }
                 match m.kind {
                     MatchKind::DirContents => {
                         for n in ["a.bin", "sub/b.bin"] {

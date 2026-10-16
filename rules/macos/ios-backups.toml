@@ -1,0 +1,12 @@
+[rule]
+id = "macos-ios-backups"
+name = { id = "Backup iPhone/iPad lama", en = "Old iPhone/iPad backups" }
+description = { id = "Backup perangkat iOS yang disimpan Finder. Sering berukuran puluhan GB. Pastikan perangkatnya sudah di-backup ke iCloud atau backup baru.", en = "iOS device backups kept by Finder, often tens of GB. Make sure the device is backed up to iCloud or a newer backup exists." }
+risk = "yellow"
+profile = "general"
+group = "backups"
+
+[[match]]
+path = "~/Library/Application Support/MobileSync/Backup"
+kind = "dir_contents"
+min_age_days = 90
