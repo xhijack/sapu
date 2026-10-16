@@ -161,6 +161,11 @@ impl Estimator {
         eta
     }
 
+    /// Smoothed remaining time before human rounding; for metrics and tests.
+    pub fn remaining(&self) -> Option<Duration> {
+        self.smoothed.map(|s| Duration::from_secs_f64(s.max(0.0)))
+    }
+
     fn moving_rate(&self) -> Option<f64> {
         let first = self.samples.first()?;
         let last = self.samples.last()?;
@@ -275,6 +280,53 @@ mod tests {
             bytes_total: Some(10_000),
         };
         assert_eq!(e.fraction(&done), 1.0);
+    }
+
+    /// PRD §10.1 acceptance: for a scan with a known total (second scan),
+    /// the ETA at the 50 % mark is within ±30 % of the real remaining time,
+    /// even when throughput varies moderately along the way.
+    #[test]
+    fn eta_at_half_is_within_thirty_percent() {
+        let total_bytes = 10_000_000u64;
+        let total_secs = 200u64;
+        // Throughput wobbles ±25 % with a slow period; real remaining at t=100 is 100 s.
+        let rate = |t: u64| -> f64 {
+            let base = total_bytes as f64 / total_secs as f64;
+            if (60..80).contains(&t) {
+                base * 0.75
+            } else if (80..100).contains(&t) {
+                base * 1.25
+            } else {
+                base
+            }
+        };
+        let mut e = Estimator::default();
+        let mut done = 0.0;
+        let mut eta_at_half = None;
+        for t in 0..=total_secs {
+            let ev = ProgressEvent {
+                items_done: 0,
+                items_total: None,
+                bytes_done: done as u64,
+                bytes_total: Some(total_bytes),
+            };
+            e.observe(&ev, s(t));
+            let shown = e.eta(&ev, s(t));
+            if t == total_secs / 2 {
+                assert!(
+                    matches!(shown, Eta::About(_)),
+                    "a number is shown at 50 %, got {shown:?}"
+                );
+                eta_at_half = e.remaining();
+            }
+            done += rate(t);
+        }
+        let real = 100.0;
+        let got = eta_at_half.expect("eta").as_secs_f64();
+        assert!(
+            (got - real).abs() / real <= 0.30,
+            "eta {got}s vs real {real}s"
+        );
     }
 
     /// Locks the IPC shape the frontend relies on.

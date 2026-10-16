@@ -15,6 +15,7 @@ export function WhatIsDialog({ path, onClose }: { path: string; onClose: () => v
   const [preview, setPreview] = useState<AiPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     ref.current?.showModal();
@@ -40,6 +41,18 @@ export function WhatIsDialog({ path, onClose }: { path: string; onClose: () => v
       setSaved(true);
     } catch (e) {
       setError(errorMessage(e));
+    }
+  };
+
+  const copyToml = async () => {
+    if (!answer) return;
+    const esc = (x: string) => x.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const toml = `[rule]\nid = "community-rule"\nname = { id = "${esc(answer.summary)}", en = "${esc(answer.summary)}" }\ndescription = { id = "${esc(answer.consequence)}", en = "${esc(answer.consequence)}" }\nrisk = "yellow"\nprofile = "general"\ngroup = "user"\n\n[[match]]\npath = "${esc(path)}"\nkind = "dir_contents"\n`;
+    try {
+      await navigator.clipboard.writeText(toml);
+      setCopied(true);
+    } catch {
+      /* clipboard unavailable */
     }
   };
 
@@ -74,7 +87,19 @@ export function WhatIsDialog({ path, onClose }: { path: string; onClose: () => v
             <span className="text-xs text-fg-muted">{t("ai.save_rule_hint")}</span>
           </div>
         )}
-        {saved && <p role="status" className="text-sm text-risk-safe-fg">{t("ai.rule_saved")}</p>}
+        {saved && (
+          <div className="grid gap-1">
+            <p role="status" className="text-sm text-risk-safe-fg">
+              {t("ai.rule_saved")}
+            </p>
+            <div>
+              <Button variant="ghost" size="sm" onClick={() => void copyToml()}>
+                {t("ai.copy_rule")}
+              </Button>
+            </div>
+            {copied && <p className="text-xs text-fg-muted">{t("ai.copied_rule")}</p>}
+          </div>
+        )}
         <div className="flex justify-end">
           <Button variant="secondary" onClick={() => ref.current?.close()}>
             {t("common.done")}

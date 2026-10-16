@@ -89,6 +89,7 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
       return { restored: [], not_found_in_trash: [] } as T;
     case "open_disk_access_settings":
     case "reveal_app_binary":
+    case "relaunch_as_admin":
       return undefined as T;
     case "system_snapshot":
       return mock.system as T;
@@ -117,6 +118,7 @@ export const api = {
   historyRestore: (id: string) => invoke<RestoreReport>("history_restore", { id }),
   openDiskAccessSettings: () => invoke<void>("open_disk_access_settings"),
   revealAppBinary: () => invoke<void>("reveal_app_binary"),
+  relaunchAsAdmin: () => invoke<void>("relaunch_as_admin"),
   systemSnapshot: () => invoke<SystemSnapshot>("system_snapshot"),
   estimateDuration: (kind: OpKind, amount: number) => invoke<number | null>("estimate_duration", { kind, amount: Math.round(amount) }),
 };

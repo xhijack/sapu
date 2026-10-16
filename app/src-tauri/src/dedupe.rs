@@ -128,6 +128,23 @@ pub fn dedupe_start(
     Ok(())
 }
 
+/// Folders a lay user thinks of as "the real place": Documents, Pictures,
+/// Desktop, Movies, Music. Used by the "keep the copy in my main folder"
+/// strategy.
+#[tauri::command]
+pub fn dedupe_primary_folders() -> Vec<PathBuf> {
+    [
+        dirs::document_dir(),
+        dirs::picture_dir(),
+        dirs::desktop_dir(),
+        dirs::video_dir(),
+        dirs::audio_dir(),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
 #[tauri::command]
 pub fn dedupe_cancel(session: State<'_, Arc<DedupeSession>>) {
     if let Ok(c) = session.control.lock()
@@ -207,8 +224,17 @@ pub fn dedupe_execute(
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FilePreview {
-    Image { data_url: String },
-    Text { excerpt: String },
+    Image {
+        data_url: String,
+    },
+    Text {
+        excerpt: String,
+    },
+    /// Office/PDF documents: metadata only, never contents.
+    Document {
+        doc_kind: String,
+        pages: Option<u32>,
+    },
     None,
 }
 
@@ -246,6 +272,33 @@ pub fn file_preview(path: PathBuf) -> FilePreview {
             Err(_) => FilePreview::None,
         };
     }
+    if ext == "pdf" {
+        return FilePreview::Document {
+            doc_kind: "pdf".into(),
+            pages: pdf_page_count(&path),
+        };
+    }
+    if matches!(
+        ext.as_str(),
+        "doc"
+            | "docx"
+            | "xls"
+            | "xlsx"
+            | "ppt"
+            | "pptx"
+            | "odt"
+            | "ods"
+            | "odp"
+            | "pages"
+            | "numbers"
+            | "key"
+            | "epub"
+    ) {
+        return FilePreview::Document {
+            doc_kind: ext.clone(),
+            pages: None,
+        };
+    }
     if matches!(
         ext.as_str(),
         "txt" | "md" | "csv" | "json" | "log" | "xml" | "html" | "rtf"
@@ -260,6 +313,40 @@ pub fn file_preview(path: PathBuf) -> FilePreview {
         }
     }
     FilePreview::None
+}
+
+/// Reads the page count from the PDF catalog (`/Type /Pages ... /Count N`)
+/// by scanning the first and last 512 KB; best effort, no rendering.
+fn pdf_page_count(path: &std::path::Path) -> Option<u32> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut f = std::fs::File::open(path).ok()?;
+    let len = f.metadata().ok()?.len();
+    let window = 512 * 1024;
+    let mut buf = Vec::with_capacity((window * 2) as usize);
+    let mut head = vec![0u8; window.min(len) as usize];
+    f.read_exact(&mut head).ok()?;
+    buf.extend_from_slice(&head);
+    if len > window {
+        f.seek(SeekFrom::End(-(window as i64))).ok()?;
+        let mut tail = vec![0u8; window as usize];
+        let n = f.read(&mut tail).ok()?;
+        buf.extend_from_slice(&tail[..n]);
+    }
+    let text = String::from_utf8_lossy(&buf);
+    // Prefer /Count that follows a /Type /Pages object; fall back to the largest /Count.
+    let mut best: Option<u32> = None;
+    for (i, _) in text.match_indices("/Count") {
+        let rest = &text[i + 6..];
+        let num: String = rest
+            .trim_start()
+            .chars()
+            .take_while(|c| c.is_ascii_digit())
+            .collect();
+        if let Ok(n) = num.parse::<u32>() {
+            best = Some(best.map_or(n, |b| b.max(n)));
+        }
+    }
+    best
 }
 
 fn base64(bytes: &[u8]) -> String {
@@ -290,7 +377,15 @@ fn base64(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::base64;
+    use super::{base64, pdf_page_count};
+
+    #[test]
+    fn pdf_page_count_from_catalog() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let p = tmp.path().join("a.pdf");
+        std::fs::write(&p, b"%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 12 >> endobj\n%%EOF").expect("write");
+        assert_eq!(pdf_page_count(&p), Some(12));
+    }
 
     #[test]
     fn base64_matches_known_vectors() {

@@ -99,3 +99,19 @@ describe("DedupeView P1", () => {
     expect(within(dialog).queryByRole("checkbox")).toBeNull();
   });
 });
+
+describe("keep in main folders", () => {
+  it("prefers the copy inside a primary folder", async () => {
+    const user = userEvent.setup();
+    render(<DedupeView onSeeHistory={vi.fn()} />);
+    await user.click(await screen.findByRole("button", { name: "Cari duplikat" }));
+    await screen.findByText(/bisa dibebaskan/, {}, { timeout: 3000 });
+    await user.selectOptions(screen.getByRole("combobox"), "in_folder");
+    // group 1: Pictures/liburan (primary) vs Downloads vs Desktop (primary, but Pictures listed first)
+    expect(screen.getByRole("radio", { name: /Pictures\/liburan\/IMG_2041.jpg/ })).toBeChecked();
+    // group 2: Documents (primary) vs Downloads
+    expect(screen.getByRole("radio", { name: /Documents\/skripsi-final.pdf/ })).toBeChecked();
+    expect(screen.getAllByText("Dokumen PDF").length).toBe(2);
+    expect(screen.getAllByText("148 halaman").length).toBe(2);
+  });
+});

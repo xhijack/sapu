@@ -30,6 +30,7 @@ export const dedupeApi = {
   execute: (strategy: KeepStrategy, keeps: Record<number, string>, groupIds: number[], apply: boolean, hardlink = false) =>
     invoke<DedupeRunReport>("dedupe_execute", { strategy, keeps, groupIds, apply, hardlink }),
   preview: (path: string) => invoke<FilePreview>("file_preview", { path }),
+  primaryFolders: () => invoke<string[]>("dedupe_primary_folders"),
   onProgress: (cb: (p: DedupeProgressPayload) => void) => listen<DedupeProgressPayload>("dedupe://progress", cb),
   onDone: (cb: (s: DedupeSummary) => void) => listen<DedupeSummary>("dedupe://done", cb),
   onError: (cb: (e: { code: string; message: string }) => void) => listen("dedupe://error", cb),
@@ -143,10 +144,14 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         failed: 0,
       } as T;
     }
+    case "dedupe_primary_folders":
+      return ["/Users/you/Documents", "/Users/you/Pictures", "/Users/you/Desktop"] as T;
     case "file_preview":
       return (String(args?.path).endsWith(".jpg")
         ? { kind: "image", data_url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90'><rect width='120' height='90' fill='%23355c9e'/></svg>" }
-        : { kind: "none" }) as T;
+        : String(args?.path).endsWith(".pdf")
+          ? { kind: "document", doc_kind: "pdf", pages: 148 }
+          : { kind: "none" }) as T;
     default:
       throw { code: "unknown_command", message: cmd };
   }

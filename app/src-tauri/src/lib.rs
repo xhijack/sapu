@@ -129,6 +129,35 @@ fn reveal_app_binary(app: tauri::AppHandle) -> CmdResult<()> {
         .map_err(|e| CommandError::new("opener", e.to_string()))
 }
 
+/// Windows: start a second, elevated instance of Sapu and quit this one.
+/// A no-op elsewhere.
+#[tauri::command]
+fn relaunch_as_admin(app: tauri::AppHandle) -> CmdResult<()> {
+    #[cfg(target_os = "windows")]
+    {
+        let exe = std::env::current_exe().map_err(|e| CommandError::new("io", e.to_string()))?;
+        std::process::Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "Start-Process",
+                "-Verb",
+                "RunAs",
+                "-FilePath",
+            ])
+            .arg(format!("'{}'", exe.display()))
+            .spawn()
+            .map_err(|e| CommandError::new("io", e.to_string()))?;
+        app.exit(0);
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app;
+        Ok(())
+    }
+}
+
 /// Opens the OS privacy settings where Full Disk Access is granted.
 #[tauri::command]
 fn open_disk_access_settings(app: tauri::AppHandle) -> CmdResult<()> {
@@ -202,6 +231,8 @@ pub fn run() {
             ai::ai_report,
             ai::ai_save_rule,
             reveal_app_binary,
+            relaunch_as_admin,
+            dedupe::dedupe_primary_folders,
             disk_access_status,
             settings_get,
             settings_set,

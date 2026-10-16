@@ -370,7 +370,7 @@ export interface DedupeRunReport {
   failed: number;
 }
 
-export type FilePreview = { kind: "image"; data_url: string } | { kind: "text"; excerpt: string } | { kind: "none" };
+export type FilePreview = { kind: "image"; data_url: string } | { kind: "text"; excerpt: string } | { kind: "document"; doc_kind: string; pages: number | null } | { kind: "none" };
 
 // ---- System (home dashboard) ----
 

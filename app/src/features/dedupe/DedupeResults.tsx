@@ -25,6 +25,7 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
   const [pairs, setPairs] = useState<FolderPair[]>([]);
   const [strategy, setStrategy] = useState<StrategyKey>("original_name");
   const [picks, setPicks] = useState<Record<number, string>>({});
+  const [folders, setFolders] = useState<string[]>([]);
   const [preview, setPreview] = useState(false);
   const [result, setResult] = useState<DedupeRunReport | null>(null);
 
@@ -40,10 +41,11 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
   useEffect(() => {
     void loadMore(0);
     dedupeApi.folderPairs(10).then(setPairs).catch(() => undefined);
+    dedupeApi.primaryFolders().then(setFolders).catch(() => undefined);
   }, [loadMore, summary.root]);
 
-  const keepFor = useCallback((g: DuplicateGroup) => picks[g.id] ?? defaultKeep(g, strategy), [picks, strategy]);
-  const strategyValue: KeepStrategy = useMemo(() => ({ kind: strategy }), [strategy]);
+  const keepFor = useCallback((g: DuplicateGroup) => picks[g.id] ?? defaultKeep(g, strategy, folders), [picks, strategy, folders]);
+  const strategyValue: KeepStrategy = useMemo(() => (strategy === "in_folder" ? { kind: "in_folder", folders } : { kind: strategy }), [strategy, folders]);
 
   if (result) {
     return (
@@ -135,7 +137,9 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
               <option value="original_name">{t("dedupe.strategy_original")}</option>
               <option value="oldest">{t("dedupe.strategy_oldest")}</option>
               <option value="newest">{t("dedupe.strategy_newest")}</option>
+              <option value="in_folder">{t("dedupe.strategy_folder")}</option>
             </select>
+            {strategy === "in_folder" && <span className="text-xs text-fg-muted">{t("dedupe.strategy_folder_hint")}</span>}
           </label>
         </div>
         <ul className="grid gap-4">

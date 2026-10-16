@@ -54,6 +54,14 @@ function Preview({ path }: { path: string }) {
     };
   }, [path]);
   if (p?.kind === "image") return <img src={p.data_url} alt="" className="h-28 w-full rounded-md bg-surface-muted object-cover" />;
+  if (p?.kind === "document")
+    return (
+      <div className="flex h-28 flex-col items-center justify-center gap-1 rounded-md bg-surface-muted text-xs text-fg-muted">
+        <FileText aria-hidden className="h-6 w-6" />
+        <span>{t("dedupe.doc_preview", { kind: p.doc_kind.toUpperCase() })}</span>
+        {p.pages != null && <span>{t("dedupe.doc_pages", { count: p.pages })}</span>}
+      </div>
+    );
   if (p?.kind === "text")
     return (
       <pre className="h-28 overflow-hidden rounded-md bg-surface-muted p-2 text-[10px] leading-tight text-fg-muted">

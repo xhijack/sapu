@@ -78,6 +78,16 @@ export function AccessStep({ info }: { info: AppInfo | null }) {
     <>
       <CardTitle>{t("onboarding.access_title")}</CardTitle>
       <CardText>{t(`onboarding.${bodyKey}`)}</CardText>
+      {os === "windows" && (
+        <div className="grid gap-1">
+          <div>
+            <Button variant="outline" onClick={() => void api.relaunchAsAdmin()}>
+              {t("onboarding.access_run_admin")}
+            </Button>
+          </div>
+          <span className="text-xs text-fg-muted">{t("onboarding.access_run_admin_hint")}</span>
+        </div>
+      )}
       {os === "macos" && (
         <div className="grid gap-3">
           <Button variant="outline" onClick={() => void api.openDiskAccessSettings()}>

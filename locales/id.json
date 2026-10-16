@@ -86,7 +86,9 @@
     "language_title": "Bahasa / Language",
     "language_body": "Pilih bahasa tampilan. Bisa diubah kapan saja di Pengaturan.",
     "access_reveal_app": "Tampilkan lokasi aplikasi",
-    "access_dev_note": "Versi pengembangan berjalan sebagai program biasa, jadi perlu ditambahkan manual lewat tombol +."
+    "access_dev_note": "Versi pengembangan berjalan sebagai program biasa, jadi perlu ditambahkan manual lewat tombol +.",
+    "access_run_admin": "Jalankan sebagai administrator",
+    "access_run_admin_hint": "Aplikasi dibuka ulang dengan hak admin. Tidak wajib."
   },
   "home": {
     "title": "Beranda",
@@ -355,7 +357,11 @@
     "hardlink_hint": "Path tetap ada dan menunjuk ke file yang disimpan. Ruang tetap bebas. Hanya di disk yang sama.",
     "linked": "{{count}} hardlink dibuat",
     "link_failed": "{{count}} hardlink gagal (beda disk)",
-    "estimate_line": "Diperkirakan sekitar {{time}}"
+    "estimate_line": "Diperkirakan sekitar {{time}}",
+    "strategy_folder": "Yang ada di folder utama",
+    "strategy_folder_hint": "Dokumen, Gambar, Desktop, Film, Musik",
+    "doc_preview": "Dokumen {{kind}}",
+    "doc_pages": "{{count}} halaman"
   },
   "ai": {
     "label": "Saran AI",
@@ -407,6 +413,8 @@
     "anonymize": "Samarkan nama pengguna dan folder beranda",
     "test": "Uji koneksi",
     "test_ok": "Terhubung, model {{model}} menjawab.",
-    "saved": "Pengaturan AI tersimpan"
+    "saved": "Pengaturan AI tersimpan",
+    "copy_rule": "Salin aturan TOML",
+    "copied_rule": "Aturan disalin. Lihat CONTRIBUTING.md untuk mengajukannya ke komunitas."
   }
 }

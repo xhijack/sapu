@@ -86,7 +86,9 @@
     "language_title": "Bahasa / Language",
     "language_body": "Choose the display language. You can change it any time in Settings.",
     "access_reveal_app": "Show app location",
-    "access_dev_note": "The development build runs as a plain program, so it has to be added manually with the + button."
+    "access_dev_note": "The development build runs as a plain program, so it has to be added manually with the + button.",
+    "access_run_admin": "Run as administrator",
+    "access_run_admin_hint": "The app reopens with admin rights. Optional."
   },
   "home": {
     "title": "Home",
@@ -355,7 +357,11 @@
     "hardlink_hint": "The path stays and points to the kept file. Space is still freed. Same disk only.",
     "linked": "{{count}} hardlinks created",
     "link_failed": "{{count}} hardlinks failed (different disk)",
-    "estimate_line": "Estimated about {{time}}"
+    "estimate_line": "Estimated about {{time}}",
+    "strategy_folder": "The one in my main folders",
+    "strategy_folder_hint": "Documents, Pictures, Desktop, Movies, Music",
+    "doc_preview": "{{kind}} document",
+    "doc_pages": "{{count}} pages"
   },
   "ai": {
     "label": "AI suggestion",
@@ -407,6 +413,8 @@
     "anonymize": "Hide the account name and home folder",
     "test": "Test connection",
     "test_ok": "Connected, model {{model}} answered.",
-    "saved": "AI settings saved"
+    "saved": "AI settings saved",
+    "copy_rule": "Copy TOML rule",
+    "copied_rule": "Rule copied. See CONTRIBUTING.md to propose it to the community."
   }
 }
