@@ -13,7 +13,7 @@ describe("ProgressPanel", () => {
           bytes_done: 0,
           bytes_total: null,
           elapsed_secs: 65,
-          eta: { kind: "about", "0": { secs: 120, nanos: 0 } },
+          eta: { kind: "about", secs: 120, nanos: 0 },
           stage: { current: 2, total: 3, label: "membandingkan isi file" },
         }}
       />,

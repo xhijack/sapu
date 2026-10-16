@@ -36,7 +36,7 @@ export function Wizard({ settings, onFinish }: Props) {
   return (
     <div className="flex h-full items-center justify-center bg-bg p-6">
       <Card className="flex w-full max-w-xl flex-col gap-5" aria-labelledby="wizard-step">
-        <p id="wizard-step" className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+        <p id="wizard-step" className="text-sm text-fg-muted">
           {t("progress.step_of", { current: step, total: TOTAL })}
         </p>
         {step === 1 && <WelcomeStep />}

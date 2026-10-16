@@ -15,11 +15,11 @@ describe("formatEta (PRD 10.1: human language, no false precision)", () => {
   const t = i18n.t.bind(i18n);
 
   it("never prints mm:ss", () => {
-    expect(formatEta(t, { kind: "about", "0": d(107) })).toBe("Sekitar 2 menit lagi");
+    expect(formatEta(t, { kind: "about", secs: 107, nanos: 0 })).toBe("Sekitar 2 menit lagi");
   });
 
   it("says less than a minute for short estimates", () => {
-    expect(formatEta(t, { kind: "about", "0": d(30) })).toBe("Kurang dari 1 menit lagi");
+    expect(formatEta(t, { kind: "about", secs: 30, nanos: 0 })).toBe("Kurang dari 1 menit lagi");
   });
 
   it("shows a range when uncertain", () => {

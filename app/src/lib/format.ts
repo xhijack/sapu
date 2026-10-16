@@ -36,9 +36,8 @@ export function formatEta(t: TFunction, eta: Eta): string {
         high: formatDuration(t, eta.high),
       });
     case "about": {
-      const d = eta["0"];
-      if (d.secs < 60) return t("progress.less_than_minute");
-      return t("progress.about", { time: formatDuration(t, d) });
+      if (eta.secs < 60) return t("progress.less_than_minute");
+      return t("progress.about", { time: formatDuration(t, eta.secs) });
     }
   }
 }

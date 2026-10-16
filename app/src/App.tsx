@@ -4,7 +4,7 @@ import { Shell, type Screen } from "@/components/Shell";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
-import { HomeView } from "@/features/home/HomeView";
+import { ScanView } from "@/features/scan/ScanView";
 import { HistoryView } from "@/features/history/HistoryView";
 import { SettingsView } from "@/features/settings/SettingsView";
 import { api } from "@/lib/api";
@@ -76,7 +76,7 @@ export default function App() {
 
   return (
     <Shell screen={screen} onNavigate={setScreen}>
-      {screen === "home" && <HomeView onRerunOnboarding={() => setShowWizard(true)} />}
+      {screen === "home" && <ScanView />}
       {screen === "history" && <HistoryView />}
       {screen === "settings" && (
         <SettingsView settings={settings} onChange={save} onRerunOnboarding={() => setShowWizard(true)} />

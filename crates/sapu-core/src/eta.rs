@@ -277,6 +277,29 @@ mod tests {
         assert_eq!(e.fraction(&done), 1.0);
     }
 
+    /// Locks the IPC shape the frontend relies on.
+    #[test]
+    fn json_shape_is_stable() {
+        let about = serde_json::to_value(Eta::About(s(120))).expect("json");
+        assert_eq!(
+            about,
+            serde_json::json!({"kind": "about", "secs": 120, "nanos": 0})
+        );
+        let range = serde_json::to_value(Eta::Range {
+            low: s(60),
+            high: s(120),
+        })
+        .expect("json");
+        assert_eq!(
+            range,
+            serde_json::json!({"kind": "range", "low": {"secs": 60, "nanos": 0}, "high": {"secs": 120, "nanos": 0}})
+        );
+        assert_eq!(
+            serde_json::to_value(Eta::Computing).expect("json"),
+            serde_json::json!({"kind": "computing"})
+        );
+    }
+
     #[test]
     fn rounding_has_no_false_precision() {
         assert_eq!(round_human(s(107)), s(120));

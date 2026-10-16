@@ -80,7 +80,7 @@ export type Eta =
   | { kind: "indeterminate" }
   | { kind: "computing" }
   | { kind: "range"; low: Duration; high: Duration }
-  | { kind: "about"; "0": Duration }
+  | { kind: "about"; secs: number; nanos: number }
   | { kind: "almost_done" };
 
 export interface ProgressState {
@@ -100,3 +100,99 @@ export interface CommandError {
 }
 
 export type RiskLevel = "safe" | "review" | "danger";
+
+// ---- Scan (Tahap 1) ----
+
+export type Category =
+  | "video"
+  | "photo"
+  | "document"
+  | "application"
+  | "system"
+  | "temporary"
+  | "development"
+  | "other";
+
+export const CATEGORIES: Category[] = [
+  "video",
+  "photo",
+  "document",
+  "application",
+  "system",
+  "temporary",
+  "development",
+  "other",
+];
+
+export interface CategorySummary {
+  category: Category;
+  bytes: number;
+  files: number;
+}
+
+export interface ScanSummary {
+  root: string;
+  started_at_unix: number;
+  finished_at_unix: number;
+  cancelled: boolean;
+  total_bytes: number;
+  file_count: number;
+  dir_count: number;
+  denied_count: number;
+  denied_sample: string[];
+  categories: CategorySummary[];
+}
+
+export interface FileEntry {
+  path: string;
+  size: number;
+  mtime: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+  category: Category;
+}
+
+export interface DirSummary {
+  path: string;
+  bytes: number;
+  files: number;
+}
+
+export interface TreeNode {
+  path: string;
+  name: string;
+  bytes: number;
+  files: number;
+  is_dir: boolean;
+  category: Category | null;
+  children: TreeNode[];
+}
+
+export type AgeFilter = "any" | "older_than_month" | "older_than_six_months" | "older_than_year";
+
+export interface FileFilter {
+  min_bytes: number;
+  category: Category | null;
+  age: AgeFilter;
+}
+
+export type ScanRunState = "running" | "paused" | "cancelled";
+
+export interface ScanStatus {
+  running: boolean;
+  state: ScanRunState | null;
+  has_result: boolean;
+}
+
+export interface ScanTargets {
+  home: string | null;
+  disk: string;
+}
+
+export interface ScanProgressPayload {
+  fraction: number | null;
+  items_done: number;
+  items_total: number | null;
+  bytes_done: number;
+  bytes_total: number | null;
+  elapsed_secs: number;
+  eta: Eta;
+}

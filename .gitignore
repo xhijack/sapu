@@ -9,3 +9,4 @@ dist/
 ruvector.db
 .claude/*
 !.claude/settings.json
+/.test-tmp/

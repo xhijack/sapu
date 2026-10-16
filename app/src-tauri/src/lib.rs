@@ -8,12 +8,23 @@ use sapu_core::safety::{
 use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
+mod scan;
+
 /// Errors cross the IPC boundary as a stable code plus a message; the
 /// frontend maps the code to a translated string.
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct CommandError {
     code: &'static str,
     message: String,
+}
+
+impl CommandError {
+    pub(crate) fn new(code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+        }
+    }
 }
 
 impl From<sapu_core::SapuError> for CommandError {
@@ -34,7 +45,7 @@ impl From<sapu_core::SapuError> for CommandError {
     }
 }
 
-type CmdResult<T> = Result<T, CommandError>;
+pub(crate) type CmdResult<T> = Result<T, CommandError>;
 
 #[derive(Debug, serde::Serialize)]
 pub struct AppInfo {
@@ -107,7 +118,22 @@ fn open_disk_access_settings(app: tauri::AppHandle) -> CmdResult<()> {
 pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .manage(std::sync::Arc::new(scan::ScanSession::default()))
         .invoke_handler(tauri::generate_handler![
+            scan::scan_targets,
+            scan::pick_folder,
+            scan::scan_start,
+            scan::scan_pause,
+            scan::scan_resume,
+            scan::scan_cancel,
+            scan::scan_status,
+            scan::scan_summary,
+            scan::scan_top_files,
+            scan::scan_top_dirs,
+            scan::scan_subtree,
+            scan::reveal_path,
+            scan::trash_paths,
             app_info,
             disk_access_status,
             settings_get,

@@ -1,6 +1,8 @@
 //! `sapu` command line interface: a thin layer over `sapu-core`.
 //! Dry-run by default; `--apply` executes (S4).
 
+mod scan;
+
 use std::io::IsTerminal;
 use std::path::PathBuf;
 
@@ -27,6 +29,8 @@ enum Command {
     History(HistoryArgs),
     /// Move files to the trash (dry-run unless --apply).
     Trash(TrashArgs),
+    /// Scan a folder and report what takes up space.
+    Scan(scan::ScanArgs),
 }
 
 #[derive(Args)]
@@ -74,6 +78,7 @@ fn main() -> anyhow::Result<()> {
         Command::Protected(f) => protected(f.json),
         Command::History(a) => history(a),
         Command::Trash(a) => trash(a),
+        Command::Scan(a) => scan::run(a),
     }
 }
 
@@ -231,7 +236,7 @@ fn print_session(s: &CleanSession) {
     );
 }
 
-fn human_bytes(n: u64) -> String {
+pub(crate) fn human_bytes(n: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
     let mut v = n as f64;
     let mut i = 0;

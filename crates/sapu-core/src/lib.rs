@@ -12,6 +12,7 @@ pub mod eta;
 pub mod platform;
 pub mod progress;
 pub mod safety;
+pub mod scanner;
 pub mod settings;
 
 pub use error::SapuError;
