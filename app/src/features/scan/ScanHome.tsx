@@ -62,7 +62,7 @@ export function ScanHome({ onStart, error }: Props) {
   return (
     <div className="grid max-w-2xl gap-8">
       <div>
-        <h1 className="text-2xl font-semibold">{t("scan.title")}</h1>
+        <h1 className="display text-2xl">{t("scan.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("scan.intro")}</p>
       </div>
       <div role="radiogroup" aria-label={t("scan.title")} className="grid divide-y divide-border card-solid">

@@ -93,7 +93,7 @@ export function DedupeView({ onSeeHistory, profile = "general" }: { onSeeHistory
   return (
     <div className="grid max-w-2xl gap-8">
       <div>
-        <h1 className="text-2xl font-semibold">{t("dedupe.title")}</h1>
+        <h1 className="display text-2xl">{t("dedupe.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("dedupe.intro")}</p>
       </div>
       <div className="grid gap-2">

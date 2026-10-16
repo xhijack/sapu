@@ -50,7 +50,7 @@ export function HistoryView() {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-bold">{t("history.title")}</h1>
+      <h1 className="display text-2xl">{t("history.title")}</h1>
       {notice && (
         <p role="status" className="rounded-lg bg-surface-muted px-3 py-2 text-sm">
           {notice}

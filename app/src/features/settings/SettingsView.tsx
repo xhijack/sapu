@@ -49,7 +49,7 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
 
   return (
     <div className="grid max-w-2xl gap-6">
-      <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
+      <h1 className="display text-2xl">{t("settings.title")}</h1>
       <Card className="grid gap-4">
         <Select<Profile>
           id="profile"

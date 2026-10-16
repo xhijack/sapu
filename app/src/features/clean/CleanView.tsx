@@ -87,7 +87,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   if (!evaluation) {
     return (
       <div className="grid gap-4">
-        <h1 className="text-2xl font-semibold">{t("clean.title")}</h1>
+        <h1 className="display text-2xl">{t("clean.title")}</h1>
         <p className="text-fg-muted">{t("clean.evaluating")}</p>
         <LoadingState />
       </div>
@@ -112,7 +112,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   return (
     <div className="grid max-w-3xl gap-8">
       <div>
-        <h1 className="text-2xl font-semibold">{t("clean.title")}</h1>
+        <h1 className="display text-2xl">{t("clean.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("clean.intro")}</p>
       </div>
 

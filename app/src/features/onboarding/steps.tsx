@@ -13,7 +13,7 @@ export function WelcomeStep({ locale, onLocale }: { locale: string | null; onLoc
   const current = locale ?? (i18n.language.startsWith("en") ? "en" : "id");
   return (
     <>
-      <CardTitle>{t("onboarding.language_title")}</CardTitle>
+      <CardTitle className="display text-[28px] leading-tight">{t("onboarding.language_title")}</CardTitle>
       <CardText>{t("onboarding.language_body")}</CardText>
       <div role="radiogroup" aria-label={t("onboarding.language_title")} className="grid grid-cols-2 gap-3">
         {(
@@ -28,7 +28,7 @@ export function WelcomeStep({ locale, onLocale }: { locale: string | null; onLoc
           </label>
         ))}
       </div>
-      <CardTitle className="mt-2">{t("onboarding.welcome_title")}</CardTitle>
+      <CardTitle className="display mt-2 text-xl">{t("onboarding.welcome_title")}</CardTitle>
       <CardText>{t("onboarding.welcome_body")}</CardText>
     </>
   );
@@ -39,7 +39,7 @@ export function ProfileStep({ info, value, onChange }: { info: AppInfo | null; v
   const tools = info?.dev_tools ?? [];
   return (
     <>
-      <CardTitle>{t("onboarding.profile_title")}</CardTitle>
+      <CardTitle className="display text-[28px] leading-tight">{t("onboarding.profile_title")}</CardTitle>
       <CardText>{t("onboarding.profile_body")}</CardText>
       {tools.length > 0 && (
         <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm">
@@ -76,7 +76,7 @@ export function AccessStep({ info }: { info: AppInfo | null }) {
   const bodyKey = os === "macos" ? "access_body_macos" : os === "windows" ? "access_body_windows" : "access_body_linux";
   return (
     <>
-      <CardTitle>{t("onboarding.access_title")}</CardTitle>
+      <CardTitle className="display text-[28px] leading-tight">{t("onboarding.access_title")}</CardTitle>
       <CardText>{t(`onboarding.${bodyKey}`)}</CardText>
       {os === "windows" && (
         <div className="grid gap-1">
@@ -139,8 +139,8 @@ export function SafetyStep() {
   ];
   return (
     <>
-      <CardTitle className="flex items-center gap-2">
-        <ShieldCheck aria-hidden className="h-5 w-5 text-risk-safe-fg" />
+      <CardTitle className="display flex items-center gap-2 text-[28px] leading-tight">
+        <ShieldCheck aria-hidden className="h-6 w-6 text-accent" />
         {t("onboarding.safety_title")}
       </CardTitle>
       <ul className="grid gap-3">
@@ -159,7 +159,7 @@ export function AiStep({ value, onChange }: { value: AiMode; onChange: (m: AiMod
   const { t } = useTranslation();
   return (
     <>
-      <CardTitle>{t("onboarding.ai_title")}</CardTitle>
+      <CardTitle className="display text-[28px] leading-tight">{t("onboarding.ai_title")}</CardTitle>
       <CardText>{t("onboarding.ai_body")}</CardText>
       <ChoiceGroup<AiMode>
         name={t("onboarding.ai_title")}
@@ -179,7 +179,7 @@ export function ScanStep() {
   const { t } = useTranslation();
   return (
     <>
-      <CardTitle>{t("onboarding.scan_title")}</CardTitle>
+      <CardTitle className="display text-[28px] leading-tight">{t("onboarding.scan_title")}</CardTitle>
       <CardText>{t("onboarding.scan_body")}</CardText>
       <p className="rounded-lg bg-surface-muted px-3 py-2 text-sm text-fg-muted">{t("onboarding.scan_unavailable")}</p>
     </>
