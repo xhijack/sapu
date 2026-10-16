@@ -76,21 +76,15 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
                     .or(snap.disks.first())
                 {
                     let used = main.total_bytes.saturating_sub(main.available_bytes);
-                    let pct = if main.total_bytes > 0 {
-                        used * 100 / main.total_bytes
-                    } else {
-                        0
-                    };
+                    let pct = (used * 100).checked_div(main.total_bytes).unwrap_or(0);
                     let _ = disk.set_text(format!(
                         "Disk: {} kosong ({pct}% terpakai)",
                         human(main.available_bytes)
                     ));
                 }
-                let mem_pct = if snap.mem_total_bytes > 0 {
-                    snap.mem_used_bytes * 100 / snap.mem_total_bytes
-                } else {
-                    0
-                };
+                let mem_pct = (snap.mem_used_bytes * 100)
+                    .checked_div(snap.mem_total_bytes)
+                    .unwrap_or(0);
                 let _ = mem.set_text(format!(
                     "Memori: {} dari {} ({mem_pct}%)",
                     human(snap.mem_used_bytes),
