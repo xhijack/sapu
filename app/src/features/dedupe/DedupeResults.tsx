@@ -105,7 +105,7 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
         <section className="grid gap-2">
           <h2 className="text-lg font-semibold">{t("dedupe.pairs_title")}</h2>
           <p className="text-sm text-fg-muted">{t("dedupe.pairs_body")}</p>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+          <ul className="divide-y divide-border card-solid">
             {pairs.map((p) => (
               <li key={`${p.a}|${p.b}`} className="grid gap-0.5 px-4 py-3 text-sm">
                 <span className="path truncate" title={p.a}>

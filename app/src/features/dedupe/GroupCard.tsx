@@ -16,7 +16,7 @@ interface Props {
 export function GroupCard({ group, keep, onKeep }: Props) {
   const { t, i18n } = useTranslation();
   return (
-    <section aria-label={group.files[0]?.path.split("/").pop()} className="grid gap-3 rounded-xl border border-border bg-surface p-4">
+    <section aria-label={group.files[0]?.path.split("/").pop()} className="grid gap-3 card-solid p-4">
       <p className="num text-sm text-fg-muted">{t("dedupe.copies", { count: group.files.length, size: formatBytes(group.size, i18n.language) })}</p>
       <div role="radiogroup" aria-label={t("dedupe.strategy")} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {group.files.map((f) => {

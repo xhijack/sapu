@@ -56,7 +56,7 @@ export function TrashDialog({ paths, onClose }: Props) {
       ref={ref}
       onClose={() => onClose(null)}
       aria-labelledby="trash-title"
-      className="m-auto w-full max-w-lg rounded-xl border border-border bg-surface p-0 text-fg shadow-xl backdrop:bg-black/40"
+      className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40"
     >
       <div className="grid gap-4 p-6">
         <h2 id="trash-title" className="flex items-center gap-2 text-lg font-semibold">

@@ -22,7 +22,7 @@ export function WelcomeStep({ locale, onLocale }: { locale: string | null; onLoc
             { v: "en", label: "English" },
           ] as const
         ).map(({ v, label }) => (
-          <label key={v} className={current === v ? "flex cursor-pointer items-center justify-center rounded-xl border border-accent bg-surface px-4 py-3 font-medium" : "flex cursor-pointer items-center justify-center rounded-xl border border-border bg-surface px-4 py-3 hover:bg-surface-muted"}>
+          <label key={v} className={current === v ? "flex cursor-pointer items-center justify-center rounded-xl border border-accent bg-surface px-4 py-3 font-medium" : "flex cursor-pointer items-center justify-center card-solid px-4 py-3 hover:bg-surface-muted"}>
             <input type="radio" name="language" value={v} checked={current === v} onChange={() => onLocale(v)} className="sr-only" />
             {label}
           </label>

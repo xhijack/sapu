@@ -65,7 +65,7 @@ export function ScanHome({ onStart, error }: Props) {
         <h1 className="text-2xl font-semibold">{t("scan.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("scan.intro")}</p>
       </div>
-      <div role="radiogroup" aria-label={t("scan.title")} className="grid divide-y divide-border rounded-xl border border-border bg-surface">
+      <div role="radiogroup" aria-label={t("scan.title")} className="grid divide-y divide-border card-solid">
         {rows.map(({ id, Icon, label, hint, path }) => {
           const active = choice === id;
           return (

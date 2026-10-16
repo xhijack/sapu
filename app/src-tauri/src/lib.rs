@@ -193,6 +193,29 @@ pub fn run() {
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
         .manage(std::sync::Mutex::new(SystemMonitor::new()))
+        .setup(|app| {
+            // Native material behind the whole window: the sidebar reads as
+            // part of macOS / Windows 11 instead of a web page.
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                #[cfg(target_os = "macos")]
+                {
+                    use window_vibrancy::{NSVisualEffectMaterial, apply_vibrancy};
+                    if let Err(e) = apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None) {
+                        tracing::warn!(error = %e, "vibrancy unavailable");
+                    }
+                }
+                #[cfg(target_os = "windows")]
+                {
+                    if let Err(e) = window_vibrancy::apply_mica(&window, None) {
+                        tracing::warn!(error = %e, "mica unavailable");
+                    }
+                }
+                #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+                let _ = window;
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             scan::scan_targets,
             scan::scan_previous,

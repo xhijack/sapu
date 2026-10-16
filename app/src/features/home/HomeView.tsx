@@ -1,24 +1,40 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, HardDrive, Search, Sparkles, Usb } from "lucide-react";
+import { Copy, HardDrive, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
 import { api } from "@/lib/api";
-import { formatBytes } from "@/lib/format";
-import type { SystemSnapshot } from "@/lib/types";
+import { scanApi } from "@/lib/scanApi";
+import { formatBytes, formatDate } from "@/lib/format";
+import type { PreviousScan, SystemSnapshot } from "@/lib/types";
 import type { Screen } from "@/components/Shell";
+import { Button } from "@/components/ui/button";
+import { Tile } from "@/components/ui/tile";
+import { SpaceRing } from "@/components/viz/SpaceRing";
+import { useCountUp } from "@/components/viz/useCountUp";
 import { cn } from "@/lib/utils";
 
 const POLL_MS = 3000;
 
-/** Home: the state of this computer right now, then one place to start. */
-export function HomeView({ onNavigate }: { onNavigate: (s: Screen) => void }) {
+function greeting(t: (k: string) => string) {
+  const h = new Date().getHours();
+  return h < 11 ? t("home.greeting_morning") : h < 18 ? t("home.greeting_day") : t("home.greeting_evening");
+}
+
+/** Home: the space ring for the main disk, one action, three doors. */
+export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) => void; onScanNow?: () => void }) {
   const { t, i18n } = useTranslation();
   const [snap, setSnap] = useState<SystemSnapshot | null>(null);
+  const [previous, setPrevious] = useState<PreviousScan | null>(null);
 
   useEffect(() => {
     let live = true;
     const tick = () => api.systemSnapshot().then((s) => live && setSnap(s)).catch(() => undefined);
     void tick();
     const id = setInterval(() => void tick(), POLL_MS);
+    scanApi
+      .targets()
+      .then((tg) => (tg.home ? scanApi.previous(tg.home) : null))
+      .then((p) => live && setPrevious(p))
+      .catch(() => undefined);
     return () => {
       live = false;
       clearInterval(id);
@@ -26,107 +42,116 @@ export function HomeView({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   }, []);
 
   const lang = i18n.language;
-  const pct = (used: number, total: number) => (total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0);
+  const main = snap?.disks.find((d) => !d.removable) ?? snap?.disks[0] ?? null;
+  const others = snap?.disks.filter((d) => d !== main) ?? [];
+  const used = main ? main.total_bytes - main.available_bytes : 0;
+  const pct = main && main.total_bytes > 0 ? Math.round((used / main.total_bytes) * 100) : 0;
+  const freeAnimated = useCountUp(main?.available_bytes ?? 0);
 
   return (
-    <div className="grid max-w-4xl gap-10">
-      <div>
-        <h1 className="text-2xl font-semibold">{t("home.title")}</h1>
-        <p className="mt-1 text-fg-muted">{t("home.intro")}</p>
-      </div>
-
-      <section className="grid gap-3">
-        <h2 className="text-sm font-medium text-fg-muted">{t("home.disks")}</h2>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {(snap?.disks ?? []).map((d) => {
-            const used = d.total_bytes - d.available_bytes;
-            const p = pct(used, d.total_bytes);
-            return (
-              <li key={d.mount} className="grid gap-3 rounded-xl border border-border bg-surface p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-medium">
-                      {d.removable ? <Usb aria-hidden className="h-4 w-4 text-fg-muted" /> : <HardDrive aria-hidden className="h-4 w-4 text-fg-muted" />}
-                      <span className="truncate">{d.name || d.mount}</span>
-                    </div>
-                    <div className="path truncate text-fg-muted" title={d.mount}>
-                      {d.mount}
-                    </div>
-                  </div>
-                  <span className="num text-2xl font-semibold tabular-nums">{p}%</span>
-                </div>
-                <Gauge value={p} label={d.name || d.mount} />
-                <div className="flex justify-between text-sm text-fg-muted">
-                  <span className="num">{t("home.disk_used_of", { used: formatBytes(used, lang), total: formatBytes(d.total_bytes, lang) })}</span>
-                  <span className="num">{t("home.disk_free", { free: formatBytes(d.available_bytes, lang) })}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+    <div className="grid max-w-[1040px] gap-10">
+      <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
+        <SpaceRing
+          size={236}
+          thickness={20}
+          total={main?.total_bytes ?? 1}
+          label={main ? `${main.name || main.mount}: ${pct}%` : t("home.measuring")}
+          segments={main ? [{ key: "used", value: used, color: pct >= 90 ? "var(--gauge-danger)" : pct >= 75 ? "var(--gauge-warn)" : "var(--gauge-ok)" }] : []}
+        >
+          <div className="grid gap-0.5">
+            <span className="display num text-[40px] leading-none">{pct}%</span>
+            <span className="text-xs text-fg-muted">{main?.name || main?.mount || ""}</span>
+          </div>
+        </SpaceRing>
+        <div className="grid gap-5">
+          <div className="grid gap-1">
+            <p className="text-fg-muted">{greeting(t)}</p>
+            <p className="display num text-[52px] leading-[1.05]">
+              {main ? formatBytes(freeAnimated, lang) : t("home.measuring")}
+              {main && <span className="ml-3 text-2xl font-semibold text-fg-muted">{t("home.hero_free_word")}</span>}
+            </p>
+            {main && <p className="num text-fg-muted">{t("home.hero_of", { total: formatBytes(main.total_bytes, lang), pct })}</p>}
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <Button size="lg" onClick={() => (onScanNow ? onScanNow() : onNavigate("scan"))}>
+              <Search aria-hidden className="h-5 w-5" />
+              {t("home.hero_cta")}
+            </Button>
+            <span className="num text-sm text-fg-muted">
+              {previous ? t("home.hero_last", { date: formatDate(previous.finished_at_unix, lang), size: formatBytes(previous.total_bytes, lang) }) : t("home.hero_never")}
+            </span>
+          </div>
+          <p className="flex items-center gap-2 text-sm text-fg-faint">
+            <ShieldCheck aria-hidden className="h-4 w-4 text-accent" />
+            {t("home.safety_line")}
+          </p>
+        </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <Meter
-          title={t("home.cpu")}
-          value={snap?.cpu_percent ?? null}
-          detail={snap ? t("home.cpu_cores", { count: snap.cpu_count }) : ""}
-          measuring={t("home.measuring")}
-        />
-        <Meter
-          title={t("home.memory")}
-          value={snap ? pct(snap.mem_used_bytes, snap.mem_total_bytes) : null}
-          detail={
-            snap
-              ? `${t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) })}${snap.swap_used_bytes > 0 ? `. ${t("home.swap", { size: formatBytes(snap.swap_used_bytes, lang) })}` : ""}`
-              : ""
-          }
-          measuring={t("home.measuring")}
-        />
+      <section className="grid gap-4 md:grid-cols-3">
+        <Tile className="rise rise-2" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("home.tile_scan")} body={t("home.tile_scan_body")} onClick={() => onNavigate("scan")} />
+        <Tile className="rise rise-3" tone="var(--accent)" icon={<Sparkles className="h-5 w-5" />} title={t("home.tile_clean")} body={t("home.tile_clean_body")} onClick={() => onNavigate("clean")} />
+        <Tile className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
       </section>
 
-      <section className="grid gap-3">
-        <h2 className="text-sm font-medium text-fg-muted">{t("home.actions")}</h2>
-        <div className="grid divide-y divide-border rounded-xl border border-border bg-surface">
-          {(
-            [
-              { id: "scan", Icon: Search, label: t("home.action_scan"), hint: t("home.action_scan_hint") },
-              { id: "clean", Icon: Sparkles, label: t("home.action_clean"), hint: t("home.action_clean_hint") },
-              { id: "dedupe", Icon: Copy, label: t("home.action_dedupe"), hint: t("home.action_dedupe_hint") },
-            ] as { id: Screen; Icon: typeof Search; label: string; hint: string }[]
-          ).map(({ id, Icon, label, hint }) => (
-            <button key={id} type="button" onClick={() => onNavigate(id)} className="flex items-center gap-4 px-5 py-4 text-left first:rounded-t-xl last:rounded-b-xl hover:bg-surface-muted">
-              <Icon aria-hidden className="h-5 w-5 text-accent" />
-              <span>
-                <span className="block font-medium">{label}</span>
-                <span className="block text-sm text-fg-muted">{hint}</span>
-              </span>
-            </button>
-          ))}
+      <section className="grid gap-4 md:grid-cols-[1fr_1fr]">
+        <div className="card rise grid gap-4 p-5">
+          <h2 className="text-sm font-semibold text-fg-muted">{t("home.system_now")}</h2>
+          <div className="grid grid-cols-2 gap-6">
+            <MiniMeter label={t("home.cpu")} value={snap?.cpu_percent ?? null} detail={snap ? t("home.cpu_cores", { count: snap.cpu_count }) : ""} measuring={t("home.measuring")} />
+            <MiniMeter
+              label={t("home.memory")}
+              value={snap ? Math.round((snap.mem_used_bytes / Math.max(1, snap.mem_total_bytes)) * 100) : null}
+              detail={snap ? t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) }) : ""}
+              measuring={t("home.measuring")}
+            />
+          </div>
+        </div>
+        <div className="card rise grid gap-3 p-5">
+          <h2 className="text-sm font-semibold text-fg-muted">{t("home.other_disks")}</h2>
+          {others.length === 0 ? (
+            <p className="text-sm text-fg-faint">—</p>
+          ) : (
+            <ul className="grid gap-3">
+              {others.map((d) => {
+                const u = d.total_bytes - d.available_bytes;
+                const p = d.total_bytes > 0 ? Math.round((u / d.total_bytes) * 100) : 0;
+                return (
+                  <li key={d.mount} className="flex items-center gap-3">
+                    <SpaceRing size={44} thickness={6} total={d.total_bytes} label={`${d.name || d.mount}: ${p}%`} segments={[{ key: "used", value: u, color: "var(--accent)" }]}>
+                      <span className="num text-[10px] font-semibold">{p}%</span>
+                    </SpaceRing>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5 text-sm font-medium">
+                        {d.removable ? <Usb aria-hidden className="h-3.5 w-3.5 text-fg-muted" /> : <HardDrive aria-hidden className="h-3.5 w-3.5 text-fg-muted" />}
+                        <span className="truncate">{d.name || d.mount}</span>
+                      </span>
+                      <span className="num block text-xs text-fg-muted">{t("home.disk_used_of", { used: formatBytes(u, lang), total: formatBytes(d.total_bytes, lang) })}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-function Gauge({ value, label }: { value: number; label: string }) {
-  const tone = value >= 90 ? "bg-risk-danger-fg" : value >= 75 ? "bg-risk-review-fg" : "bg-accent";
+function MiniMeter({ label, value, detail, measuring }: { label: string; value: number | null; detail: string; measuring: string }) {
+  const v = value ?? 0;
+  const tone = v >= 90 ? "bg-gauge-danger" : v >= 75 ? "bg-gauge-warn" : "bg-gauge-ok";
   return (
-    <div role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} className="h-2.5 w-full overflow-hidden rounded-full bg-surface-muted">
-      <div className={cn("h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none", tone)} style={{ width: `${value}%` }} />
-    </div>
-  );
-}
-
-function Meter({ title, value, detail, measuring }: { title: string; value: number | null; detail: string; measuring: string }) {
-  return (
-    <div className="grid gap-3 rounded-xl border border-border bg-surface p-5">
+    <div className="grid gap-2">
       <div className="flex items-baseline justify-between">
-        <span className="font-medium">{title}</span>
-        <span className="num text-2xl font-semibold">{value === null ? <span className="text-sm font-normal text-fg-muted">{measuring}</span> : `${Math.round(value)}%`}</span>
+        <span className="text-sm font-medium">{label}</span>
+        <span className="display num text-xl">{value === null ? <span className="text-xs font-normal text-fg-muted">{measuring}</span> : `${Math.round(value)}%`}</span>
       </div>
-      <Gauge value={value ?? 0} label={title} />
-      <span className="num text-sm text-fg-muted">{detail}</span>
+      <div role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+        <div className={cn("h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none", tone)} style={{ width: `${v}%` }} />
+      </div>
+      <span className="num text-xs text-fg-muted">{detail}</span>
     </div>
   );
 }

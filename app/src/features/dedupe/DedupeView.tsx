@@ -98,7 +98,7 @@ export function DedupeView({ onSeeHistory, profile = "general" }: { onSeeHistory
       </div>
       <div className="grid gap-2">
         <span className="text-sm text-fg-muted">{t("dedupe.target_label")}</span>
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="flex items-center gap-3 card-solid px-4 py-3">
           <span className="path min-w-0 flex-1 truncate" title={root ?? ""}>
             {root ?? "…"}
           </span>

@@ -7,12 +7,16 @@ describe("HomeView", () => {
     const user = userEvent.setup();
     const nav = vi.fn();
     render(<HomeView onNavigate={nav} />);
-    expect(await screen.findByText("Macintosh HD")).toBeInTheDocument();
+    // Main disk is the hero ring; other disks are small rings.
+    expect(await screen.findByRole("img", { name: /Macintosh HD: 88%/ })).toBeInTheDocument();
     expect(screen.getByText("Backup")).toBeInTheDocument();
-    expect(screen.getByText(/433,0 GB terpakai dari 494,0 GB/)).toBeInTheDocument();
+    expect(screen.getByText(/dari 494,0 GB, 88% terpakai/)).toBeInTheDocument();
     expect(screen.getByText("24%")).toBeInTheDocument(); // cpu rounded
     expect(screen.getByText("62%")).toBeInTheDocument(); // memory 9.92/16
-    await user.click(screen.getByRole("button", { name: /Pindai disk/ }));
+    expect(screen.getByText(/Trash dulu/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Pindai disk sekarang" }));
     expect(nav).toHaveBeenCalledWith("scan");
+    await user.click(screen.getByRole("button", { name: /^Duplikat/ }));
+    expect(nav).toHaveBeenCalledWith("dedupe");
   });
 });

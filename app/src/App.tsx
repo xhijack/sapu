@@ -87,7 +87,7 @@ export default function App() {
   return (
     <Shell screen={screen} onNavigate={navigate}>
       <Pane active={screen === "home"} mounted>
-        <HomeView onNavigate={navigate} />
+        <HomeView onNavigate={navigate} onScanNow={() => navigate("scan")} />
       </Pane>
       <Pane active={screen === "scan"} mounted={visited.has("scan")}>
         <ScanView />

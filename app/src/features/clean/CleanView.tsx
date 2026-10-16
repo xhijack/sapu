@@ -125,7 +125,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
             {groups.map((g) => (
               <section key={g} className="grid gap-1">
                 <h2 className="text-sm font-medium text-fg-muted">{t(`clean.group_${g}`, { defaultValue: g })}</h2>
-                <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+                <ul className="divide-y divide-border card-solid">
                   {rows
                     .filter((r) => r.group === g)
                     .map((r) => {

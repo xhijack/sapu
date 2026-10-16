@@ -28,7 +28,7 @@ export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
           ? t("clean.done_dry")
           : t("clean.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
       </p>
-      <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+      <ul className="divide-y divide-border card-solid">
         {result.outcomes.map((o, i) => (
           <li key={`${o.kind === "project" ? o.root : o.rule_id}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="min-w-0">

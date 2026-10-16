@@ -57,7 +57,7 @@ export function WhatIsDialog({ path, onClose }: { path: string; onClose: () => v
   };
 
   return (
-    <dialog ref={ref} onClose={onClose} aria-labelledby="whatis-title" className="m-auto w-full max-w-lg rounded-xl border border-border bg-surface p-0 text-fg shadow-xl backdrop:bg-black/40">
+    <dialog ref={ref} onClose={onClose} aria-labelledby="whatis-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
       <div className="grid gap-4 p-6">
         <h2 id="whatis-title" className="text-lg font-semibold">
           {t("ai.whatis_title")}

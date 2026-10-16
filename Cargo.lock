@@ -3285,6 +3285,7 @@ dependencies = [
  "tempfile",
  "tracing",
  "tracing-subscriber",
+ "window-vibrancy",
 ]
 
 [[package]]

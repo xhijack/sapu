@@ -13,15 +13,20 @@
     "windows": [
       {
         "title": "Sapu",
-        "width": 1040,
-        "height": 720,
-        "minWidth": 820,
-        "minHeight": 560
+        "width": 1120,
+        "height": 760,
+        "minWidth": 880,
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "decorations": true
       }
     ],
     "security": {
       "csp": null
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

@@ -45,7 +45,7 @@ export function DedupePreview({ summary, strategy, picks, allowHardlink = false,
   };
 
   return (
-    <dialog ref={ref} onClose={onClose} aria-labelledby="dedupe-preview-title" className="m-auto w-full max-w-lg rounded-xl border border-border bg-surface p-0 text-fg shadow-xl backdrop:bg-black/40">
+    <dialog ref={ref} onClose={onClose} aria-labelledby="dedupe-preview-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
       <div className="grid gap-4 p-6">
         <h2 id="dedupe-preview-title" className="text-lg font-semibold">
           {t("dedupe.preview_title")}

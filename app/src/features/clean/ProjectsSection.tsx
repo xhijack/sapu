@@ -28,7 +28,7 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
       <p className="text-sm text-fg-muted">{t("clean.projects_body")}</p>
       <ul className="grid gap-3">
         {projects.map((p) => (
-          <li key={p.root} className="grid gap-2 rounded-xl border border-border bg-surface p-4">
+          <li key={p.root} className="grid gap-2 card-solid p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="min-w-0">
                 <span className="font-medium">{p.name}</span>
