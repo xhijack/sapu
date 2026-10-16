@@ -8,7 +8,10 @@
 //! - Core never formats text for display; it emits data and [`progress`] events.
 
 pub mod error;
+pub mod eta;
+pub mod platform;
 pub mod progress;
 pub mod safety;
+pub mod settings;
 
 pub use error::SapuError;

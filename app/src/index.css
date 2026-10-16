@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* Design tokens. Risk colours are semantic and always paired with an icon
+   and a label in the UI (PRD §10). Contrast targets WCAG AA. */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-muted: #efefec;
+  --border: #dcdcd7;
+  --fg: #1b1b18;
+  --fg-muted: #5f5f58;
+  --accent: #1f6feb;
+  --accent-fg: #ffffff;
+  --focus: #1f6feb;
+
+  --risk-safe-bg: #e3f5e8;
+  --risk-safe-fg: #0f5b2a;
+  --risk-safe-border: #8fd1a4;
+  --risk-review-bg: #fff4d6;
+  --risk-review-fg: #6b4a00;
+  --risk-review-border: #f0c75e;
+  --risk-danger-bg: #fde4e4;
+  --risk-danger-fg: #8a1c1c;
+  --risk-danger-border: #f0a0a0;
+}
+
+:root[data-theme="dark"],
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --bg: #15161a;
+    --surface: #1e2026;
+    --surface-muted: #262930;
+    --border: #363a44;
+    --fg: #ececea;
+    --fg-muted: #a3a5ad;
+    --accent: #5b9dff;
+    --accent-fg: #0b1324;
+    --focus: #8fbcff;
+
+    --risk-safe-bg: #123b22;
+    --risk-safe-fg: #a9ecbf;
+    --risk-safe-border: #2f7a4b;
+    --risk-review-bg: #3f2f05;
+    --risk-review-fg: #ffd980;
+    --risk-review-border: #8a6a1a;
+    --risk-danger-bg: #44181a;
+    --risk-danger-fg: #ffb3b3;
+    --risk-danger-border: #8f3a3d;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #15161a;
+  --surface: #1e2026;
+  --surface-muted: #262930;
+  --border: #363a44;
+  --fg: #ececea;
+  --fg-muted: #a3a5ad;
+  --accent: #5b9dff;
+  --accent-fg: #0b1324;
+  --focus: #8fbcff;
+  --risk-safe-bg: #123b22;
+  --risk-safe-fg: #a9ecbf;
+  --risk-safe-border: #2f7a4b;
+  --risk-review-bg: #3f2f05;
+  --risk-review-fg: #ffd980;
+  --risk-review-border: #8a6a1a;
+  --risk-danger-bg: #44181a;
+  --risk-danger-fg: #ffb3b3;
+  --risk-danger-border: #8f3a3d;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-focus: var(--focus);
+  --color-risk-safe-bg: var(--risk-safe-bg);
+  --color-risk-safe-fg: var(--risk-safe-fg);
+  --color-risk-safe-border: var(--risk-safe-border);
+  --color-risk-review-bg: var(--risk-review-bg);
+  --color-risk-review-fg: var(--risk-review-fg);
+  --color-risk-review-border: var(--risk-review-border);
+  --color-risk-danger-bg: var(--risk-danger-bg);
+  --color-risk-danger-fg: var(--risk-danger-fg);
+  --color-risk-danger-border: var(--risk-danger-border);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
