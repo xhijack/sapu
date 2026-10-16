@@ -10,14 +10,15 @@ use std::time::Instant;
 
 use sapu_core::dedupe::{
     DedupeOptions, DedupePlan, DedupeResult, DedupeRunReport, DedupeSummary, DuplicateGroup,
-    FolderPair, KeepStrategy, Stage, execute, find_duplicates, folder_pairs,
+    FolderPair, KeepStrategy, ReplaceMode, Stage, execute, find_duplicates, folder_pairs,
 };
-use sapu_core::eta::{Estimator, Eta};
+use sapu_core::eta::{Estimator, Eta, OpKind};
 use sapu_core::progress::{FnSink, NoProgress, ProgressEvent};
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
 use sapu_core::scanner::ScanControl;
 use tauri::{AppHandle, Emitter, State};
 
+use crate::support::{notify_done, record_rate};
 use crate::{CmdResult, CommandError};
 
 #[derive(Default)]
@@ -100,6 +101,19 @@ pub fn dedupe_start(
         match result {
             Ok(r) => {
                 let summary = r.summary.clone();
+                if !r.summary.cancelled {
+                    record_rate(
+                        OpKind::Dedupe,
+                        r.summary.wasted_bytes.max(r.summary.candidates),
+                        start.elapsed(),
+                    );
+                }
+                notify_done(
+                    &app,
+                    start.elapsed(),
+                    "Sapu",
+                    &format!("Pencarian duplikat selesai: {} grup", summary.groups),
+                );
                 if let Ok(mut slot) = session.result.lock() {
                     *slot = Some(Arc::new(r));
                 }
@@ -171,6 +185,7 @@ pub fn dedupe_execute(
     keeps: HashMap<u64, PathBuf>,
     group_ids: Vec<u64>,
     apply: bool,
+    hardlink: bool,
 ) -> CmdResult<DedupeRunReport> {
     let r = result(&session)?;
     let mut plan = DedupePlan::build(&r.summary.root, &r.groups, &strategy, |g| {
@@ -181,7 +196,12 @@ pub fn dedupe_execute(
         plan = plan.retain(&group_ids);
     }
     let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-    Ok(execute(&plan, &safety, apply, &mut NoProgress)?)
+    let mode = if hardlink {
+        ReplaceMode::Hardlink
+    } else {
+        ReplaceMode::Trash
+    };
+    Ok(execute(&plan, &safety, apply, mode, &mut NoProgress)?)
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

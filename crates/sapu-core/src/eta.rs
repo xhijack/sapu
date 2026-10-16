@@ -308,3 +308,108 @@ mod tests {
         assert_eq!(round_human(s(7)), s(10));
     }
 }
+
+/// Which long operation a rate belongs to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OpKind {
+    /// bytes per second
+    Scan,
+    /// items per second
+    Clean,
+    /// bytes per second (stage 3 hashing dominates)
+    Dedupe,
+}
+
+/// Observed throughput on this device, so a preview can say "about a
+/// minute" before anything starts (PRD §10.1 P1). Keeps the last five
+/// rates per operation and estimates from their median.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct RateHistory {
+    rates: std::collections::HashMap<OpKind, Vec<f64>>,
+}
+
+impl RateHistory {
+    const KEEP: usize = 5;
+
+    pub fn default_path() -> Option<std::path::PathBuf> {
+        dirs::data_local_dir().map(|d| d.join("sapu").join("rates.json"))
+    }
+
+    pub fn load(path: &std::path::Path) -> Self {
+        std::fs::read(path)
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default()
+    }
+
+    pub fn save(&self, path: &std::path::Path) -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let json = serde_json::to_vec(self).map_err(std::io::Error::other)?;
+        std::fs::write(path, json)
+    }
+
+    /// Record `amount` units processed in `elapsed`. Ignores tiny runs,
+    /// which would only add noise.
+    pub fn record(&mut self, kind: OpKind, amount: u64, elapsed: Duration) {
+        if elapsed < Duration::from_secs(2) || amount == 0 {
+            return;
+        }
+        let v = self.rates.entry(kind).or_default();
+        v.push(amount as f64 / elapsed.as_secs_f64());
+        if v.len() > Self::KEEP {
+            v.remove(0);
+        }
+    }
+
+    /// Rounded estimate for processing `amount` units, or `None` without history.
+    pub fn estimate(&self, kind: OpKind, amount: u64) -> Option<Duration> {
+        let v = self.rates.get(&kind)?;
+        if v.is_empty() {
+            return None;
+        }
+        let mut sorted = v.clone();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let median = sorted[sorted.len() / 2];
+        if median <= 0.0 {
+            return None;
+        }
+        Some(round_human(Duration::from_secs_f64(amount as f64 / median)))
+    }
+}
+
+#[cfg(test)]
+mod rate_tests {
+    use super::*;
+
+    #[test]
+    fn estimates_from_median_and_rounds() {
+        let mut h = RateHistory::default();
+        assert_eq!(h.estimate(OpKind::Scan, 1000), None);
+        h.record(OpKind::Scan, 1_000_000, Duration::from_secs(10)); // 100 KB/s
+        h.record(OpKind::Scan, 3_000_000, Duration::from_secs(10)); // 300 KB/s
+        h.record(OpKind::Scan, 2_000_000, Duration::from_secs(10)); // 200 KB/s (median)
+        assert_eq!(
+            h.estimate(OpKind::Scan, 20_000_000),
+            Some(Duration::from_secs(120))
+        );
+        h.record(OpKind::Scan, 5, Duration::from_millis(100)); // ignored
+        assert_eq!(h.rates[&OpKind::Scan].len(), 3);
+    }
+
+    #[test]
+    fn roundtrip_and_cap() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let p = tmp.path().join("x/rates.json");
+        let mut h = RateHistory::default();
+        for i in 1..=7 {
+            h.record(OpKind::Clean, i * 100, Duration::from_secs(10));
+        }
+        assert_eq!(h.rates[&OpKind::Clean].len(), 5);
+        h.save(&p).expect("save");
+        assert_eq!(RateHistory::load(&p), h);
+    }
+}

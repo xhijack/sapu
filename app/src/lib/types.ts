@@ -10,6 +10,7 @@ export interface Settings {
   locale: string | null;
   ai_mode: AiMode;
   theme: Theme;
+  notify_when_done: boolean;
 }
 
 export type DiskAccess = "not_applicable" | "granted" | "denied" | "unknown";
@@ -130,8 +131,26 @@ export interface CategorySummary {
   files: number;
 }
 
+export interface ScanDiff {
+  since_unix: number;
+  delta_bytes: number;
+  delta_files: number;
+  categories: { category: Category; delta_bytes: number }[];
+  dirs: { path: string; delta_bytes: number; is_new: boolean }[];
+}
+
+export interface PreviousScan {
+  finished_at_unix: number;
+  total_bytes: number;
+  file_count: number;
+  estimated_secs: number | null;
+}
+
+export type OpKind = "scan" | "clean" | "dedupe";
+
 export interface ScanSummary {
   root: string;
+  diff: ScanDiff | null;
   disk_total_bytes: number | null;
   disk_free_bytes: number | null;
   started_at_unix: number;
@@ -313,7 +332,9 @@ export interface DedupeProgressPayload extends ScanProgressPayload {
   stage: { current: number; total: number };
 }
 
-export type GroupOutcome = { kind: "done"; group_id: number; session: CleanSession } | { kind: "keep_missing"; group_id: number; keep: string };
+export type GroupOutcome =
+  | { kind: "done"; group_id: number; session: CleanSession; linked: number; link_failed: string[] }
+  | { kind: "keep_missing"; group_id: number; keep: string };
 
 export interface DedupeRunReport {
   dry_run: boolean;

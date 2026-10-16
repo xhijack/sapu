@@ -7,7 +7,8 @@ use std::time::Instant;
 use anyhow::Context;
 use clap::{Args, ValueEnum};
 use sapu_core::dedupe::{
-    DedupeOptions, DedupePlan, KeepStrategy, Stage, execute, find_duplicates, folder_pairs,
+    DedupeOptions, DedupePlan, KeepStrategy, ReplaceMode, Stage, execute, find_duplicates,
+    folder_pairs,
 };
 use sapu_core::progress::{FnSink, NoProgress, ProgressEvent};
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -41,6 +42,9 @@ pub struct DupesArgs {
     /// How many groups to print.
     #[arg(long, default_value_t = 30)]
     top: usize,
+    /// After trashing a duplicate, put a hardlink to the kept file at its path.
+    #[arg(long)]
+    hardlink: bool,
 }
 
 pub fn run(args: DupesArgs) -> anyhow::Result<()> {
@@ -93,7 +97,20 @@ pub fn run(args: DupesArgs) -> anyhow::Result<()> {
             ProtectedPaths::os_defaults(),
             HistoryStore::open_default().context("history")?,
         );
-        Some(execute(&plan, &safety, true, &mut NoProgress).context("execute")?)
+        Some(
+            execute(
+                &plan,
+                &safety,
+                true,
+                if args.hardlink {
+                    ReplaceMode::Hardlink
+                } else {
+                    ReplaceMode::Trash
+                },
+                &mut NoProgress,
+            )
+            .context("execute")?,
+        )
     } else {
         None
     };

@@ -13,6 +13,7 @@ use tauri_plugin_opener::OpenerExt;
 mod clean;
 mod dedupe;
 mod scan;
+mod support;
 
 /// Errors cross the IPC boundary as a stable code plus a message; the
 /// frontend maps the code to a translated string.
@@ -157,12 +158,14 @@ pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(std::sync::Arc::new(scan::ScanSession::default()))
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
         .manage(std::sync::Mutex::new(SystemMonitor::new()))
         .invoke_handler(tauri::generate_handler![
             scan::scan_targets,
+            scan::scan_previous,
             scan::pick_folder,
             scan::scan_start,
             scan::scan_pause,
@@ -186,6 +189,7 @@ pub fn run() {
             dedupe::file_preview,
             app_info,
             system_snapshot,
+            support::estimate_duration,
             reveal_app_binary,
             disk_access_status,
             settings_get,

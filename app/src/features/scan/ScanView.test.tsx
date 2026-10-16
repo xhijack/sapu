@@ -62,3 +62,17 @@ describe("ScanView resume", () => {
     expect(screen.getByRole("button", { name: "Jeda" })).toBeInTheDocument();
   });
 });
+
+describe("ScanView P1", () => {
+  it("shows the last scan and an estimate on the target row, and the diff after a scan", async () => {
+    const user = userEvent.setup();
+    render(<ScanView />);
+    expect(await screen.findByText(/Terakhir dipindai .*204,2 GB/)).toBeInTheDocument();
+    expect(screen.getByText(/Diperkirakan sekitar 2 menit/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mulai pindai" }));
+    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
+    const diff = screen.getByTestId("scan-diff");
+    expect(diff).toHaveTextContent(/Bertambah 8,2 GB sejak/);
+    expect(diff).toHaveTextContent(/terutama dari dev \(\+6,0 GB\), baru \(\+2,1 GB, baru\)/);
+  });
+});

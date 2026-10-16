@@ -2,11 +2,13 @@
 
 use std::sync::{Arc, Mutex};
 
+use crate::support::{notify_done, record_rate};
 use sapu_core::cleaner::{CleanReport, CleanRunReport, Selection, evaluate, execute};
+use sapu_core::eta::OpKind;
 use sapu_core::progress::NoProgress;
 use sapu_core::rules::{Env, Localized, Profile, Risk, RuleSet, load_embedded};
 use sapu_core::safety::{HistoryStore, PermanentConfirmation, ProtectedPaths, Safety};
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use crate::{CmdResult, CommandError};
 
@@ -82,6 +84,7 @@ pub async fn clean_evaluate(
 /// second confirmation for rules that empty the Trash.
 #[tauri::command]
 pub async fn clean_execute(
+    app: AppHandle,
     session: State<'_, Arc<CleanSession>>,
     rule_ids: Vec<String>,
     apply: bool,
@@ -101,7 +104,8 @@ pub async fn clean_execute(
         let permanent =
             permanent_ok.then(PermanentConfirmation::i_understand_this_cannot_be_undone);
         let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-        Ok(execute(
+        let start = std::time::Instant::now();
+        let run = execute(
             &report,
             &rules,
             &selection,
@@ -109,7 +113,17 @@ pub async fn clean_execute(
             permanent,
             &safety,
             &mut NoProgress,
-        )?)
+        )?;
+        if apply {
+            record_rate(OpKind::Clean, run.disposed as u64, start.elapsed());
+            notify_done(
+                &app,
+                start.elapsed(),
+                "Sapu",
+                &format!("Pembersihan selesai: {} item", run.disposed),
+            );
+        }
+        Ok(run)
     })
     .await
     .map_err(|e| CommandError::new("io", e.to_string()))?

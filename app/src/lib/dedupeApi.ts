@@ -27,8 +27,8 @@ export const dedupeApi = {
   summary: () => invoke<DedupeSummary>("dedupe_summary"),
   groups: (offset: number, limit: number) => invoke<DuplicateGroup[]>("dedupe_groups", { offset, limit }),
   folderPairs: (limit: number) => invoke<FolderPair[]>("dedupe_folder_pairs", { limit }),
-  execute: (strategy: KeepStrategy, keeps: Record<number, string>, groupIds: number[], apply: boolean) =>
-    invoke<DedupeRunReport>("dedupe_execute", { strategy, keeps, groupIds, apply }),
+  execute: (strategy: KeepStrategy, keeps: Record<number, string>, groupIds: number[], apply: boolean, hardlink = false) =>
+    invoke<DedupeRunReport>("dedupe_execute", { strategy, keeps, groupIds, apply, hardlink }),
   preview: (path: string) => invoke<FilePreview>("file_preview", { path }),
   onProgress: (cb: (p: DedupeProgressPayload) => void) => listen<DedupeProgressPayload>("dedupe://progress", cb),
   onDone: (cb: (s: DedupeSummary) => void) => listen<DedupeSummary>("dedupe://done", cb),
@@ -42,10 +42,12 @@ const MB = 1024 ** 2;
 
 export const dedupeMock = {
   tickMs: 20,
-  lastExecute: null as { strategy: KeepStrategy; keeps: Record<number, string>; groupIds: number[]; apply: boolean } | null,
+  lastExecute: null as { strategy: KeepStrategy; keeps: Record<number, string>; groupIds: number[]; apply: boolean; hardlink?: boolean } | null,
+  lastMinSize: null as number | null,
   summary: null as DedupeSummary | null,
   reset() {
     this.lastExecute = null;
+    this.lastMinSize = null;
     this.summary = null;
     this.tickMs = 20;
   },
@@ -91,6 +93,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
   switch (cmd) {
     case "dedupe_start": {
       const root = String(args?.root);
+      dedupeMock.lastMinSize = (args?.minSize as number | null) ?? null;
       let i = 0;
       const step = () => {
         i += 1;
@@ -126,14 +129,14 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         { a: "/Users/you/Documents", b: "/Users/you/Downloads", files: 1, bytes: 1.1 * MB },
       ] as T;
     case "dedupe_execute": {
-      const a = args as { strategy: KeepStrategy; keeps: Record<number, string>; groupIds: number[]; apply: boolean };
+      const a = args as { strategy: KeepStrategy; keeps: Record<number, string>; groupIds: number[]; apply: boolean; hardlink: boolean };
       dedupeMock.lastExecute = a;
       const groups = mockGroups(dedupeMock.summary?.root ?? "/Users/you").filter((g) => a.groupIds.length === 0 || a.groupIds.includes(g.id));
       const removed = groups.reduce((n, g) => n + g.files.length - 1, 0);
       const bytes = groups.reduce((n, g) => n + g.wasted_bytes, 0);
       return {
         dry_run: !a.apply,
-        outcomes: groups.map((g) => ({ kind: "done" as const, group_id: g.id, session: { id: "s", started_at_unix: 0, finished_at_unix: 0, dry_run: !a.apply, disposal: "trash" as const, scope: "/", entries: [], bytes_freed: a.apply ? g.wasted_bytes : 0, disposed: g.files.length - 1, skipped: 0, failed: 0 } })),
+        outcomes: groups.map((g) => ({ kind: "done" as const, group_id: g.id, linked: a.hardlink ? g.files.length - 1 : 0, link_failed: [], session: { id: "s", started_at_unix: 0, finished_at_unix: 0, dry_run: !a.apply, disposal: "trash" as const, scope: "/", entries: [], bytes_freed: a.apply ? g.wasted_bytes : 0, disposed: g.files.length - 1, skipped: 0, failed: 0 } })),
         bytes_freed: a.apply ? bytes : 0,
         disposed: removed,
         skipped: 0,

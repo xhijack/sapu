@@ -60,12 +60,7 @@ pub fn run(args: ScanArgs) -> anyhow::Result<()> {
     .context("scan")?;
 
     if let Some(dir) = &stats_dir {
-        let _ = ScanStats {
-            total_bytes: result.total_bytes,
-            file_count: result.file_count,
-            finished_at_unix: result.finished_at_unix,
-        }
-        .save(dir, &result.root);
+        let _ = ScanStats::from_result(&result).save(dir, &result.root);
     }
 
     let summary = result.summary();

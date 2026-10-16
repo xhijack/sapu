@@ -145,7 +145,9 @@
     "reason_os-system": "Sistem operasi",
     "reason_filesystem-root": "Akar disk",
     "saved": "Tersimpan",
-    "rerun_onboarding": "Buka panduan awal lagi"
+    "rerun_onboarding": "Buka panduan awal lagi",
+    "notify": "Notifikasi saat operasi panjang selesai",
+    "notify_hint": "Berguna kalau kamu meninggalkan aplikasi saat memindai."
   },
   "errors": {
     "protected": "Lokasi ini dilindungi.",
@@ -219,7 +221,14 @@
     "result_total_of": "{{size}} dipakai dari {{total}}",
     "strip_free": "Kosong",
     "strip_other_volume": "Di luar folder ini",
-    "size_note": "Ukuran adalah ruang yang benar-benar terpakai di disk, bukan ukuran file logis."
+    "size_note": "Ukuran adalah ruang yang benar-benar terpakai di disk, bukan ukuran file logis.",
+    "last_scan_line": "Terakhir dipindai {{date}}, {{size}}",
+    "estimate_line": "Diperkirakan sekitar {{time}}",
+    "diff_up": "Bertambah {{size}} sejak {{date}}",
+    "diff_down": "Berkurang {{size}} sejak {{date}}",
+    "diff_same": "Tidak berubah sejak {{date}}",
+    "diff_mainly": "terutama dari",
+    "diff_new": "baru"
   },
   "category": {
     "video": "Video",
@@ -272,7 +281,8 @@
     "group_docker": "Docker",
     "group_node_modules": "Proyek JavaScript",
     "group_package_cache": "Cache package manager",
-    "group_xcode": "Xcode"
+    "group_xcode": "Xcode",
+    "estimate_line": "Diperkirakan sekitar {{time}}"
   },
   "dedupe": {
     "title": "Duplikat",
@@ -313,6 +323,12 @@
     "keep_missing": "Grup dilewati: file yang disimpan sudah tidak ada",
     "new_search": "Cari di folder lain",
     "no_preview": "Tidak ada pratinjau",
-    "new_badge": "Baru"
+    "new_badge": "Baru",
+    "min_size": "Abaikan file lebih kecil dari",
+    "hardlink": "Ganti duplikat dengan hardlink",
+    "hardlink_hint": "Path tetap ada dan menunjuk ke file yang disimpan. Ruang tetap bebas. Hanya di disk yang sama.",
+    "linked": "{{count}} hardlink dibuat",
+    "link_failed": "{{count}} hardlink gagal (beda disk)",
+    "estimate_line": "Diperkirakan sekitar {{time}}"
   }
 }

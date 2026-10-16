@@ -4,6 +4,7 @@
 import type {
   CleanSession,
   DirSummary,
+  PreviousScan,
   FileEntry,
   FileFilter,
   ScanProgressPayload,
@@ -36,6 +37,7 @@ async function listen<T>(event: string, cb: (payload: T) => void): Promise<Unlis
 
 export const scanApi = {
   targets: () => invoke<ScanTargets>("scan_targets"),
+  previous: (root: string) => invoke<PreviousScan | null>("scan_previous", { root }),
   pickFolder: () => invoke<string | null>("pick_folder"),
   start: (root: string) => invoke<void>("scan_start", { root }),
   pause: () => invoke<void>("scan_pause"),
@@ -77,6 +79,16 @@ export const scanMock = {
 
 const mockSummary = (root: string): ScanSummary => ({
   root,
+  diff: {
+    since_unix: 1_791_400_000,
+    delta_bytes: 8.2 * GB,
+    delta_files: 12_300,
+    categories: [{ category: "development", delta_bytes: 6 * GB }],
+    dirs: [
+      { path: `${root}/dev`, delta_bytes: 6 * GB, is_new: false },
+      { path: `${root}/Movies/baru`, delta_bytes: 2.1 * GB, is_new: true },
+    ],
+  },
   disk_total_bytes: 494 * GB,
   disk_free_bytes: 61 * GB,
   started_at_unix: 1_792_000_000,
@@ -143,6 +155,8 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
   switch (cmd) {
     case "scan_targets":
       return { home: "/Users/you", disk: "/" } as T;
+    case "scan_previous":
+      return (String(args?.root) === "/Users/you" ? { finished_at_unix: 1_791_400_000, total_bytes: 204.2 * GB, file_count: 1_192_011, estimated_secs: 120 } : null) as T;
     case "pick_folder":
       return "/Users/you/Downloads" as T;
     case "scan_start": {

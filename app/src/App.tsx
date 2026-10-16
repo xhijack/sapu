@@ -96,7 +96,7 @@ export default function App() {
         <CleanView profile={settings.profile} onSeeHistory={() => navigate("history")} />
       </Pane>
       <Pane active={screen === "dedupe"} mounted={visited.has("dedupe")}>
-        <DedupeView onSeeHistory={() => navigate("history")} />
+        <DedupeView profile={settings.profile} onSeeHistory={() => navigate("history")} />
       </Pane>
       <Pane active={screen === "history"} mounted={visited.has("history")}>
         <HistoryView />

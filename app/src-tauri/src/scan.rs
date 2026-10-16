@@ -17,7 +17,9 @@ use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
+use crate::support::{notify_done, record_rate};
 use crate::{CmdResult, CommandError};
+use sapu_core::eta::OpKind;
 
 #[derive(Default)]
 pub struct ScanSession {
@@ -66,6 +68,34 @@ fn disk_root() -> PathBuf {
     {
         PathBuf::from("/")
     }
+}
+
+/// Previous scan of `root` (date, totals) and the estimated duration of a
+/// new scan, for the target picker.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct PreviousScan {
+    finished_at_unix: u64,
+    total_bytes: u64,
+    file_count: u64,
+    estimated_secs: Option<u64>,
+}
+
+#[tauri::command]
+pub fn scan_previous(root: PathBuf) -> Option<PreviousScan> {
+    let dir = ScanStats::default_dir().ok()?;
+    let root = std::path::absolute(&root).ok()?;
+    let prev = ScanStats::load(&dir, &root)?;
+    let estimated_secs = sapu_core::eta::RateHistory::default_path()
+        .and_then(|p| {
+            sapu_core::eta::RateHistory::load(&p).estimate(OpKind::Scan, prev.total_bytes)
+        })
+        .map(|d| d.as_secs());
+    Some(PreviousScan {
+        finished_at_unix: prev.finished_at_unix,
+        total_bytes: prev.total_bytes,
+        file_count: prev.file_count,
+        estimated_secs,
+    })
 }
 
 #[tauri::command]
@@ -136,17 +166,21 @@ pub fn scan_start(
                 if let Some(dir) = &stats_dir
                     && !result.cancelled
                 {
-                    let _ = ScanStats {
-                        total_bytes: result.total_bytes,
-                        file_count: result.file_count,
-                        finished_at_unix: result.finished_at_unix,
-                    }
-                    .save(dir, &result.root);
+                    let _ = ScanStats::from_result(&result).save(dir, &result.root);
                 }
                 let summary = result.summary();
+                if !result.cancelled {
+                    record_rate(OpKind::Scan, result.total_bytes, start.elapsed());
+                }
                 if let Ok(mut r) = session.result.lock() {
                     *r = Some(Arc::new(result));
                 }
+                notify_done(
+                    &app,
+                    start.elapsed(),
+                    "Sapu",
+                    &format!("Pemindaian selesai: {} file", summary.file_count),
+                );
                 let _ = app.emit("scan://done", summary);
             }
             Err(e) => {

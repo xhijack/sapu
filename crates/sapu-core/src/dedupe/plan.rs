@@ -96,6 +96,10 @@ pub enum GroupOutcome {
     Done {
         group_id: u64,
         session: CleanSession,
+        /// Hardlinks created (hardlink mode only).
+        linked: usize,
+        /// Paths where the hardlink could not be created (other volume, FS limits).
+        link_failed: Vec<PathBuf>,
     },
     /// The file to keep vanished before removal: nothing in the group was touched.
     KeepMissing { group_id: u64, keep: PathBuf },
@@ -114,10 +118,23 @@ pub struct DedupeRunReport {
 /// Executes the plan through the safety layer, one `DeletePlan` per group.
 /// Right before each group the kept file is re-checked; if it is gone the
 /// group is skipped entirely (never remove the last copy).
+/// What happens to a duplicate after it leaves its place.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReplaceMode {
+    /// Move to the Trash; the path disappears.
+    #[default]
+    Trash,
+    /// Move to the Trash, then put a hardlink to the kept file at the old
+    /// path: nothing disappears from the folder structure, space is freed.
+    Hardlink,
+}
+
 pub fn execute(
     plan: &DedupePlan,
     safety: &Safety,
     apply: bool,
+    mode: ReplaceMode,
     progress: &mut dyn ProgressSink,
 ) -> Result<DedupeRunReport> {
     let mut run = DedupeRunReport {
@@ -145,6 +162,22 @@ pub fn execute(
             dp = dp.apply();
         }
         let session = safety.execute(&dp, &mut crate::progress::NoProgress)?;
+        let (mut linked, mut link_failed) = (0usize, Vec::new());
+        if apply && mode == ReplaceMode::Hardlink {
+            for e in session
+                .entries
+                .iter()
+                .filter(|e| e.outcome == crate::safety::Outcome::Disposed)
+            {
+                match std::fs::hard_link(&g.keep, &e.path) {
+                    Ok(()) => linked += 1,
+                    Err(err) => {
+                        tracing::warn!(error = %err, "hardlink replacement failed");
+                        link_failed.push(e.path.clone());
+                    }
+                }
+            }
+        }
         done += g.remove.len() as u64;
         progress.report(&ProgressEvent {
             items_done: done,
@@ -161,6 +194,8 @@ pub fn execute(
         run.outcomes.push(GroupOutcome::Done {
             group_id: g.group_id,
             session,
+            linked,
+            link_failed,
         });
     }
     Ok(run)
@@ -250,7 +285,7 @@ mod tests {
         );
 
         // Dry run first: nothing changes.
-        let dry = execute(&plan, &safety, false, &mut NoProgress).expect("dry");
+        let dry = execute(&plan, &safety, false, ReplaceMode::Trash, &mut NoProgress).expect("dry");
         assert!(dry.dry_run && r.join("g1/dup").exists());
 
         // The keep of group 2 disappears before apply.
@@ -258,7 +293,7 @@ mod tests {
         // Use permanent disposal via a plan rebuilt on the same groups? Trash is a
         // real side effect, so apply only against the tempdir with Permanent.
         let perm = plan_permanent(&plan);
-        let run = execute_with(&perm, &safety).expect("run");
+        let run = execute_with(&perm, &safety, false).expect("run");
         assert!(!r.join("g1/dup").exists(), "duplicate removed");
         assert!(r.join("g1/keep").exists(), "keep untouched");
         assert!(
@@ -272,13 +307,47 @@ mod tests {
         assert_eq!(run.bytes_freed, 10);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn hardlink_mode_restores_the_path_sharing_the_kept_inode() {
+        use std::os::unix::fs::MetadataExt;
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let r = tmp.path();
+        std::fs::create_dir_all(r.join("a")).expect("mkdir");
+        std::fs::create_dir_all(r.join("b")).expect("mkdir");
+        std::fs::write(r.join("a/keep.bin"), b"0123456789").expect("write");
+        std::fs::write(r.join("b/dup.bin"), b"0123456789").expect("write");
+        let groups = vec![group(1, &[&r.join("a/keep.bin"), &r.join("b/dup.bin")])];
+        let plan = DedupePlan::build(r, &groups, &KeepStrategy::Oldest, |_| {
+            Some(r.join("a/keep.bin"))
+        })
+        .expect("plan");
+        let safety = Safety::new(
+            ProtectedPaths::os_defaults(),
+            HistoryStore::with_dir(tmp.path().join("h")).expect("h"),
+        );
+        let run = execute_with(&plan, &safety, true).expect("run");
+        assert!(matches!(
+            run.outcomes[0],
+            GroupOutcome::Done { linked: 1, .. }
+        ));
+        let keep = std::fs::metadata(r.join("a/keep.bin")).expect("m");
+        let dup = std::fs::metadata(r.join("b/dup.bin")).expect("m");
+        assert_eq!(
+            keep.ino(),
+            dup.ino(),
+            "path exists again and shares the inode"
+        );
+        assert_eq!(keep.nlink(), 2);
+    }
+
     // Test helpers: run the same logic with permanent disposal so the test
     // filesystem (tempdir) is used instead of the real Trash.
     fn plan_permanent(p: &DedupePlan) -> DedupePlan {
         p.clone()
     }
 
-    fn execute_with(plan: &DedupePlan, safety: &Safety) -> Result<DedupeRunReport> {
+    fn execute_with(plan: &DedupePlan, safety: &Safety, hardlink: bool) -> Result<DedupeRunReport> {
         use crate::safety::{Disposal, PermanentConfirmation};
         let mut run = DedupeRunReport::default();
         for g in &plan.groups {
@@ -297,9 +366,23 @@ mod tests {
             }
             let session = safety.execute(&dp.apply(), &mut NoProgress)?;
             run.bytes_freed += session.bytes_freed;
+            let mut linked = 0;
+            if hardlink {
+                for e in session
+                    .entries
+                    .iter()
+                    .filter(|e| e.outcome == crate::safety::Outcome::Disposed)
+                {
+                    std::fs::hard_link(&g.keep, &e.path)
+                        .map_err(|e| crate::error::SapuError::io("hardlink", e))?;
+                    linked += 1;
+                }
+            }
             run.outcomes.push(GroupOutcome::Done {
                 group_id: g.group_id,
                 session,
+                linked,
+                link_failed: Vec::new(),
             });
         }
         Ok(run)

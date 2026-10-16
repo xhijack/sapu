@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, formatDuration } from "@/lib/format";
+import { api } from "@/lib/api";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
 import type { CleanRunReport } from "@/lib/types";
@@ -21,15 +22,24 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
   const [ack, setAck] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [estimate, setEstimate] = useState<number | null>(null);
 
   useEffect(() => {
     ref.current?.showModal();
   }, []);
 
+  const items = rows.reduce((a, r) => a + r.items, 0);
+  useEffect(() => {
+    let live = true;
+    api.estimateDuration("clean", Math.max(items, 1)).then((s) => live && setEstimate(s)).catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [items]);
+
   const hasPermanent = rows.some((r) => r.permanent);
   const hasVolumes = rows.some((r) => r.confirmSeparately);
   const commands = rows.filter((r) => r.commandLine);
-  const items = rows.reduce((a, r) => a + r.items, 0);
   const bytes = rows.reduce((a, r) => a + (r.bytes ?? 0), 0);
 
   const confirm = async () => {
@@ -53,7 +63,10 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
         <h2 id="clean-preview-title" className="text-lg font-semibold">
           {t("clean.preview_title")}
         </h2>
-        <p className="text-fg-muted">{t("clean.preview_body", { rules: rows.length, items, size: formatBytes(bytes, i18n.language) })}</p>
+        <p className="text-fg-muted">
+          {t("clean.preview_body", { rules: rows.length, items, size: formatBytes(bytes, i18n.language) })}
+          {estimate != null && ` ${t("clean.estimate_line", { time: formatDuration(t, estimate) })}.`}
+        </p>
         <ul className="max-h-48 overflow-y-auto rounded-md border border-border text-sm">
           {rows.map((r) => (
             <li key={r.id} className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 last:border-0">

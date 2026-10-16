@@ -84,6 +84,8 @@ pub struct FileFilter {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ScanResult {
     pub root: PathBuf,
+    /// Change since the previous scan of this root, when one exists.
+    pub diff: Option<super::stats_cache::ScanDiff>,
     /// Capacity of the volume holding `root`, when known.
     pub disk_total_bytes: Option<u64>,
     pub disk_free_bytes: Option<u64>,
@@ -213,6 +215,7 @@ impl ScanResult {
     pub fn summary(&self) -> ScanSummary {
         ScanSummary {
             root: self.root.clone(),
+            diff: self.diff.clone(),
             disk_total_bytes: self.disk_total_bytes,
             disk_free_bytes: self.disk_free_bytes,
             started_at_unix: self.started_at_unix,
@@ -231,6 +234,7 @@ impl ScanResult {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ScanSummary {
     pub root: PathBuf,
+    pub diff: Option<super::stats_cache::ScanDiff>,
     pub disk_total_bytes: Option<u64>,
     pub disk_free_bytes: Option<u64>,
     pub started_at_unix: u64,

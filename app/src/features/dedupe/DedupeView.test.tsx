@@ -70,3 +70,32 @@ describe("DedupeView", () => {
     expect(dedupeMock.lastExecute).toBeNull();
   });
 });
+
+describe("DedupeView P1", () => {
+  it("passes the minimum size and offers hardlinks only to developers", async () => {
+    const user = userEvent.setup();
+    render(<DedupeView onSeeHistory={vi.fn()} profile="developer" />);
+    await user.selectOptions(await screen.findByRole("combobox"), "1048576");
+    await user.click(screen.getByRole("button", { name: "Cari duplikat" }));
+    expect(dedupeMock.lastMinSize).toBe(1048576);
+    await screen.findByText(/bisa dibebaskan/, {}, { timeout: 3000 });
+    await user.click(screen.getByRole("button", { name: /Hapus duplikat/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Diperkirakan sekitar/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("checkbox", { name: /hardlink/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Pindahkan ke Trash" }));
+    await screen.findByRole("heading", { name: "Selesai" });
+    expect(dedupeMock.lastExecute?.hardlink).toBe(true);
+    expect(screen.getByText(/3 hardlink dibuat/)).toBeInTheDocument();
+  });
+
+  it("hides the hardlink option for everyday users", async () => {
+    const user = userEvent.setup();
+    render(<DedupeView onSeeHistory={vi.fn()} profile="general" />);
+    await user.click(await screen.findByRole("button", { name: "Cari duplikat" }));
+    await screen.findByText(/bisa dibebaskan/, {}, { timeout: 3000 });
+    await user.click(screen.getByRole("button", { name: /Hapus duplikat/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("checkbox")).toBeNull();
+  });
+});

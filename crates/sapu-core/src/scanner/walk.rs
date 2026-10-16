@@ -15,6 +15,8 @@ use super::stats_cache::ScanStats;
 #[derive(Debug, Clone)]
 pub struct ScanOptions {
     pub root: PathBuf,
+    /// Snapshot of the previous scan of this root, for progress and diff.
+    pub previous: Option<ScanStats>,
     /// Denominator for progress: bytes/files expected (previous scan or disk
     /// usage). `None` = indeterminate.
     pub expected_bytes: Option<u64>,
@@ -29,12 +31,13 @@ impl ScanOptions {
     pub fn new(root: impl Into<PathBuf>, stats_dir: Option<&Path>) -> Self {
         let root = root.into();
         let prev = stats_dir.and_then(|d| ScanStats::load(d, &root));
-        let (expected_bytes, expected_files) = match prev {
+        let (expected_bytes, expected_files) = match &prev {
             Some(s) => (Some(s.total_bytes), Some(s.file_count)),
             None => (super::disk::used_bytes(&root), None),
         };
         Self {
             root,
+            previous: prev,
             expected_bytes,
             expected_files,
             denied_sample_size: 20,
@@ -166,7 +169,8 @@ pub fn scan(
     );
 
     let (disk_total_bytes, disk_free_bytes) = super::disk::capacity(&root).unzip();
-    Ok(ScanResult {
+    let mut result = ScanResult {
+        diff: None,
         disk_total_bytes,
         disk_free_bytes,
         root,
@@ -180,7 +184,13 @@ pub fn scan(
         denied_sample,
         files,
         dirs,
-    })
+    };
+    if let Some(prev) = &opts.previous
+        && !cancelled
+    {
+        result.diff = Some(prev.diff(&result));
+    }
+    Ok(result)
 }
 
 /// Roll `own_*` totals up into every ancestor inside the scan root.
@@ -305,6 +315,7 @@ mod tests {
     fn opts(root: &Path) -> ScanOptions {
         ScanOptions {
             root: root.to_path_buf(),
+            previous: None,
             expected_bytes: None,
             expected_files: None,
             denied_sample_size: 5,
@@ -495,6 +506,27 @@ mod tests {
         let last = last.expect("event");
         assert_eq!(last.items_done, 1);
         assert_eq!(last.bytes_total, Some(on_disk(&tmp.path().join("a"))));
+    }
+
+    #[test]
+    fn second_scan_reports_the_difference() {
+        let tmp = tempdir();
+        let r = tmp.path();
+        write(&r.join("keep/a.txt"), 100);
+        let first = scan(&opts(r), &ScanControl::new(), &mut NoProgress).expect("scan");
+        assert!(first.diff.is_none());
+        let prev = ScanStats::from_result(&first);
+
+        write(&r.join("grow/big.mp4"), 50_000);
+        let mut o = opts(r);
+        o.previous = Some(prev.clone());
+        let second = scan(&o, &ScanControl::new(), &mut NoProgress).expect("scan");
+        let diff = second.diff.expect("diff");
+        assert_eq!(diff.since_unix, prev.finished_at_unix);
+        assert_eq!(diff.delta_files, 1);
+        assert_eq!(diff.delta_bytes, on_disk(&r.join("grow/big.mp4")) as i64);
+        assert!(diff.dirs[0].path.ends_with("grow") && diff.dirs[0].is_new);
+        assert_eq!(diff.categories[0].category, Category::Video);
     }
 
     #[test]

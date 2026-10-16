@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, formatDate } from "@/lib/format";
 import type { Category, CleanSession, ScanSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CategoryList } from "./CategoryList";
@@ -58,6 +58,7 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
         <p className="text-sm text-fg-muted">
           {t("scan.result_counts", { files: summary.file_count.toLocaleString(i18n.language), dirs: summary.dir_count.toLocaleString(i18n.language) })}
         </p>
+        {summary.diff && <DiffLine diff={summary.diff} />}
         {summary.cancelled && <p className="text-sm text-risk-review-fg">{t("scan.cancelled_note")}</p>}
         {summary.denied_count > 0 && <p className="text-sm text-fg-muted">{t("scan.denied_note", { count: summary.denied_count })}</p>}
         <p className="text-xs text-fg-muted">{t("scan.size_note")}</p>
@@ -115,5 +116,34 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
 
       {trashing && <TrashDialog paths={trashing} onClose={onTrashClosed} />}
     </div>
+  );
+}
+
+function DiffLine({ diff }: { diff: NonNullable<ScanSummary["diff"]> }) {
+  const { t, i18n } = useTranslation();
+  const date = formatDate(diff.since_unix, i18n.language);
+  const size = formatBytes(Math.abs(diff.delta_bytes), i18n.language);
+  const head = diff.delta_bytes > 0 ? t("scan.diff_up", { size, date }) : diff.delta_bytes < 0 ? t("scan.diff_down", { size, date }) : t("scan.diff_same", { date });
+  const main = diff.dirs.filter((d) => Math.sign(d.delta_bytes) === Math.sign(diff.delta_bytes)).slice(0, 2);
+  return (
+    <p data-testid="scan-diff" className="num text-sm text-fg-muted">
+      {head}
+      {main.length > 0 && (
+        <>
+          , {t("scan.diff_mainly")}{" "}
+          {main.map((d, i) => (
+            <span key={d.path}>
+              {i > 0 && ", "}
+              <span className="path" title={d.path}>
+                {d.path.split("/").pop()}
+              </span>{" "}
+              ({diff.delta_bytes > 0 ? "+" : "−"}
+              {formatBytes(Math.abs(d.delta_bytes), i18n.language)}
+              {d.is_new ? `, ${t("scan.diff_new")}` : ""})
+            </span>
+          ))}
+        </>
+      )}
+    </p>
   );
 }

@@ -7,6 +7,7 @@ import type {
   CleanSession,
   CommandError,
   DiskAccess,
+  OpKind,
   ProtectedEntry,
   RestoreReport,
   Settings,
@@ -29,6 +30,7 @@ export const defaultSettings: Settings = {
   locale: null,
   ai_mode: "off",
   theme: "system",
+  notify_when_done: true,
 };
 
 /** Mock state, exported for tests. */
@@ -90,6 +92,8 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
       return undefined as T;
     case "system_snapshot":
       return mock.system as T;
+    case "estimate_duration":
+      return ((args?.kind as OpKind) === "scan" ? 120 : 30) as T;
     default:
       throw { code: "unknown_command", message: cmd } satisfies CommandError;
   }
@@ -114,6 +118,7 @@ export const api = {
   openDiskAccessSettings: () => invoke<void>("open_disk_access_settings"),
   revealAppBinary: () => invoke<void>("reveal_app_binary"),
   systemSnapshot: () => invoke<SystemSnapshot>("system_snapshot"),
+  estimateDuration: (kind: OpKind, amount: number) => invoke<number | null>("estimate_duration", { kind, amount: Math.round(amount) }),
 };
 
 export function isCommandError(e: unknown): e is CommandError {

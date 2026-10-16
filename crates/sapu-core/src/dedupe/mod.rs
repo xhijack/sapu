@@ -9,4 +9,6 @@ mod plan;
 pub use group::{DupFile, DuplicateGroup, FolderPair, folder_pairs};
 pub use keep::{KeepStrategy, choose_keep, name_score};
 pub use pipeline::{DedupeOptions, DedupeResult, DedupeSummary, STAGES, Stage, find_duplicates};
-pub use plan::{DedupePlan, DedupeRunReport, GroupOutcome, GroupPlan, PlanError, execute};
+pub use plan::{
+    DedupePlan, DedupeRunReport, GroupOutcome, GroupPlan, PlanError, ReplaceMode, execute,
+};

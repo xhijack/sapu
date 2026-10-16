@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState } from "@/components/States";
 import { formatBytes } from "@/lib/format";
 import { dedupeApi } from "@/lib/dedupeApi";
-import type { DedupeRunReport, DedupeSummary, DuplicateGroup, FolderPair, KeepStrategy } from "@/lib/types";
+import type { DedupeRunReport, DedupeSummary, DuplicateGroup, FolderPair, KeepStrategy, Profile } from "@/lib/types";
 import { GroupCard } from "./GroupCard";
 import { DedupePreview } from "./DedupePreview";
 import { defaultKeep, type StrategyKey } from "./keep";
@@ -13,12 +13,13 @@ const PAGE = 20;
 
 interface Props {
   summary: DedupeSummary;
+  profile?: Profile;
   onSeeHistory: () => void;
   onNewSearch: () => void;
   onRerun: () => void;
 }
 
-export function DedupeResults({ summary, onSeeHistory, onNewSearch, onRerun }: Props) {
+export function DedupeResults({ summary, profile = "general", onSeeHistory, onNewSearch, onRerun }: Props) {
   const { t, i18n } = useTranslation();
   const [groups, setGroups] = useState<DuplicateGroup[] | null>(null);
   const [pairs, setPairs] = useState<FolderPair[]>([]);
@@ -52,6 +53,16 @@ export function DedupeResults({ summary, onSeeHistory, onNewSearch, onRerun }: P
           {t("dedupe.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
         </p>
         {result.outcomes.some((o) => o.kind === "keep_missing") && <p className="text-sm text-risk-review-fg">{t("dedupe.keep_missing")}</p>}
+        {(() => {
+          const linked = result.outcomes.reduce((n, o) => n + (o.kind === "done" ? o.linked : 0), 0);
+          const failed = result.outcomes.reduce((n, o) => n + (o.kind === "done" ? o.link_failed.length : 0), 0);
+          return linked + failed > 0 ? (
+            <p className="num text-sm text-fg-muted">
+              {t("dedupe.linked", { count: linked })}
+              {failed > 0 && `, ${t("dedupe.link_failed", { count: failed })}`}
+            </p>
+          ) : null;
+        })()}
         <div className="flex gap-2">
           <Button variant="outline" onClick={onSeeHistory}>
             {t("clean.see_history")}
@@ -157,6 +168,7 @@ export function DedupeResults({ summary, onSeeHistory, onNewSearch, onRerun }: P
           summary={summary}
           strategy={strategyValue}
           picks={picks}
+          allowHardlink={profile === "developer"}
           onClose={() => setPreview(false)}
           onDone={(r) => {
             setPreview(false);

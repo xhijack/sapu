@@ -6,18 +6,21 @@ import { ErrorState } from "@/components/States";
 import { dedupeApi } from "@/lib/dedupeApi";
 import { scanApi } from "@/lib/scanApi";
 import { useErrorMessage } from "@/lib/errors";
-import type { DedupeProgressPayload, DedupeSummary } from "@/lib/types";
+import type { DedupeProgressPayload, DedupeSummary, Profile } from "@/lib/types";
 import { DedupeResults } from "./DedupeResults";
 
 type Phase = { kind: "idle" } | { kind: "running"; root: string } | { kind: "done"; summary: DedupeSummary };
 
-export function DedupeView({ onSeeHistory }: { onSeeHistory: () => void }) {
+const MIN_SIZES = [1024, 4096, 64 * 1024, 1024 * 1024];
+
+export function DedupeView({ onSeeHistory, profile = "general" }: { onSeeHistory: () => void; profile?: Profile }) {
   const { t } = useTranslation();
   const errorMessage = useErrorMessage();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [root, setRoot] = useState<string | null>(null);
   const [progress, setProgress] = useState<DedupeProgressPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [minSize, setMinSize] = useState(4096);
 
   useEffect(() => {
     let live = true;
@@ -54,11 +57,11 @@ export function DedupeView({ onSeeHistory }: { onSeeHistory: () => void }) {
       setError(null);
       setProgress(null);
       dedupeApi
-        .start(r)
+        .start(r, minSize)
         .then(() => setPhase({ kind: "running", root: r }))
         .catch((e) => setError(errorMessage(e)));
     },
-    [errorMessage],
+    [errorMessage, minSize],
   );
 
   const pick = async () => {
@@ -84,7 +87,7 @@ export function DedupeView({ onSeeHistory }: { onSeeHistory: () => void }) {
   }
 
   if (phase.kind === "done") {
-    return <DedupeResults summary={phase.summary} onSeeHistory={onSeeHistory} onNewSearch={() => setPhase({ kind: "idle" })} onRerun={() => start(phase.summary.root)} />;
+    return <DedupeResults summary={phase.summary} profile={profile} onSeeHistory={onSeeHistory} onNewSearch={() => setPhase({ kind: "idle" })} onRerun={() => start(phase.summary.root)} />;
   }
 
   return (
@@ -104,6 +107,16 @@ export function DedupeView({ onSeeHistory }: { onSeeHistory: () => void }) {
           </Button>
         </div>
       </div>
+      <label className="grid gap-1 text-sm">
+        <span className="text-fg-muted">{t("dedupe.min_size")}</span>
+        <select value={minSize} onChange={(e) => setMinSize(Number(e.target.value))} className="h-9 w-48 rounded-md border border-border bg-surface px-2">
+          {MIN_SIZES.map((v) => (
+            <option key={v} value={v}>
+              {v >= 1024 * 1024 ? `${v / 1024 / 1024} MB` : `${v / 1024} KB`}
+            </option>
+          ))}
+        </select>
+      </label>
       {error && <ErrorState message={error} />}
       <div>
         <Button size="lg" disabled={!root} onClick={() => root && start(root)}>

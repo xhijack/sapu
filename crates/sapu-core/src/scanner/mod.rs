@@ -17,5 +17,5 @@ pub use result::{
     AgeFilter, CategorySummary, DirStats, DirSummary, FileEntry, FileFilter, ScanResult,
     ScanSummary, TreeNode,
 };
-pub use stats_cache::ScanStats;
+pub use stats_cache::{CategoryDelta, DirDelta, ScanDiff, ScanStats};
 pub use walk::{ScanOptions, scan};

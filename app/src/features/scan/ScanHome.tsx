@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { FolderSearch, HardDrive, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scanApi } from "@/lib/scanApi";
-import type { ScanTargets } from "@/lib/types";
+import type { PreviousScan, ScanTargets } from "@/lib/types";
+import { formatBytes, formatDate, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Choice = "home" | "disk" | "folder";
@@ -15,10 +16,24 @@ interface Props {
 
 /** First screen: an invitation to scan. One primary action. */
 export function ScanHome({ onStart, error }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [targets, setTargets] = useState<ScanTargets | null>(null);
   const [choice, setChoice] = useState<Choice>("home");
   const [folder, setFolder] = useState<string | null>(null);
+  const [previous, setPrevious] = useState<Record<string, PreviousScan | null>>({});
+
+  useEffect(() => {
+    const paths = [targets?.home, targets?.disk, folder].filter((p): p is string => !!p);
+    let live = true;
+    for (const p of paths) {
+      if (p in previous) continue;
+      scanApi.previous(p).then((prev) => live && setPrevious((m) => ({ ...m, [p]: prev }))).catch(() => undefined);
+    }
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targets, folder]);
 
   useEffect(() => {
     let live = true;
@@ -67,6 +82,12 @@ export function ScanHome({ onStart, error }: Props) {
                 {path && id === "folder" && (
                   <span className="path mt-1 block truncate text-fg-muted" title={path}>
                     {path}
+                  </span>
+                )}
+                {path && previous[path] && (
+                  <span className="num mt-1 block text-xs text-fg-muted">
+                    {t("scan.last_scan_line", { date: formatDate(previous[path]!.finished_at_unix, i18n.language), size: formatBytes(previous[path]!.total_bytes, i18n.language) })}
+                    {previous[path]!.estimated_secs != null && `. ${t("scan.estimate_line", { time: formatDuration(t, previous[path]!.estimated_secs!) })}`}
                   </span>
                 )}
               </span>
