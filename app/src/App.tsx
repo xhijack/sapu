@@ -7,6 +7,7 @@ import { Wizard } from "@/features/onboarding/Wizard";
 import { ScanView } from "@/features/scan/ScanView";
 import { HomeView } from "@/features/home/HomeView";
 import { CareView } from "@/features/care/CareView";
+import { AppsView } from "@/features/apps/AppsView";
 import { CleanView } from "@/features/clean/CleanView";
 import { DedupeView } from "@/features/dedupe/DedupeView";
 import { HistoryView } from "@/features/history/HistoryView";
@@ -101,6 +102,9 @@ export default function App() {
       </Pane>
       <Pane active={screen === "dedupe"} mounted={visited.has("dedupe")}>
         <DedupeView profile={settings.profile} onSeeHistory={() => navigate("history")} />
+      </Pane>
+      <Pane active={screen === "apps"} mounted={visited.has("apps")}>
+        <AppsView onSeeHistory={() => navigate("history")} />
       </Pane>
       <Pane active={screen === "history"} mounted={visited.has("history")}>
         <HistoryView />

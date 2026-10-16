@@ -11,6 +11,7 @@ use sapu_core::settings::Settings;
 use tauri_plugin_opener::OpenerExt;
 
 mod ai;
+mod apps;
 mod care;
 mod clean;
 mod dedupe;
@@ -256,6 +257,12 @@ pub fn run() {
             scan::scan_subtree,
             scan::reveal_path,
             scan::trash_paths,
+            apps::apps_list,
+            apps::apps_leftovers,
+            apps::apps_orphans,
+            apps::apps_is_running,
+            apps::apps_uninstall,
+            apps::app_icon,
             care::care_run,
             care::care_last,
             clean::clean_evaluate,

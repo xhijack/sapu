@@ -11,7 +11,8 @@
     "clean": "Clean",
     "dedupe": "Duplicates",
     "scan": "Scan",
-    "care": "Care"
+    "care": "Care",
+    "apps": "Apps"
   },
   "common": {
     "next": "Next",
@@ -197,7 +198,8 @@
     "ai_disabled": "AI help is off.",
     "ai_provider": "Could not reach the AI provider. Check the address, model or API key.",
     "ai_bad_answer": "The AI answer could not be read. Try again.",
-    "ai_keychain": "Could not access the system keychain."
+    "ai_keychain": "Could not access the system keychain.",
+    "app_running": "The app is still running. Quit it, then try again."
   },
   "scan": {
     "title": "Scan",
@@ -508,5 +510,43 @@
     "done_title": "Care done",
     "done_body": "{{size}} freed. The Space Score updates when you care again.",
     "last_care": "Last cared {{date}}, score {{score}}"
+  },
+  "apps": {
+    "title": "Apps",
+    "intro": "Remove apps together with their leftovers, or clean up remnants of apps that are gone. Everything goes to the Trash first.",
+    "loading": "Reading the app list…",
+    "unsupported": "The app list is available on macOS for now. On Windows and Linux use the system's app manager.",
+    "search": "Search apps",
+    "tab_installed": "Installed",
+    "tab_orphans": "Leftovers",
+    "count": "{{count}} apps, {{size}}",
+    "system_badge": "System",
+    "running_badge": "Running",
+    "version": "Version {{v}}",
+    "last_used": "Last used {{date}}",
+    "leftovers_title": "Leftovers in Library",
+    "leftovers_none": "No leftovers found.",
+    "leftovers_loading": "Looking for leftovers…",
+    "kind_support": "App data",
+    "kind_cache": "Cache",
+    "kind_preferences": "Preferences",
+    "kind_logs": "Logs",
+    "kind_container": "Container",
+    "kind_group_container": "Group container",
+    "kind_saved_state": "Saved state",
+    "kind_web_kit": "Web data",
+    "kind_launch_agent": "Launch agent",
+    "kind_cookies": "Cookies",
+    "uninstall": "Remove app and {{count}} leftovers, {{size}}",
+    "uninstall_app_only": "Remove app, {{size}}",
+    "remove_leftovers": "Move {{count}} leftovers to Trash, {{size}}",
+    "system_note": "Apps that ship with macOS cannot be removed by Sapu.",
+    "running_note": "Quit the app before removing it.",
+    "orphans_body": "Library folders of apps that are no longer installed. Check before moving.",
+    "orphans_none": "No leftovers from removed apps.",
+    "select_all": "Select all",
+    "confirm_title": "Move to the Trash?",
+    "confirm_body": "{{count}} items, {{size}}. The app and its leftovers can be restored from the Trash or History.",
+    "done": "{{count}} items moved to the Trash, {{size}} freed."
   }
 }

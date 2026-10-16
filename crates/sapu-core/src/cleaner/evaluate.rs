@@ -244,6 +244,11 @@ fn children(dir: &Path) -> Vec<Candidate> {
         .collect()
 }
 
+/// Recursive size without following symlinks (public alias for other modules).
+pub fn dir_size_pub(dir: &Path) -> u64 {
+    dir_size(dir)
+}
+
 /// Recursive size without following symlinks.
 pub(crate) fn dir_size(dir: &Path) -> u64 {
     jwalk::WalkDir::new(dir)

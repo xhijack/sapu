@@ -171,11 +171,14 @@ mod platform {
             "/etc",
             "/private/etc",
             "/private/var/db",
-            "/Applications",
             "/cores",
         ] {
             set.add(p, Protection::Subtree, "os-system");
         }
+        // The folder itself stays; individual bundles may be uninstalled
+        // through the safety layer. Apple's own apps live in /System/Applications.
+        set.add("/Applications", Protection::Exact, "os-system");
+        set.add("/Applications/Utilities", Protection::Exact, "os-system");
         if let Some(home) = dirs::home_dir() {
             set.add(
                 home.join("Library/Keychains"),
@@ -300,6 +303,15 @@ mod tests {
             // A random file directly under home is not protected.
             assert!(!set.is_protected(&home.join("sapu-does-not-exist-xyz.tmp")));
         }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn applications_folder_protected_but_bundles_removable() {
+        let set = ProtectedPaths::os_defaults();
+        assert!(set.is_protected(Path::new("/Applications")));
+        assert!(!set.is_protected(Path::new("/Applications/SomeApp.app")));
+        assert!(set.is_protected(Path::new("/System/Applications/Safari.app")));
     }
 
     #[test]

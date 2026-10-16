@@ -27,6 +27,7 @@ blake3 = "1"
 rayon = "1"
 sysinfo = "0.37"
 ureq = { version = "3", features = ["json"] }
+plist = "1"
 keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native"] }
 
 [workspace.lints.rust]

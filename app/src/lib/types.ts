@@ -539,3 +539,23 @@ export interface CareProgressPayload {
   elapsed_secs: number;
   eta: Eta;
 }
+
+// ---- Apps (R4) ----
+
+export interface InstalledApp {
+  name: string;
+  bundle_id: string | null;
+  version: string | null;
+  path: string;
+  bytes: number;
+  last_used: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+  is_system: boolean;
+}
+
+export type LeftoverKind = "support" | "cache" | "preferences" | "logs" | "container" | "group_container" | "saved_state" | "web_kit" | "launch_agent" | "cookies";
+
+export interface Leftover {
+  path: string;
+  kind: LeftoverKind;
+  bytes: number;
+}

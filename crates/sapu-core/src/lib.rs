@@ -7,6 +7,7 @@
 //! - The only code path that removes files is [`safety`].
 //! - Core never formats text for display; it emits data and [`progress`] events.
 
+pub mod apps;
 pub mod care;
 pub mod cleaner;
 pub mod dedupe;

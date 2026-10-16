@@ -11,7 +11,8 @@
     "clean": "Bersih",
     "dedupe": "Duplikat",
     "scan": "Pindai",
-    "care": "Rawat"
+    "care": "Rawat",
+    "apps": "Aplikasi"
   },
   "common": {
     "next": "Lanjut",
@@ -197,7 +198,8 @@
     "ai_disabled": "Bantuan AI mati.",
     "ai_provider": "Tidak bisa menghubungi penyedia AI. Periksa alamat, model, atau API key.",
     "ai_bad_answer": "Jawaban AI tidak bisa dibaca. Coba lagi.",
-    "ai_keychain": "Tidak bisa mengakses keychain sistem."
+    "ai_keychain": "Tidak bisa mengakses keychain sistem.",
+    "app_running": "Aplikasi masih berjalan. Tutup dulu, lalu coba lagi."
   },
   "scan": {
     "title": "Pindai",
@@ -508,5 +510,43 @@
     "done_title": "Selesai dirawat",
     "done_body": "{{size}} dibebaskan. Skor Ruang akan diperbarui saat kamu merawat lagi.",
     "last_care": "Terakhir dirawat {{date}}, skor {{score}}"
+  },
+  "apps": {
+    "title": "Aplikasi",
+    "intro": "Hapus aplikasi beserta sisa filenya, atau bersihkan sisa aplikasi yang sudah tidak ada. Semuanya ke Trash dulu.",
+    "loading": "Membaca daftar aplikasi…",
+    "unsupported": "Daftar aplikasi baru tersedia di macOS. Di Windows dan Linux gunakan pengelola aplikasi sistem.",
+    "search": "Cari aplikasi",
+    "tab_installed": "Terpasang",
+    "tab_orphans": "Sisa aplikasi",
+    "count": "{{count}} aplikasi, {{size}}",
+    "system_badge": "Bawaan sistem",
+    "running_badge": "Sedang berjalan",
+    "version": "Versi {{v}}",
+    "last_used": "Terakhir dipakai {{date}}",
+    "leftovers_title": "Sisa file di Library",
+    "leftovers_none": "Tidak ada sisa file yang ditemukan.",
+    "leftovers_loading": "Mencari sisa file…",
+    "kind_support": "Data aplikasi",
+    "kind_cache": "Cache",
+    "kind_preferences": "Preferensi",
+    "kind_logs": "Log",
+    "kind_container": "Container",
+    "kind_group_container": "Container grup",
+    "kind_saved_state": "Status jendela",
+    "kind_web_kit": "Data web",
+    "kind_launch_agent": "Agen otomatis",
+    "kind_cookies": "Cookie",
+    "uninstall": "Hapus aplikasi dan {{count}} sisa, {{size}}",
+    "uninstall_app_only": "Hapus aplikasi, {{size}}",
+    "remove_leftovers": "Pindahkan {{count}} sisa ke Trash, {{size}}",
+    "system_note": "Aplikasi bawaan macOS tidak bisa dihapus oleh Sapu.",
+    "running_note": "Tutup aplikasinya dulu sebelum dihapus.",
+    "orphans_body": "Folder di Library milik aplikasi yang sudah tidak terpasang. Periksa sebelum memindahkan.",
+    "orphans_none": "Tidak ada sisa aplikasi.",
+    "select_all": "Pilih semua",
+    "confirm_title": "Pindahkan ke Trash?",
+    "confirm_body": "{{count}} item, {{size}}. Aplikasi dan sisa filenya bisa dipulihkan dari Trash atau Riwayat.",
+    "done": "{{count}} item dipindahkan ke Trash, {{size}} dibebaskan."
   }
 }

@@ -3273,6 +3273,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "dirs",
+ "plist",
  "sapu-ai",
  "sapu-core",
  "serde",
@@ -3309,6 +3310,7 @@ dependencies = [
  "glob",
  "include_dir",
  "jwalk",
+ "plist",
  "rayon",
  "serde",
  "serde_json",
