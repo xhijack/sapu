@@ -18,6 +18,8 @@ pub struct DiskInfo {
 pub struct SystemSnapshot {
     /// 0..100 across all cores; `None` until two samples exist.
     pub cpu_percent: Option<f32>,
+    /// Per-core usage 0..100, same order as the OS reports; empty until two samples exist.
+    pub cpu_per_core: Vec<f32>,
     pub cpu_count: usize,
     pub mem_total_bytes: u64,
     pub mem_used_bytes: u64,
@@ -69,6 +71,11 @@ impl SystemMonitor {
             .collect();
         SystemSnapshot {
             cpu_percent: (self.samples >= 2).then(|| self.sys.global_cpu_usage()),
+            cpu_per_core: if self.samples >= 2 {
+                self.sys.cpus().iter().map(|c| c.cpu_usage()).collect()
+            } else {
+                Vec::new()
+            },
             cpu_count: self.sys.cpus().len(),
             mem_total_bytes: self.sys.total_memory(),
             mem_used_bytes: self.sys.used_memory(),
@@ -101,5 +108,6 @@ mod tests {
         assert!(s.cpu_count > 0);
         let s2 = m.snapshot();
         assert!(s2.cpu_percent.is_some());
+        assert_eq!(s2.cpu_per_core.len(), s2.cpu_count);
     }
 }

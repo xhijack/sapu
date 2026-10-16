@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, HardDrive, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
+import { Copy, HardDrive, History, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
 import { api } from "@/lib/api";
 import { scanApi } from "@/lib/scanApi";
 import { formatBytes, formatDate } from "@/lib/format";
-import type { PreviousScan, SystemSnapshot } from "@/lib/types";
+import type { HistoryTotals, PreviousScan, ScanLogEntry, SystemSnapshot } from "@/lib/types";
 import type { Screen } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Tile } from "@/components/ui/tile";
@@ -24,6 +24,8 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const { t, i18n } = useTranslation();
   const [snap, setSnap] = useState<SystemSnapshot | null>(null);
   const [previous, setPrevious] = useState<PreviousScan | null>(null);
+  const [totals, setTotals] = useState<HistoryTotals | null>(null);
+  const [recent, setRecent] = useState<ScanLogEntry[]>([]);
 
   useEffect(() => {
     let live = true;
@@ -35,6 +37,8 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
       .then((tg) => (tg.home ? scanApi.previous(tg.home) : null))
       .then((p) => live && setPrevious(p))
       .catch(() => undefined);
+    api.historyTotals().then((x) => live && setTotals(x)).catch(() => undefined);
+    scanApi.history(4).then((x) => live && setRecent(x)).catch(() => undefined);
     return () => {
       live = false;
       clearInterval(id);
@@ -94,11 +98,61 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         <Tile className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1fr_1fr]">
+      <section className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
+        <div className="card rise grid gap-3 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-fg-muted">
+            <History aria-hidden className="h-4 w-4" />
+            {t("home.activity")}
+          </h2>
+          {totals && totals.sessions > 0 ? (
+            <div>
+              <p className="display num text-2xl">{t("home.freed_total", { size: formatBytes(totals.bytes_freed, lang) })}</p>
+              <p className="num text-xs text-fg-muted">{t("home.freed_sessions", { count: totals.sessions, items: totals.items_disposed.toLocaleString(lang) })}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-fg-faint">{t("home.freed_none")}</p>
+          )}
+          {recent.length > 0 && (
+            <div className="grid gap-1">
+              <span className="text-xs text-fg-muted">{t("home.recent_scans")}</span>
+              <ul className="grid gap-1 text-sm">
+                {recent.map((r) => (
+                  <li key={`${r.root}-${r.finished_at_unix}`} className="flex items-baseline justify-between gap-3">
+                    <span className="path min-w-0 truncate" title={r.root}>
+                      {r.root.split("/").filter(Boolean).pop() || r.root}
+                    </span>
+                    <span className="num shrink-0 text-xs text-fg-muted">
+                      {formatDate(r.finished_at_unix, lang)}, {t("home.scan_line", { size: formatBytes(r.total_bytes, lang), files: r.file_count.toLocaleString(lang) })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <button type="button" onClick={() => onNavigate("history")} className="w-fit text-xs text-accent underline-offset-2 hover:underline">
+            {t("clean.see_history")}
+          </button>
+        </div>
         <div className="card rise grid gap-4 p-5">
           <h2 className="text-sm font-semibold text-fg-muted">{t("home.system_now")}</h2>
-          <div className="grid grid-cols-2 gap-6">
-            <MiniMeter label={t("home.cpu")} value={snap?.cpu_percent ?? null} detail={snap ? t("home.cpu_cores", { count: snap.cpu_count }) : ""} measuring={t("home.measuring")} />
+          <div className="grid gap-6">
+            <div className="grid gap-2">
+              <MiniMeter
+                label={t("home.cpu")}
+                value={snap?.cpu_percent ?? null}
+                detail={snap ? t("home.cores_hint", { count: snap.cpu_count, avg: Math.round(snap.cpu_percent ?? 0) }) : ""}
+                measuring={t("home.measuring")}
+              />
+              {snap && snap.cpu_per_core.length > 0 && (
+                <ul aria-label={t("home.cpu")} className="flex h-6 items-end gap-[3px]">
+                  {snap.cpu_per_core.map((c, i) => (
+                    <li key={i} title={`#${i + 1}: ${Math.round(c)}%`} className="flex-1 rounded-sm bg-surface-muted">
+                      <div className={cn("w-full rounded-sm transition-[height] duration-500", c >= 90 ? "bg-gauge-danger" : c >= 75 ? "bg-gauge-warn" : "bg-gauge-ok")} style={{ height: `${Math.max(8, Math.round(c))}%` }} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <MiniMeter
               label={t("home.memory")}
               value={snap ? Math.round((snap.mem_used_bytes / Math.max(1, snap.mem_total_bytes)) * 100) : null}

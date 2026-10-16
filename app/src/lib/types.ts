@@ -385,6 +385,7 @@ export interface DiskInfo {
 
 export interface SystemSnapshot {
   cpu_percent: number | null;
+  cpu_per_core: number[];
   cpu_count: number;
   mem_total_bytes: number;
   mem_used_bytes: number;
@@ -471,4 +472,18 @@ export interface AiSearchResult {
   filter: SearchFilter;
   files: FileEntry[];
   preview: AiPreview;
+}
+
+export interface ScanLogEntry {
+  root: string;
+  finished_at_unix: number;
+  total_bytes: number;
+  file_count: number;
+}
+
+export interface HistoryTotals {
+  sessions: number;
+  bytes_freed: number;
+  items_disposed: number;
+  last_session_unix: number | null;
 }

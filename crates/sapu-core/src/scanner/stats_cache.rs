@@ -22,6 +22,15 @@ pub struct ScanStats {
     pub top_dirs: Vec<DirSummary>,
 }
 
+/// A finished scan, as listed on the home screen.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ScanLogEntry {
+    pub root: PathBuf,
+    pub finished_at_unix: u64,
+    pub total_bytes: u64,
+    pub file_count: u64,
+}
+
 /// What changed between the previous snapshot and the current scan.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ScanDiff {
@@ -135,7 +144,44 @@ impl ScanStats {
         std::fs::create_dir_all(dir).map_err(|e| SapuError::io("create scans dir", e))?;
         let json = serde_json::to_vec(self)?;
         std::fs::write(Self::file_for(dir, root), json)
-            .map_err(|e| SapuError::io("write scan stats", e))
+            .map_err(|e| SapuError::io("write scan stats", e))?;
+        self.append_log(dir, root)
+    }
+
+    /// One line per finished scan in `scans/history.jsonl`, for the home
+    /// screen's activity list. Kept to the last 200 entries.
+    fn append_log(&self, dir: &Path, root: &Path) -> Result<()> {
+        let path = dir.join("history.jsonl");
+        let entry = ScanLogEntry {
+            root: root.to_path_buf(),
+            finished_at_unix: self.finished_at_unix,
+            total_bytes: self.total_bytes,
+            file_count: self.file_count,
+        };
+        let mut lines: Vec<String> = std::fs::read_to_string(&path)
+            .map(|s| s.lines().map(str::to_string).collect())
+            .unwrap_or_default();
+        lines.push(serde_json::to_string(&entry)?);
+        if lines.len() > 200 {
+            let drop = lines.len() - 200;
+            lines.drain(..drop);
+        }
+        std::fs::write(&path, lines.join("\n") + "\n")
+            .map_err(|e| SapuError::io("write scan log", e))
+    }
+
+    /// Newest first.
+    pub fn read_log(dir: &Path, limit: usize) -> Vec<ScanLogEntry> {
+        let Ok(text) = std::fs::read_to_string(dir.join("history.jsonl")) else {
+            return Vec::new();
+        };
+        let mut v: Vec<ScanLogEntry> = text
+            .lines()
+            .filter_map(|l| serde_json::from_str(l).ok())
+            .collect();
+        v.reverse();
+        v.truncate(limit);
+        v
     }
 }
 
@@ -154,8 +200,16 @@ mod tests {
             ..Default::default()
         };
         a.save(&dir, Path::new("/a")).expect("save");
-        assert_eq!(ScanStats::load(&dir, Path::new("/a")), Some(a));
+        assert_eq!(ScanStats::load(&dir, Path::new("/a")), Some(a.clone()));
         assert_eq!(ScanStats::load(&dir, Path::new("/b")), None);
+        let b = ScanStats {
+            finished_at_unix: 2,
+            ..a.clone()
+        };
+        b.save(&dir, Path::new("/a")).expect("save");
+        let log = ScanStats::read_log(&dir, 10);
+        assert_eq!(log.len(), 2);
+        assert_eq!(log[0].finished_at_unix, 2, "newest first");
     }
 
     #[test]

@@ -15,8 +15,8 @@ describe("ScanView", () => {
     expect(await screen.findByRole("progressbar")).toBeInTheDocument();
     await screen.findByText(/Sekitar .* lagi/);
 
-    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
-    expect(screen.getByRole("img", { name: "Pembagian ruang per kategori" })).toBeInTheDocument();
+    await screen.findByTestId("scan-total", {}, { timeout: 3000 });
+    expect(screen.getByRole("img", { name: "Ruang per kategori" })).toBeInTheDocument();
     expect(screen.getByText(/3 folder tidak bisa dibaca/)).toBeInTheDocument();
   });
 
@@ -38,9 +38,9 @@ describe("ScanView", () => {
     scanMock.ticks = 2;
     render(<ScanView />);
     await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
-    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
+    await screen.findByTestId("scan-total", {}, { timeout: 3000 });
 
-    await user.click(screen.getByRole("button", { name: /^Video/ }));
+    await user.click(screen.getByRole("button", { name: /Video/ }));
     expect(await screen.findByRole("heading", { name: "File terbesar" })).toBeInTheDocument();
     const rows = await screen.findAllByRole("button", { name: "Pindahkan ke Trash" });
     expect(rows.length).toBeGreaterThan(0);
@@ -70,7 +70,7 @@ describe("ScanView P1", () => {
     expect(await screen.findByText(/Terakhir dipindai .*204,2 GB/)).toBeInTheDocument();
     expect(screen.getByText(/Diperkirakan sekitar 2 menit/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Mulai pindai" }));
-    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
+    await screen.findByTestId("scan-total", {}, { timeout: 3000 });
     const diff = screen.getByTestId("scan-diff");
     expect(diff).toHaveTextContent(/Bertambah 8,2 GB sejak/);
     expect(diff).toHaveTextContent(/terutama dari dev \(\+6,0 GB\), baru \(\+2,1 GB, baru\)/);

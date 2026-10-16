@@ -98,6 +98,37 @@ pub fn scan_previous(root: PathBuf) -> Option<PreviousScan> {
     })
 }
 
+/// Recent finished scans (newest first) for the home screen.
+#[tauri::command]
+pub fn scan_history(limit: usize) -> Vec<sapu_core::scanner::ScanLogEntry> {
+    ScanStats::default_dir()
+        .map(|d| ScanStats::read_log(&d, limit.min(100)))
+        .unwrap_or_default()
+}
+
+/// macOS Quick Look for a file (Space in Finder); elsewhere reveals the file.
+#[tauri::command]
+pub fn quick_look(app: AppHandle, path: PathBuf) -> CmdResult<()> {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = &app;
+        std::process::Command::new("qlmanage")
+            .arg("-p")
+            .arg(&path)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| CommandError::new("io", e.to_string()))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        app.opener()
+            .reveal_item_in_dir(&path)
+            .map_err(|e| CommandError::new("opener", e.to_string()))
+    }
+}
+
 #[tauri::command]
 pub fn scan_targets() -> ScanTargets {
     ScanTargets {

@@ -7,6 +7,7 @@ import type {
   CleanSession,
   CommandError,
   DiskAccess,
+  HistoryTotals,
   OpKind,
   ProtectedEntry,
   RestoreReport,
@@ -50,6 +51,7 @@ export const mock = {
   ] as ProtectedEntry[],
   system: {
     cpu_percent: 23.5,
+    cpu_per_core: [71, 40, 22, 18, 15, 12, 9, 8, 20, 20],
     cpu_count: 10,
     mem_total_bytes: 16 * 1024 ** 3,
     mem_used_bytes: 9.92 * 1024 ** 3,
@@ -82,6 +84,8 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
       return mock.protected as T;
     case "history_list":
       return mock.history as T;
+    case "history_totals":
+      return { sessions: 3, bytes_freed: 41.2 * 1024 ** 3, items_disposed: 1240, last_session_unix: 1_791_900_000 } as T;
     case "history_restore":
       if (mock.info.os === "macos") {
         throw { code: "restore_unsupported", message: "unsupported" } satisfies CommandError;
@@ -115,6 +119,7 @@ export const api = {
   settingsSet: (settings: Settings) => invoke<void>("settings_set", { settings }),
   protectedPaths: () => invoke<ProtectedEntry[]>("protected_paths"),
   historyList: () => invoke<CleanSession[]>("history_list"),
+  historyTotals: () => invoke<HistoryTotals>("history_totals"),
   historyRestore: (id: string) => invoke<RestoreReport>("history_restore", { id }),
   openDiskAccessSettings: () => invoke<void>("open_disk_access_settings"),
   revealAppBinary: () => invoke<void>("reveal_app_binary"),

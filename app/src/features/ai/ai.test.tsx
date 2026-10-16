@@ -12,7 +12,7 @@ describe("AI off", () => {
     const user = userEvent.setup();
     render(<ScanView />);
     await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
-    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
+    await screen.findByTestId("scan-total", {}, { timeout: 3000 });
     expect(screen.queryByRole("button", { name: "Buat ringkasan dengan AI" })).toBeNull();
     await user.click(screen.getByRole("tab", { name: "Terbesar" }));
     expect(screen.queryByRole("searchbox")).toBeNull();
@@ -30,7 +30,7 @@ describe("AI on", () => {
     const user = userEvent.setup();
     render(<ScanView />);
     await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
-    await screen.findByText(/212,4 GB dipakai/, {}, { timeout: 3000 });
+    await screen.findByTestId("scan-total", {}, { timeout: 3000 });
 
     await user.click(await screen.findByRole("button", { name: "Buat ringkasan dengan AI" }));
     const panel = await screen.findByTestId("ai-panel");

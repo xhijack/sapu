@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { SpaceRing, type RingSegment } from "@/components/viz/SpaceRing";
+import { useCountUp } from "@/components/viz/useCountUp";
 import { formatBytes, formatDate } from "@/lib/format";
 import type { Category, CleanSession, ScanSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { CategoryList } from "./CategoryList";
-import { DiskStrip } from "./DiskStrip";
+import { CategoryTiles } from "./CategoryTiles";
 import { LargestList } from "./LargestList";
+import { Sunburst } from "./Sunburst";
 import { Treemap } from "./Treemap";
 import { TrashDialog } from "./TrashDialog";
+import { categoryColor } from "./categoryColor";
 import { AiReport } from "@/features/ai/AiReport";
 import { AiSearch } from "@/features/ai/AiSearch";
 import { WhatIsDialog } from "@/features/ai/WhatIsDialog";
 import { useAiEnabled } from "@/features/ai/useAiEnabled";
 
 type Tab = "summary" | "map" | "largest";
+type MapMode = "sunburst" | "treemap";
 
 interface Props {
   summary: ScanSummary;
@@ -24,13 +28,22 @@ interface Props {
 
 export function Results({ summary, onRescan, onNewScan }: Props) {
   const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const [tab, setTab] = useState<Tab>("summary");
+  const [mapMode, setMapMode] = useState<MapMode>("sunburst");
   const [category, setCategory] = useState<Category | null>(null);
   const [trashing, setTrashing] = useState<string[] | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
   const [whatIs, setWhatIs] = useState<string | null>(null);
   const aiEnabled = useAiEnabled();
+  const total = useCountUp(summary.total_bytes);
+
+  const diskTotal = summary.disk_total_bytes ?? summary.total_bytes;
+  const free = summary.disk_free_bytes ?? 0;
+  const ringSegments: RingSegment[] = summary.categories.filter((c) => c.bytes > 0).map((c) => ({ key: c.category, value: c.bytes, color: categoryColor(c.category), label: `${t(`category.${c.category}`)}: ${formatBytes(c.bytes, lang)}` }));
+  const other = Math.max(0, diskTotal - summary.total_bytes - free);
+  if (other > 0) ringSegments.push({ key: "other-volume", value: other, color: "var(--border-strong)", label: `${t("scan.strip_other_volume")}: ${formatBytes(other, lang)}` });
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "summary", label: t("scan.tab_summary") },
@@ -45,41 +58,55 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
     setRemoved((r) => new Set([...r, ...done]));
     setNotice(
       s.skipped === 0 && s.failed === 0
-        ? t("scan.trash_done", { count: s.disposed, size: formatBytes(s.bytes_freed, i18n.language) })
+        ? t("scan.trash_done", { count: s.disposed, size: formatBytes(s.bytes_freed, lang) })
         : t("scan.trash_partial", { ok: s.disposed, skipped: s.skipped, failed: s.failed }),
     );
   };
 
   return (
-    <div className="grid max-w-5xl gap-8">
-      <header className="grid gap-1">
-        <p className="num text-4xl font-semibold tracking-tight">
-          {summary.disk_total_bytes
-            ? t("scan.result_total_of", { size: formatBytes(summary.total_bytes, i18n.language), total: formatBytes(summary.disk_total_bytes, i18n.language) })
-            : t("scan.result_total", { size: formatBytes(summary.total_bytes, i18n.language) })}
-        </p>
-        <p className="path truncate text-fg-muted" title={summary.root}>
-          {summary.root}
-        </p>
-        <p className="text-sm text-fg-muted">
-          {t("scan.result_counts", { files: summary.file_count.toLocaleString(i18n.language), dirs: summary.dir_count.toLocaleString(i18n.language) })}
-        </p>
-        {summary.diff && <DiffLine diff={summary.diff} />}
-        {summary.cancelled && <p className="text-sm text-risk-review-fg">{t("scan.cancelled_note")}</p>}
-        {summary.denied_count > 0 && <p className="text-sm text-fg-muted">{t("scan.denied_note", { count: summary.denied_count })}</p>}
-        <p className="text-xs text-fg-muted">{t("scan.size_note")}</p>
+    <div className="grid max-w-[1040px] gap-8">
+      <header className="rise grid items-center gap-8 md:grid-cols-[auto_1fr]">
+        <SpaceRing size={200} thickness={18} total={diskTotal} segments={ringSegments} label={t("scan.ring_label")}>
+          <div className="grid gap-0.5">
+            <span className="display num text-[30px] leading-none">{diskTotal > 0 ? Math.round((summary.total_bytes / diskTotal) * 100) : 100}%</span>
+            <span className="text-[11px] text-fg-muted">{summary.root.split("/").filter(Boolean).pop() || summary.root}</span>
+          </div>
+        </SpaceRing>
+        <div className="grid gap-3">
+          <div className="grid gap-1">
+            <p data-testid="scan-total" className="display num text-[44px] leading-[1.05]">
+              {formatBytes(total, lang)}
+              <span className="ml-3 text-xl font-semibold text-fg-muted">{summary.disk_total_bytes ? t("scan.result_used_of", { total: formatBytes(summary.disk_total_bytes, lang) }) : t("scan.result_used")}</span>
+            </p>
+            <p className="path truncate text-fg-muted" title={summary.root}>
+              {summary.root}
+            </p>
+            <p className="num text-sm text-fg-muted">
+              {t("scan.result_counts", { files: summary.file_count.toLocaleString(lang), dirs: summary.dir_count.toLocaleString(lang) })}
+            </p>
+            {summary.diff && <DiffLine diff={summary.diff} />}
+            {summary.cancelled && <p className="text-sm text-risk-review-fg">{t("scan.cancelled_note")}</p>}
+            {summary.denied_count > 0 && <p className="text-sm text-fg-muted">{t("scan.denied_note", { count: summary.denied_count })}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={onRescan}>
+              {t("scan.rescan")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onNewScan}>
+              {t("scan.new_scan")}
+            </Button>
+          </div>
+        </div>
       </header>
 
-      <DiskStrip categories={summary.categories} total={summary.total_bytes} diskTotal={summary.disk_total_bytes} diskFree={summary.disk_free_bytes} />
-
       {notice && (
-        <p role="status" className="rounded-md bg-surface-muted px-3 py-2 text-sm">
+        <p role="status" className="card-solid px-4 py-2 text-sm">
           {notice} {removed.size > 0 && t("scan.stale_note")}
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-4 border-b border-border">
-        <div role="tablist" className="flex gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" className="inline-flex rounded-full bg-surface-muted p-1">
           {tabs.map((tb) => (
             <button
               key={tb.id}
@@ -87,46 +114,44 @@ export function Results({ summary, onRescan, onNewScan }: Props) {
               type="button"
               aria-selected={tab === tb.id}
               onClick={() => setTab(tb.id)}
-              className={cn("-mb-px border-b-2 px-3 py-2 text-sm font-medium", tab === tb.id ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg")}
+              className={cn("rounded-full px-4 py-1.5 text-sm font-medium transition-colors", tab === tb.id ? "bg-surface-solid text-fg shadow-[var(--shadow-1)]" : "text-fg-muted hover:text-fg")}
             >
               {tb.label}
             </button>
           ))}
         </div>
-        <div className="flex gap-2 pb-2">
-          <Button variant="ghost" size="sm" onClick={onNewScan}>
-            {t("scan.new_scan")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={onRescan}>
-            {t("scan.rescan")}
-          </Button>
-        </div>
+        {tab === "map" && (
+          <div role="radiogroup" aria-label={t("scan.tab_map")} className="inline-flex rounded-full bg-surface-muted p-1 text-sm">
+            {(["sunburst", "treemap"] as MapMode[]).map((m) => (
+              <button key={m} type="button" role="radio" aria-checked={mapMode === m} onClick={() => setMapMode(m)} className={cn("rounded-full px-3 py-1 font-medium", mapMode === m ? "bg-surface-solid shadow-[var(--shadow-1)]" : "text-fg-muted")}>
+                {t(`scan.map_${m}`)}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div role="tabpanel">
-        {tab === "summary" && aiEnabled && (
-          <div className="mb-6">
-            <AiReport />
-          </div>
-        )}
         {tab === "summary" && (
-          <CategoryList
-            categories={summary.categories}
-            total={summary.total_bytes}
-            onSelect={(c) => {
-              setCategory(c);
-              setTab("largest");
-            }}
-          />
-        )}
-        {tab === "map" && <Treemap root={summary.root} />}
-        {tab === "largest" && aiEnabled && (
-          <div className="mb-6">
-            <AiSearch onTrash={setTrashing} />
+          <div className="grid gap-6">
+            {aiEnabled && <AiReport />}
+            <h2 className="text-sm font-semibold text-fg-muted">{t("scan.categories_title")}</h2>
+            <CategoryTiles
+              categories={summary.categories}
+              total={summary.total_bytes}
+              onSelect={(c) => {
+                setCategory(c);
+                setTab("largest");
+              }}
+            />
           </div>
         )}
+        {tab === "map" && (mapMode === "sunburst" ? <Sunburst root={summary.root} onTrash={setTrashing} /> : <Treemap root={summary.root} />)}
         {tab === "largest" && (
-          <LargestList key={category ?? "all"} initialCategory={category} onTrash={setTrashing} removed={removed} onCopied={() => setNotice(t("scan.copied"))} onWhatIs={aiEnabled ? setWhatIs : undefined} />
+          <div className="grid gap-6">
+            {aiEnabled && <AiSearch onTrash={setTrashing} />}
+            <LargestList key={category ?? "all"} initialCategory={category} onTrash={setTrashing} removed={removed} onCopied={() => setNotice(t("scan.copied"))} onWhatIs={aiEnabled ? setWhatIs : undefined} />
+          </div>
         )}
       </div>
 

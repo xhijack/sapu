@@ -14,6 +14,10 @@ describe("HomeView", () => {
     expect(screen.getByText("24%")).toBeInTheDocument(); // cpu rounded
     expect(screen.getByText("62%")).toBeInTheDocument(); // memory 9.92/16
     expect(screen.getByText(/Trash dulu/)).toBeInTheDocument();
+    expect(screen.getByText(/41,2 GB dibebaskan sejauh ini/)).toBeInTheDocument();
+    expect(screen.getByText(/10 inti, rata-rata 24%/)).toBeInTheDocument();
+    expect(screen.getAllByTitle(/^#\d+: \d+%$/).length).toBe(10);
+    expect(screen.getByText("Downloads")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Pindai disk sekarang" }));
     expect(nav).toHaveBeenCalledWith("scan");
     await user.click(screen.getByRole("button", { name: /^Duplikat/ }));

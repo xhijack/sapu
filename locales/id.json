@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Sapu",
-    "tagline": "Bersihkan ruang disk dengan aman."
+    "tagline": "Bersihkan ruang disk dengan aman.",
+    "full_name": "Smart Analyzer & Pruning Utility"
   },
   "nav": {
     "home": "Beranda",
@@ -127,7 +128,14 @@
     "greeting_day": "Selamat siang",
     "greeting_evening": "Selamat malam",
     "safety_line": "Semua yang Sapu hapus masuk ke Trash dulu dan tercatat di Riwayat.",
-    "hero_free_word": "kosong"
+    "hero_free_word": "kosong",
+    "activity": "Aktivitas",
+    "freed_total": "{{size}} dibebaskan sejauh ini",
+    "freed_sessions": "{{count}} pembersihan, {{items}} item",
+    "freed_none": "Belum ada pembersihan. Mulai dari Pindai.",
+    "recent_scans": "Pemindaian terakhir",
+    "scan_line": "{{size}}, {{files}} file",
+    "cores_hint": "{{count}} inti, rata-rata {{avg}}%"
   },
   "history": {
     "title": "Riwayat pembersihan",
@@ -252,7 +260,25 @@
     "diff_down": "Berkurang {{size}} sejak {{date}}",
     "diff_same": "Tidak berubah sejak {{date}}",
     "diff_mainly": "terutama dari",
-    "diff_new": "baru"
+    "diff_new": "baru",
+    "scanning_files": "file diperiksa",
+    "scanning_bytes": "sudah diukur",
+    "map_treemap": "Kotak",
+    "map_sunburst": "Cincin",
+    "sun_hint": "Klik cincin untuk masuk, klik tengah untuk naik. Tambahkan ke keranjang lalu pindahkan sekaligus.",
+    "sun_up": "Naik",
+    "sun_enter": "Masuk",
+    "basket": "Keranjang",
+    "basket_add": "Tambah ke keranjang",
+    "basket_remove": "Keluarkan",
+    "basket_empty": "Keranjang kosong. Pilih folder atau file di cincin.",
+    "basket_total": "{{count}} item, {{size}}",
+    "basket_trash": "Pindahkan keranjang ke Trash",
+    "quicklook": "Pratinjau (Spasi)",
+    "categories_title": "Per kategori",
+    "ring_label": "Ruang per kategori",
+    "result_used_of": "dipakai dari {{total}}",
+    "result_used": "dipakai"
   },
   "category": {
     "video": "Video",

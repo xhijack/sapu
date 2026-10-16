@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, FolderOpen, HelpCircle, Trash2 } from "lucide-react";
+import { Copy, Eye, FolderOpen, HelpCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState } from "@/components/States";
 import { formatBytes, formatDate } from "@/lib/format";
@@ -71,6 +71,9 @@ export function LargestList({ initialCategory = null, onTrash, removed, onCopied
 
   const rowActions = (path: string) => (
     <span className="flex shrink-0 gap-1">
+      <Button variant="ghost" size="sm" aria-label={t("scan.quicklook")} title={t("scan.quicklook")} onClick={() => void scanApi.quickLook(path)}>
+        <Eye aria-hidden className="h-4 w-4" />
+      </Button>
       {onWhatIs && (
         <Button variant="ghost" size="sm" aria-label={t("ai.whatis")} title={t("ai.whatis")} onClick={() => onWhatIs(path)}>
           <HelpCircle aria-hidden className="h-4 w-4" />
@@ -125,7 +128,17 @@ export function LargestList({ initialCategory = null, onTrash, removed, onCopied
         ) : (
           <ul className="divide-y divide-border">
             {visibleFiles.map((f) => (
-              <li key={f.path} className="flex items-center gap-3 py-2">
+              <li
+                key={f.path}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === " " && e.target === e.currentTarget) {
+                    e.preventDefault();
+                    void scanApi.quickLook(f.path);
+                  }
+                }}
+                className="flex items-center gap-3 rounded-lg py-2 outline-none focus-visible:bg-surface-muted"
+              >
                 <span aria-hidden className="h-3 w-3 shrink-0 rounded-sm" style={{ background: categoryColor(f.category) }} />
                 <span className="min-w-0 flex-1">
                   <span className="path block truncate" title={f.path}>

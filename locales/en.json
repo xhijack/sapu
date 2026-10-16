@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Sapu",
-    "tagline": "Free up disk space, safely."
+    "tagline": "Free up disk space, safely.",
+    "full_name": "Smart Analyzer & Pruning Utility"
   },
   "nav": {
     "home": "Home",
@@ -127,7 +128,14 @@
     "greeting_day": "Good afternoon",
     "greeting_evening": "Good evening",
     "safety_line": "Everything Sapu removes goes to the Trash first and is logged in History.",
-    "hero_free_word": "free"
+    "hero_free_word": "free",
+    "activity": "Activity",
+    "freed_total": "{{size}} freed so far",
+    "freed_sessions": "{{count}} clean-ups, {{items}} items",
+    "freed_none": "No clean-ups yet. Start with Scan.",
+    "recent_scans": "Recent scans",
+    "scan_line": "{{size}}, {{files}} files",
+    "cores_hint": "{{count}} cores, average {{avg}}%"
   },
   "history": {
     "title": "Clean-up history",
@@ -252,7 +260,25 @@
     "diff_down": "Shrank by {{size}} since {{date}}",
     "diff_same": "Unchanged since {{date}}",
     "diff_mainly": "mainly from",
-    "diff_new": "new"
+    "diff_new": "new",
+    "scanning_files": "files checked",
+    "scanning_bytes": "measured so far",
+    "map_treemap": "Boxes",
+    "map_sunburst": "Rings",
+    "sun_hint": "Click a ring to go inside, click the centre to go up. Add to the basket, then move everything at once.",
+    "sun_up": "Up",
+    "sun_enter": "Open",
+    "basket": "Basket",
+    "basket_add": "Add to basket",
+    "basket_remove": "Remove",
+    "basket_empty": "The basket is empty. Pick a folder or file in the rings.",
+    "basket_total": "{{count}} items, {{size}}",
+    "basket_trash": "Move basket to Trash",
+    "quicklook": "Preview (Space)",
+    "categories_title": "By category",
+    "ring_label": "Space by category",
+    "result_used_of": "used of {{total}}",
+    "result_used": "used"
   },
   "category": {
     "video": "Video",

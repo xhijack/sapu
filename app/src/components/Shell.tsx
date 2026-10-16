@@ -44,7 +44,10 @@ export function Shell({ screen, onNavigate, children }: { screen: Screen; onNavi
               <path d="M7 16l-3 5" />
             </svg>
           </span>
-          <span className="display text-[17px]">{t("app.name")}</span>
+          <span className="grid leading-tight">
+            <span className="display text-[17px]">{t("app.name")}</span>
+            <span className="text-[10px] leading-tight text-fg-faint">{t("app.full_name")}</span>
+          </span>
         </div>
         <div className="grid gap-1">{MAIN.map(item)}</div>
         <div className="mt-auto grid gap-1">{SECONDARY.map(item)}</div>
