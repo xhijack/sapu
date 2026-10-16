@@ -201,7 +201,9 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 {
                     use window_vibrancy::{NSVisualEffectMaterial, apply_vibrancy};
-                    if let Err(e) = apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None) {
+                    if let Err(e) =
+                        apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None)
+                    {
                         tracing::warn!(error = %e, "vibrancy unavailable");
                     }
                 }
