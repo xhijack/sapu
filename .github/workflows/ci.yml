@@ -30,6 +30,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Forbidden removal APIs
         run: sh scripts/check-forbidden-fs.sh
+      - name: AI crate isolation
+        run: sh scripts/check-ai-isolation.sh
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy
