@@ -23,6 +23,9 @@ pub struct OrganizeSession {
     pub finished_at_unix: u64,
     /// Successful moves only, in the order they happened.
     pub moves: Vec<MoveRecord>,
+    /// Folders Sapu itself created for this run; the only ones undo may remove.
+    #[serde(default)]
+    pub created_dirs: Vec<PathBuf>,
     pub moved: usize,
     pub skipped: usize,
     pub failed: usize,
@@ -155,6 +158,7 @@ mod tests {
                 bytes: 5,
                 len: 1,
             }],
+            created_dirs: vec!["/r/G".into()],
             moved: 1,
             skipped: 0,
             failed: 0,

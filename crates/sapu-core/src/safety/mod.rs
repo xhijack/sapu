@@ -32,6 +32,7 @@ mod validate;
 pub use dispose::{Disposal, DisposalKind, PermanentConfirmation};
 pub use execute::{DeletePlan, Safety};
 pub use history::{CleanSession, HistoryStore, Outcome, RestoreReport, SessionEntry};
+pub(crate) use protected::lexical_absolute;
 pub use protected::{ProtectedEntry, ProtectedPaths, Protection};
 pub use snapshot::FileSnapshot;
 pub use validate::{ValidationFailure, revalidate};

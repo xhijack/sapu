@@ -301,6 +301,11 @@ pub fn apply_naming(plan: &mut OrganizePlan, names: &[Naming], merges: &[(String
             continue;
         };
         if let Some(g) = plan.groups.iter_mut().find(|g| g.id == n.id) {
+            // An existing folder or a unit group is what it is; renaming it
+            // would mean moving the folder itself.
+            if matches!(g.source, GroupSource::Existing | GroupSource::Unit) {
+                continue;
+            }
             if g.name != name {
                 g.name = name;
                 g.source = GroupSource::Ai;
@@ -319,6 +324,12 @@ pub fn apply_naming(plan: &mut OrganizePlan, names: &[Naming], merges: &[(String
         let Some(fi) = plan.groups.iter().position(|g| g.id == *from) else {
             continue;
         };
+        if matches!(
+            plan.groups[fi].source,
+            GroupSource::Existing | GroupSource::Unit
+        ) {
+            continue;
+        }
         let Some(ii) = plan.groups.iter().position(|g| g.id == *into) else {
             continue;
         };
@@ -557,5 +568,46 @@ mod tests {
             &[(inv, fin)],
         );
         assert_eq!(group(&plan, "Keuangan").entries.len(), 4);
+    }
+
+    #[test]
+    fn existing_and_unit_groups_are_never_renamed_or_merged_away() {
+        let t = tempdir();
+        touch(&t.path().join("Dokumen/old.pdf"));
+        touch(&t.path().join("backend/package.json"));
+        for n in ["Invoice-1.pdf", "Invoice-2.pdf", "Invoice-3.pdf"] {
+            touch(&t.path().join(n));
+        }
+        let mut plan = propose(&scan_folder(t.path()).expect("scan"));
+        let docs = group(&plan, "Dokumen").id.clone();
+        let proj = group(&plan, "Proyek").id.clone();
+        let inv = group(&plan, "Invoice").id.clone();
+        apply_naming(
+            &mut plan,
+            &[
+                Naming {
+                    id: docs.clone(),
+                    name: "Documents".into(),
+                    confidence: 0.99,
+                },
+                Naming {
+                    id: proj.clone(),
+                    name: "Code".into(),
+                    confidence: 0.99,
+                },
+            ],
+            &[(docs.clone(), inv.clone()), (proj.clone(), inv.clone())],
+        );
+        assert_eq!(
+            group(&plan, "Dokumen").entries.len(),
+            1,
+            "existing folder keeps its name and is not merged away"
+        );
+        assert_eq!(
+            group(&plan, "Proyek").entries.len(),
+            1,
+            "projects keep their unit group"
+        );
+        assert_eq!(group(&plan, "Invoice").entries.len(), 3);
     }
 }

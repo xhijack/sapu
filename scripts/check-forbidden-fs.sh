@@ -14,7 +14,7 @@ if [ -n "$hits" ]; then
 fi
 # Tests may rename to simulate a person moving files; they are the only
 # code allowed to use `.expect(`, which is how they are told apart here.
-hits=$(grep -rn --include='*.rs' 'fs::rename' crates app 2>/dev/null | grep -v "^$RENAME_ALLOWED:" | grep -v '\.expect(' || true)
+hits=$(grep -rn --include='*.rs' 'fs::rename\|fs::{[^}]*rename' crates app 2>/dev/null | grep -v "^$RENAME_ALLOWED:" | grep -v '\.expect(' || true)
 if [ -n "$hits" ]; then
   echo "Forbidden rename usage outside $RENAME_ALLOWED:" >&2
   echo "$hits" >&2

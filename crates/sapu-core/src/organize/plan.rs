@@ -3,8 +3,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use super::group::{OrganizePlan, sanitize_name};
-use super::scan::Unit;
+use super::group::{GroupSource, OrganizePlan, sanitize_name};
+use super::scan::{Unit, plain_folder_or_absent};
 use crate::error::{Result, SapuError};
 use crate::safety::{FileSnapshot, ProtectedPaths};
 
@@ -67,7 +67,13 @@ pub fn build_move_plan(
         .iter()
         .filter(|g| selection.group_ids.contains(&g.id))
     {
-        let name = match selection.renames.iter().find(|(id, _)| *id == g.id) {
+        let fixed = matches!(g.source, GroupSource::Existing | GroupSource::Unit);
+        let name = match selection
+            .renames
+            .iter()
+            .filter(|_| !fixed)
+            .find(|(id, _)| *id == g.id)
+        {
             Some((_, raw)) => {
                 sanitize_name(raw).ok_or_else(|| invalid("group name is not a safe folder name"))?
             }
@@ -78,7 +84,22 @@ pub fn build_move_plan(
         if !dest_dir.starts_with(&root) || dest_dir == root {
             return Err(invalid("destination escapes the folder"));
         }
+        // A link, a file, a project or a bundle carrying the group's name
+        // cannot receive files: it would open a project or leave the folder.
+        let dest_ok = plain_folder_or_absent(&dest_dir);
         for e in &g.entries {
+            if !dest_ok && e.path != dest_dir {
+                skipped.push((
+                    e.path.clone(),
+                    format!("destination {} is not a plain folder", dest_dir.display()),
+                ));
+                continue;
+            }
+            if e.name.contains('/') || e.name.contains('\\') || e.name == ".." || e.name.is_empty()
+            {
+                skipped.push((e.path.clone(), "unsafe entry name".into()));
+                continue;
+            }
             if excluded.contains(e.path.as_path()) || e.unit == Unit::Link {
                 continue;
             }
@@ -240,5 +261,45 @@ mod tests {
         let mp = build_move_plan(&plan, &sel, &protected).expect("plan");
         assert_eq!(mp.moves.len(), 1, "protected file is skipped, not planned");
         assert_eq!(mp.skipped.len(), 1);
+    }
+
+    #[test]
+    fn destination_that_is_a_link_file_or_project_is_refused() {
+        let t = tempdir();
+        // A symlinked "Dokumen" pointing outside, a plain file "Arsip", a project "Kode".
+        std::fs::create_dir_all(t.path().join("outside")).expect("outside");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(t.path().join("outside"), t.path().join("Dokumen"))
+            .expect("symlink");
+        touch(&t.path().join("a.pdf"));
+        touch(&t.path().join("Arsip"));
+        touch(&t.path().join("x.zip"));
+        touch(&t.path().join("Kode/package.json"));
+        touch(&t.path().join("main.rs"));
+        let plan = plan_for(t.path());
+        let sel = Selection {
+            group_ids: all_ids(&plan),
+            excluded: vec![],
+            renames: vec![],
+        };
+        let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
+        for name in ["a.pdf", "x.zip", "main.rs"] {
+            assert!(
+                mp.moves.iter().all(|m| m.from != t.path().join(name)),
+                "{name} must not be planned into a non-folder destination"
+            );
+            assert!(
+                mp.skipped
+                    .iter()
+                    .any(|(p, why)| p == &t.path().join(name) && why.contains("destination")),
+                "{name} skipped with a destination reason: {:?}",
+                mp.skipped
+            );
+        }
+        assert!(
+            mp.moves
+                .iter()
+                .all(|m| !m.to.starts_with(t.path().join("outside")))
+        );
     }
 }

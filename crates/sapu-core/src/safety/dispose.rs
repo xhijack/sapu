@@ -56,8 +56,13 @@ pub(super) fn dispose(path: &Path, disposal: &Disposal) -> io::Result<()> {
         Disposal::Permanent(_) => {
             let meta = std::fs::symlink_metadata(path)?;
             if meta.is_dir() {
+                // An empty folder goes with `remove_dir`, which fails instead
+                // of sweeping up a file that appeared since the caller looked.
                 // Does not follow symlinks inside the tree.
-                std::fs::remove_dir_all(path)
+                match std::fs::remove_dir(path) {
+                    Ok(()) => Ok(()),
+                    Err(_) => std::fs::remove_dir_all(path),
+                }
             } else {
                 // Regular files and symlinks (removes the link, not its target).
                 std::fs::remove_file(path)

@@ -5,10 +5,11 @@ use std::path::{Path, PathBuf};
 
 use super::history::{MoveRecord, OrganizeSession, OrganizeStore};
 use super::plan::MovePlan;
+use super::scan::plain_folder_or_absent;
 use crate::error::{Result, SapuError};
 use crate::progress::{ProgressEvent, ProgressSink, Throttled};
 use crate::safety::{
-    DeletePlan, Disposal, FileSnapshot, PermanentConfirmation, Safety, revalidate,
+    DeletePlan, Disposal, FileSnapshot, PermanentConfirmation, Safety, lexical_absolute, revalidate,
 };
 
 #[derive(Debug, Clone)]
@@ -52,11 +53,53 @@ fn same_volume(_a: &Path, _b: &Path) -> bool {
 }
 
 /// Moves one path with `rename`, the only call of its kind in the crate.
-fn rename(from: &Path, to: &Path) -> std::io::Result<()> {
-    if let Some(parent) = to.parent() {
-        std::fs::create_dir_all(parent)?;
+/// Returns whether the destination folder had to be created.
+fn rename(from: &Path, to: &Path) -> std::io::Result<bool> {
+    let mut created = false;
+    if let Some(parent) = to.parent()
+        && !parent.exists()
+    {
+        std::fs::create_dir(parent)?;
+        created = true;
     }
-    std::fs::rename(from, to)
+    std::fs::rename(from, to)?;
+    Ok(created)
+}
+
+/// Every move must read `root/<group>/<name>` ← `root/<name>` once `..` is
+/// resolved, name the same file its snapshot describes, and target a plain
+/// folder. A plan is data that may have crossed IPC; it is not trusted.
+fn check_plan(plan: &MovePlan, root: &Path) -> Result<()> {
+    for m in &plan.moves {
+        let from = lexical_absolute(&m.from);
+        let to = lexical_absolute(&m.to);
+        if lexical_absolute(&m.snapshot.path) != from {
+            return Err(invalid("snapshot does not describe the file being moved"));
+        }
+        if from.parent() != Some(root) && !from.starts_with(root) {
+            return Err(invalid("a move starts outside the folder"));
+        }
+        let Some(dest_dir) = to.parent() else {
+            return Err(invalid("destination has no folder"));
+        };
+        if dest_dir.parent() != Some(root) || dest_dir == root {
+            return Err(invalid("destination is not root/<group>/<name>"));
+        }
+        if to.file_name().is_none()
+            || to
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(invalid("destination name is not plain"));
+        }
+        if !plain_folder_or_absent(dest_dir) {
+            return Err(invalid("destination is not a plain folder"));
+        }
+        if !same_volume(&from, &to) {
+            return Err(invalid("moves across volumes are not supported"));
+        }
+    }
+    Ok(())
 }
 
 /// Runs the plan. Each move is re-validated right before it happens; a
@@ -67,15 +110,10 @@ pub fn apply(
     store: &OrganizeStore,
     progress: &mut dyn ProgressSink,
 ) -> Result<ApplyReport> {
-    let root = std::path::absolute(&plan.root).map_err(|e| SapuError::io("resolve root", e))?;
-    for m in &plan.moves {
-        if !m.to.starts_with(&root) || !m.from.starts_with(&root) {
-            return Err(invalid("a move leaves the folder"));
-        }
-        if !same_volume(&m.from, &m.to) {
-            return Err(invalid("moves across volumes are not supported"));
-        }
-    }
+    let root = lexical_absolute(
+        &std::path::absolute(&plan.root).map_err(|e| SapuError::io("resolve root", e))?,
+    );
+    check_plan(plan, &root)?;
     let mut sink = Throttled::new(progress, 10);
     let total = plan.moves.len() as u64;
     let bytes_total: u64 = plan.moves.iter().map(|m| m.bytes).sum();
@@ -85,11 +123,17 @@ pub fn apply(
         started_at_unix: OrganizeSession::now_unix(),
         finished_at_unix: 0,
         moves: Vec::new(),
+        created_dirs: Vec::new(),
         moved: 0,
         skipped: plan.skipped.len(),
         failed: 0,
         undone: false,
     };
+    // Recorded before anything moves, and after every move, so a crash
+    // mid-run still leaves an undoable record.
+    if !dry_run {
+        store.record(&session)?;
+    }
     let mut failures = Vec::new();
     let mut bytes_done = 0u64;
     for (i, m) in plan.moves.iter().enumerate() {
@@ -103,14 +147,18 @@ pub fn apply(
             failures.push((m.from.clone(), "destination already exists".into()));
         } else {
             match rename(&m.from, &m.to) {
-                Ok(()) => {
+                Ok(created) => {
                     session.moved += 1;
+                    if created && let Some(dir) = m.to.parent() {
+                        session.created_dirs.push(lexical_absolute(dir));
+                    }
                     session.moves.push(MoveRecord {
                         from: m.from.clone(),
                         to: m.to.clone(),
                         bytes: m.bytes,
                         len: m.snapshot.size,
                     });
+                    store.record(&session)?;
                 }
                 Err(e) => {
                     session.failed += 1;
@@ -167,7 +215,7 @@ pub fn undo(
             report.skipped += 1;
         } else {
             match rename(&m.to, &m.from) {
-                Ok(()) => report.restored += 1,
+                Ok(_) => report.restored += 1,
                 Err(_) => report.failed += 1,
             }
         }
@@ -183,27 +231,22 @@ pub fn undo(
     Ok(report)
 }
 
-/// The destination folders of this session that are now empty were created
-/// by Sapu for it; removing them restores the tree exactly. Permanent is
-/// fine for an empty folder (nothing to restore), and it still goes
-/// through the safety layer like every removal.
+/// Removes the folders Sapu created for this session that are empty again.
+/// Folders the person already had are never touched. Permanent is fine for
+/// an empty folder (nothing to restore); it still goes through `safety`.
 fn remove_empty_destinations(session: &OrganizeSession, safety: &Safety) -> Result<()> {
-    let mut dirs: Vec<PathBuf> = session
-        .moves
+    let root = lexical_absolute(&session.root);
+    let empty: Vec<FileSnapshot> = session
+        .created_dirs
         .iter()
-        .filter_map(|m| m.to.parent().map(Path::to_path_buf))
-        .filter(|d| d.starts_with(&session.root) && *d != session.root)
-        .collect();
-    dirs.sort();
-    dirs.dedup();
-    let empty: Vec<FileSnapshot> = dirs
-        .into_iter()
+        .map(|d| lexical_absolute(d))
+        .filter(|d| d.starts_with(&root) && *d != root)
         .filter(|d| {
             std::fs::read_dir(d)
                 .map(|mut it| it.next().is_none())
                 .unwrap_or(false)
         })
-        .filter_map(|d| FileSnapshot::capture(&d).ok())
+        .filter_map(|d| FileSnapshot::capture(d).ok())
         .collect();
     if empty.is_empty() {
         return Ok(());
@@ -342,16 +385,86 @@ mod tests {
         touch(&root.join("b.pdf"), b"b");
         let store = OrganizeStore::with_dir(t.path().join("store")).expect("store");
         let report = apply(&full_plan(&root), false, &store, &mut NoProgress).expect("apply");
-        // The person moved one file elsewhere by hand (simulated by writing it out and leaving the slot empty).
-        let gone = root.join("Dokumen/a.pdf");
-        let elsewhere = t.path().join("elsewhere.pdf");
-        std::fs::copy(&gone, &elsewhere).expect("copy");
-        // Emulate the hand move without rename/remove APIs: truncate so re-validation fails.
-        std::fs::write(&gone, b"changed by hand").expect("write");
+        // The person moved one file elsewhere by hand.
+        std::fs::rename(root.join("Dokumen/a.pdf"), t.path().join("elsewhere.pdf"))
+            .expect("rename");
         let r = undo(&report.session, &store, &safety(t.path()), &mut NoProgress).expect("undo");
         assert_eq!(r.restored, 1);
         assert_eq!(r.skipped, 1);
         assert!(root.join("b.pdf").is_file());
+        assert!(
+            t.path().join("elsewhere.pdf").is_file(),
+            "the hand-moved file is left alone"
+        );
+    }
+
+    #[test]
+    fn undo_keeps_the_users_existing_folder() {
+        let t = tempdir();
+        let root = t.path().join("docs");
+        std::fs::create_dir_all(root.join("Dokumen")).expect("existing folder");
+        touch(&root.join("a.pdf"), b"a");
+        let store = OrganizeStore::with_dir(t.path().join("store")).expect("store");
+        let report = apply(&full_plan(&root), false, &store, &mut NoProgress).expect("apply");
+        assert!(root.join("Dokumen/a.pdf").is_file());
+        undo(&report.session, &store, &safety(t.path()), &mut NoProgress).expect("undo");
+        assert!(root.join("a.pdf").is_file());
+        assert!(
+            root.join("Dokumen").is_dir(),
+            "a folder the person made survives undo"
+        );
+    }
+
+    #[test]
+    fn refuses_tampered_plans() {
+        let t = tempdir();
+        let root = t.path().join("docs");
+        touch(&root.join("a.pdf"), b"a");
+        touch(&root.join("b.pdf"), b"b");
+        let store = OrganizeStore::with_dir(t.path().join("store")).expect("store");
+        // 1. `..` inside a destination that still starts with root textually.
+        let mut plan = full_plan(&root);
+        plan.moves[0].to = root
+            .join("Dokumen")
+            .join("..")
+            .join("..")
+            .join("escape.pdf");
+        assert!(apply(&plan, false, &store, &mut NoProgress).is_err());
+        // 2. Destination deeper than root/<group>/<name>.
+        let mut plan = full_plan(&root);
+        plan.moves[0].to = root.join("Dokumen").join("deeper").join("a.pdf");
+        assert!(apply(&plan, false, &store, &mut NoProgress).is_err());
+        // 3. Snapshot for a different file than `from`.
+        let mut plan = full_plan(&root);
+        let other = plan.moves[1].snapshot.clone();
+        plan.moves[0].snapshot = other;
+        assert!(apply(&plan, false, &store, &mut NoProgress).is_err());
+        assert!(
+            root.join("a.pdf").is_file() && root.join("b.pdf").is_file(),
+            "nothing moved"
+        );
+    }
+
+    #[test]
+    fn session_is_recorded_before_the_first_move() {
+        use crate::progress::{FnSink, ProgressEvent};
+        let t = tempdir();
+        let root = t.path().join("docs");
+        touch(&root.join("a.pdf"), b"a");
+        let store_dir = t.path().join("store");
+        let store = OrganizeStore::with_dir(&store_dir).expect("store");
+        let seen = std::cell::Cell::new(false);
+        let mut sink = FnSink(|_e: &ProgressEvent| {
+            let s = OrganizeStore::with_dir(&store_dir).expect("store");
+            if !s.list().expect("list").is_empty() {
+                seen.set(true);
+            }
+        });
+        apply(&full_plan(&root), false, &store, &mut sink).expect("apply");
+        assert!(
+            seen.get(),
+            "a session file existed while moves were still happening"
+        );
     }
 
     #[test]

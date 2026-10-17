@@ -39,6 +39,29 @@ pub struct FolderListing {
 
 const BUNDLE_EXTENSIONS: &[&str] = &["app", "bundle", "framework", "photoslibrary", "pkg"];
 
+/// Package directories macOS shows as one item.
+pub(super) fn is_bundle_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_ascii_lowercase)
+        .is_some_and(|e| BUNDLE_EXTENSIONS.contains(&e.as_str()))
+}
+
+/// Can files be placed inside `dir`? Only a plain folder that is not a
+/// link, a project or a bundle. A missing path is fine (it will be created).
+pub(super) fn plain_folder_or_absent(dir: &Path) -> bool {
+    match std::fs::symlink_metadata(dir) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => true,
+        Err(_) => false,
+        Ok(meta) => {
+            !meta.file_type().is_symlink()
+                && meta.is_dir()
+                && !is_bundle_path(dir)
+                && !is_project_root(dir)
+        }
+    }
+}
+
 /// Lists the top level of `root`. Hidden entries are skipped; unreadable
 /// ones are reported, not fatal.
 pub fn scan_folder(root: &Path) -> Result<FolderListing> {
@@ -65,11 +88,7 @@ pub fn scan_folder(root: &Path) -> Result<FolderListing> {
         let unit = if meta.file_type().is_symlink() {
             Unit::Link
         } else if meta.is_dir() {
-            let ext = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .map(str::to_ascii_lowercase);
-            if ext.is_some_and(|e| BUNDLE_EXTENSIONS.contains(&e.as_str())) {
+            if is_bundle_path(&path) {
                 Unit::Bundle
             } else if is_project_root(&path) {
                 Unit::Project

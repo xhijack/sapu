@@ -146,4 +146,17 @@ mod tests {
         assert!(p.contains("Invoice-1.pdf"));
         assert!(p.contains("\"merge\""));
     }
+
+    #[test]
+    fn unusable_provider_answer_is_an_error_not_a_plan() {
+        use crate::provider::{Ollama, Provider, test_server};
+        let (url, _req) =
+            test_server::serve(r#"{"message":{"role":"assistant","content":"sorry, no idea"}}"#);
+        let p = Ollama::new(&url, "m", std::time::Duration::from_secs(5));
+        let answer = p.complete("sys", "user").expect("http ok");
+        assert!(
+            Tidy::parse(&answer).is_err(),
+            "no JSON → the caller keeps the heuristic names"
+        );
+    }
 }
