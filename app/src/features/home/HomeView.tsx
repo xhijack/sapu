@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Usb } from "lucide-react";
+import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Trash2, Usb } from "lucide-react";
+import { cleanApi } from "@/lib/cleanApi";
+import { EmptyTrashDialog } from "@/features/clean/EmptyTrashDialog";
 import { api } from "@/lib/api";
 import { scanApi } from "@/lib/scanApi";
 import { formatBytes, formatDate } from "@/lib/format";
-import type { HistoryTotals, PreviousScan, ScanLogEntry, SystemSnapshot } from "@/lib/types";
+import type { HistoryTotals, PreviousScan, ScanLogEntry, SystemSnapshot, TrashStatus } from "@/lib/types";
 import type { Screen } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Tile } from "@/components/ui/tile";
 import { SpaceRing } from "@/components/viz/SpaceRing";
+import { Achievement } from "@/components/Achievement";
 import { useCountUp } from "@/components/viz/useCountUp";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +29,8 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const [previous, setPrevious] = useState<PreviousScan | null>(null);
   const [totals, setTotals] = useState<(HistoryTotals & { days_since_first: number | null }) | null>(null);
   const [recent, setRecent] = useState<ScanLogEntry[]>([]);
+  const [trash, setTrash] = useState<TrashStatus | null>(null);
+  const [emptying, setEmptying] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -42,6 +47,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
       .then((x) => live && setTotals({ ...x, days_since_first: x.first_session_unix ? Math.max(1, Math.round((Date.now() / 1000 - x.first_session_unix) / 86_400)) : null }))
       .catch(() => undefined);
     scanApi.history(4).then((x) => live && setRecent(x)).catch(() => undefined);
+    cleanApi.trashStatus().then((x) => live && setTrash(x)).catch(() => undefined);
     return () => {
       live = false;
       clearInterval(id);
@@ -88,8 +94,26 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
               <Search aria-hidden className="h-5 w-5" />
               {t("home.hero_cta")}
             </Button>
+            {trash && trash.items > 0 && (
+              <Button variant="ghost" size="lg" onClick={() => setEmptying(true)}>
+                <Trash2 aria-hidden className="h-5 w-5" />
+                {t("home.empty_trash", { size: formatBytes(trash.bytes, lang) })}
+              </Button>
+            )}
             {!previous && <span className="num text-sm text-fg-muted">{t("home.hero_never")}</span>}
           </div>
+          {emptying && (
+            <EmptyTrashDialog
+              status={trash}
+              onClose={(r) => {
+                setEmptying(false);
+                if (r) {
+                  setTrash({ bytes: 0, items: 0 });
+                  api.historyTotals().then((x) => setTotals({ ...x, days_since_first: x.first_session_unix ? Math.max(1, Math.round((Date.now() / 1000 - x.first_session_unix) / 86_400)) : null })).catch(() => undefined);
+                }
+              }}
+            />
+          )}
           <p className="flex items-center gap-2 text-sm text-fg-faint">
             <ShieldCheck aria-hidden className="h-4 w-4 text-accent" />
             {t("home.safety_line")}
@@ -104,23 +128,14 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         <Tile compact className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+      <section className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
+        <Achievement freed={totals?.bytes_freed ?? 0} sessions={totals?.sessions ?? 0} firstUnix={totals?.first_session_unix ?? null} days={totals?.days_since_first ?? null} />
         <div className="card rise grid gap-2 p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-fg-muted">
             <History aria-hidden className="h-4 w-4" />
             {t("home.activity")}
           </h2>
-          {totals && totals.sessions > 0 ? (
-            <div>
-              <p className="display num text-2xl">{t("home.freed_total", { size: formatBytes(totals.bytes_freed, lang) })}</p>
-              <p className="num text-xs text-fg-muted">
-                {totals.first_session_unix && totals.days_since_first ? t("home.freed_since", { date: formatDate(totals.first_session_unix, lang), days: totals.days_since_first }) + ", " : ""}
-                {t("home.freed_sessions", { count: totals.sessions, items: totals.items_disposed.toLocaleString(lang) })}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-fg-faint">{t("home.freed_none")}</p>
-          )}
+          {recent.length === 0 && <p className="text-sm text-fg-faint">{t("home.freed_none")}</p>}
           {recent.length > 0 && (
             <div className="grid gap-1">
               <span className="text-xs text-fg-muted">{t("home.recent_scans")}</span>

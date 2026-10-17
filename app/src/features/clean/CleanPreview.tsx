@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/DialogClose";
 import { formatBytes, formatDuration, formatElapsed, formatEta } from "@/lib/format";
 import { api } from "@/lib/api";
 import { cleanApi } from "@/lib/cleanApi";
@@ -86,9 +88,12 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
     return (
       <dialog ref={ref} onClose={onClose} aria-labelledby="clean-run-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
         <div className="grid gap-4 p-6">
-          <h2 id="clean-run-title" className="text-lg font-semibold">
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="clean-run-title" className="text-lg font-semibold">
             {t("clean.run_title")}
           </h2>
+            <DialogClose onClick={() => ref.current?.close()} />
+          </div>
           <div role="progressbar" aria-label={t("clean.run_title")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined} className="h-2 w-full overflow-hidden rounded-full bg-surface-muted">
             <span className={`block h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none ${pct === null ? "slide w-1/3" : ""}`} style={pct === null ? undefined : { width: `${pct}%` }} />
           </div>
@@ -105,6 +110,7 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
           )}
           <div className="flex justify-end">
             <Button variant="secondary" onClick={() => ref.current?.close()}>
+              <ChevronDown aria-hidden className="h-4 w-4" />
               {t("clean.run_hide")}
             </Button>
           </div>
@@ -116,9 +122,12 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
   return (
     <dialog ref={ref} onClose={onClose} aria-labelledby="clean-preview-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
       <div className="grid gap-4 p-6">
-        <h2 id="clean-preview-title" className="text-lg font-semibold">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="clean-preview-title" className="text-lg font-semibold">
           {t("clean.preview_title")}
         </h2>
+          <DialogClose onClick={() => ref.current?.close()} />
+        </div>
         <p className="text-fg-muted">
           {t("clean.preview_body", { rules: rows.length, items, size: formatBytes(bytes, i18n.language) })}
           {estimate != null && ` ${t("clean.estimate_line", { time: formatDuration(t, estimate) })}.`}

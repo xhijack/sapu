@@ -6,6 +6,9 @@ import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
 import { DisclaimerGate } from "@/features/onboarding/DisclaimerGate";
 import { AboutView } from "@/features/about/AboutView";
+import { RatePrompt } from "@/components/RatePrompt";
+import { RATE_THRESHOLD } from "@/lib/milestones";
+import { cleanApi } from "@/lib/cleanApi";
 import { ScanView } from "@/features/scan/ScanView";
 import { HomeView } from "@/features/home/HomeView";
 import { CareView } from "@/features/care/CareView";
@@ -62,6 +65,29 @@ export default function App() {
     void fetchSettings();
   }, [fetchSettings]);
 
+  // One-time thank-you once lifetime freed space passes the threshold.
+  const [rateFreed, setRateFreed] = useState<number | null>(null);
+  const [os, setOs] = useState("macos");
+  useEffect(() => {
+    let live = true;
+    api
+      .appInfo()
+      .then((i) => live && setOs(i.os))
+      .catch(() => undefined);
+    const sub = cleanApi.onRunDone(() => {
+      api
+        .historyTotals()
+        .then((tot) => {
+          if (live && tot.bytes_freed >= RATE_THRESHOLD) setRateFreed(tot.bytes_freed);
+        })
+        .catch(() => undefined);
+    });
+    return () => {
+      live = false;
+      void sub.then((f) => f());
+    };
+  }, []);
+
   // Tray shortcut: bring Care up and start it.
   const [careKick, setCareKick] = useState(0);
   useEffect(() => {
@@ -110,6 +136,16 @@ export default function App() {
 
   return (
     <Shell screen={screen} onNavigate={navigate}>
+      {rateFreed !== null && !settings.rate_prompt_done && (
+        <RatePrompt
+          freed={rateFreed}
+          os={os}
+          onClose={() => {
+            setRateFreed(null);
+            save({ ...settings, rate_prompt_done: true });
+          }}
+        />
+      )}
       <Pane active={screen === "home"} mounted>
         <HomeView onNavigate={navigate} onScanNow={() => navigate("care")} />
       </Pane>

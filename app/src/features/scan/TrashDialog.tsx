@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/DialogClose";
 import { formatBytes } from "@/lib/format";
 import { scanApi } from "@/lib/scanApi";
 import { useErrorMessage } from "@/lib/errors";
@@ -59,10 +60,13 @@ export function TrashDialog({ paths, onClose }: Props) {
       className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40"
     >
       <div className="grid gap-4 p-6">
-        <h2 id="trash-title" className="flex items-center gap-2 text-lg font-semibold">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="trash-title" className="flex items-center gap-2 text-lg font-semibold">
           <Trash2 aria-hidden className="h-5 w-5" />
           {t("scan.trash_title")}
         </h2>
+          <DialogClose onClick={() => ref.current?.close()} />
+        </div>
         {error ? (
           <p role="alert" className="text-risk-danger-fg">
             {error}

@@ -14,6 +14,8 @@ export interface Settings {
   menu_bar_monitor: boolean;
   /** The no-warranty notice was read and accepted. */
   disclaimer_accepted: boolean;
+  /** The rating thank-you was shown (or dismissed) once. */
+  rate_prompt_done: boolean;
 }
 
 export type DiskAccess = "not_applicable" | "granted" | "denied" | "unknown";
@@ -398,6 +400,11 @@ export interface CleanRunProgress {
   step: RunStep | null;
   elapsed_secs: number;
   eta: Eta;
+}
+
+export interface TrashStatus {
+  bytes: number;
+  items: number;
 }
 
 export interface CleanRunStatus {

@@ -1,5 +1,5 @@
 import { isTauri } from "./api";
-import type { CleanCheckProgress, CleanCheckStatus, CleanEvaluation, CleanRunProgress, CleanRunReport, CleanRunStatus, Profile, RunStep } from "./types";
+import type { CleanCheckProgress, CleanCheckStatus, CleanEvaluation, CleanRunProgress, CleanRunReport, CleanRunStatus, Profile, RunStep, TrashStatus } from "./types";
 
 type Unlisten = () => void;
 
@@ -35,6 +35,9 @@ export const cleanApi = {
   run: (ruleIds: string[], artefacts: string[], apply: boolean, permanentOk: boolean) =>
     invoke<void>("clean_run_start", { ruleIds, artefacts, apply, permanentOk }),
   runStatus: () => invoke<CleanRunStatus>("clean_run_status"),
+  trashStatus: () => invoke<TrashStatus>("trash_status"),
+  /** Empties the Trash on every volume; progress and result arrive on the run events. */
+  emptyTrash: () => invoke<void>("trash_empty_start"),
   runLast: () => invoke<CleanRunReport | null>("clean_run_last"),
   onRunProgress: (cb: (p: CleanRunProgress) => void) => listen<CleanRunProgress>("clean://run_progress", cb),
   onRunDone: (cb: (r: CleanRunReport) => void) => listen<CleanRunReport>("clean://run_done", cb),
@@ -61,10 +64,12 @@ export const cleanMock = {
   tickMs: typeof location !== "undefined" && location.search.includes("slow") ? 700 : 15,
   running: false,
   runRunning: false,
+  trash: { bytes: 12.4 * GB, items: 1_204 } as TrashStatus,
   lastRun: null as CleanRunReport | null,
   lastEvaluation: null as CleanEvaluation | null,
   reset() {
     this.runRunning = false;
+    this.trash = { bytes: 12.4 * GB, items: 1_204 };
     this.lastRun = null;
     this.lastExecute = null;
     this.cached = true;
@@ -167,6 +172,26 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         } else setTimeout(step, cleanMock.tickMs);
       };
       setTimeout(step, cleanMock.tickMs);
+      return undefined as T;
+    }
+    case "trash_status":
+      return cleanMock.trash as T;
+    case "trash_empty_start": {
+      const bytes = cleanMock.trash.bytes;
+      const report: CleanRunReport = { dry_run: false, outcomes: [{ kind: "files", rule_id: "macos-trash", session: { id: "t", started_at_unix: 0, finished_at_unix: 0, dry_run: false, disposal: "permanent", scope: "/Users/you/.Trash", entries: [], bytes_freed: bytes, disposed: cleanMock.trash.items, skipped: 0, failed: 0 } }], bytes_freed: bytes, disposed: cleanMock.trash.items, skipped: 0, failed: 0 };
+      cleanMock.runRunning = true;
+      let i = 0;
+      const tick = () => {
+        i += 1;
+        emit<CleanRunProgress>("clean://run_progress", { items_done: i, items_total: 3, bytes_done: (bytes * i) / 3, bytes_total: bytes, fraction: i / 3, step: { kind: "rule", rule_id: "macos-trash", items: cleanMock.trash.items }, elapsed_secs: i, eta: { kind: "about", secs: (3 - i) * 2, nanos: 0 } });
+        if (i >= 3) {
+          cleanMock.runRunning = false;
+          cleanMock.trash = { bytes: 0, items: 0 };
+          cleanMock.lastRun = report;
+          emit("clean://run_done", report);
+        } else setTimeout(tick, cleanMock.tickMs);
+      };
+      setTimeout(tick, cleanMock.tickMs);
       return undefined as T;
     }
     case "clean_run_status":

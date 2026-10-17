@@ -141,7 +141,8 @@
     "hero_cta_care": "Care for my Mac",
     "tile_care": "Care",
     "tile_care_body": "One click: scan, check, and clean what is safe.",
-    "freed_since": "since {{date}} ({{days}} days)"
+    "freed_since": "since {{date}} ({{days}} days)",
+    "empty_trash": "Empty the Trash ({{size}})"
   },
   "history": {
     "title": "Clean-up history",
@@ -717,5 +718,35 @@
     "point_review": "Look at anything labelled yellow before ticking it. Sapu never touches protected folders.",
     "point_liability": "Sapu is provided as is, without warranty. The developer and PT Sopwer Teknologi Indonesia are not liable for system damage or data loss resulting from the use of this application.",
     "accept": "I have read and accept these terms."
+  },
+  "trash": {
+    "title": "Empty the Trash",
+    "body": "{{count}} items ({{size}}) in the Trash of every disk will be deleted permanently.",
+    "body_unknown": "The Trash on every disk will be emptied permanently.",
+    "confirm": "Empty now",
+    "running": "Emptying the Trash…",
+    "done": "{{size}} freed, {{count}} items deleted permanently.",
+    "failed": "{{count}} items could not be deleted; see History."
+  },
+  "achievement": {
+    "title": "Achievement",
+    "none": "No achievement yet. The first clean unlocks the first badge.",
+    "next_label": "Towards the next badge",
+    "next": "{{size}} to go until {{goal}}",
+    "max": "Highest badge reached.",
+    "level_0": "Beginner: under 10 GB",
+    "level_1": "Tidier, 10 GB",
+    "level_2": "Sweeper, 50 GB",
+    "level_3": "Cleaner, 100 GB",
+    "level_4": "Liberator, 250 GB",
+    "level_5": "Conqueror, 500 GB",
+    "level_6": "Legend, 1 TB"
+  },
+  "rate": {
+    "title": "{{size}} freed so far. Thank you!",
+    "body": "If Sapu helped, a star in the app store helps others find it. We ask only this once.",
+    "body_soon": "If Sapu helped, tell a friend. The link to rate it in the app store appears once Sapu is published there.",
+    "later": "Maybe later",
+    "go": "Rate Sapu"
   }
 }

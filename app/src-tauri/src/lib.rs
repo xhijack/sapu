@@ -311,6 +311,8 @@ pub fn run() {
             clean::clean_run_start,
             clean::clean_run_status,
             clean::clean_run_last,
+            clean::trash_status,
+            clean::trash_empty_start,
             dedupe::dedupe_start,
             dedupe::dedupe_cancel,
             dedupe::dedupe_summary,

@@ -34,6 +34,7 @@ export const defaultSettings: Settings = {
   notify_when_done: true,
   menu_bar_monitor: true,
   disclaimer_accepted: false,
+  rate_prompt_done: false,
 };
 
 /** Mock state, exported for tests. */

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/DialogClose";
 import { appsApi } from "@/lib/appsApi";
 import { useErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/format";
@@ -50,9 +51,12 @@ export function UninstallDialog({ app, leftovers, onClose }: Props) {
   return (
     <dialog ref={ref} onClose={() => onClose(null)} aria-labelledby="uninstall-title" className="m-auto w-full max-w-lg rounded-xl border border-border bg-surface-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
       <div className="grid gap-4 p-6">
-        <h2 id="uninstall-title" className="text-lg font-semibold">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="uninstall-title" className="text-lg font-semibold">
           {t("apps.confirm_title")}
         </h2>
+          <DialogClose onClick={() => ref.current?.close()} />
+        </div>
         {error ? (
           <p role="alert" className="text-risk-danger-fg">
             {error}

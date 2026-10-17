@@ -38,6 +38,8 @@ pub struct Settings {
     /// anything else on first run, and once more for settings from before
     /// the notice existed.
     pub disclaimer_accepted: bool,
+    /// The one-time "rate Sapu" thank-you was shown or dismissed.
+    pub rate_prompt_done: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
@@ -60,6 +62,7 @@ impl Default for Settings {
             notify_when_done: true,
             menu_bar_monitor: true,
             disclaimer_accepted: false,
+            rate_prompt_done: false,
         }
     }
 }
@@ -118,6 +121,7 @@ mod tests {
             notify_when_done: false,
             menu_bar_monitor: false,
             disclaimer_accepted: true,
+            rate_prompt_done: false,
         };
         s.save(&p).expect("save");
         assert_eq!(Settings::load(&p).expect("load"), s);

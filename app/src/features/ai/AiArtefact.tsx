@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/DialogClose";
 import { aiApi } from "@/lib/aiApi";
 import { useErrorMessage } from "@/lib/errors";
 import type { AiPreview, ArtefactAnswer } from "@/lib/types";
@@ -62,9 +63,7 @@ function ArtefactDialog({ root, answer, preview, onClose }: { root: string; answ
           <h2 id="ai-artefact-title" className="min-w-0 text-lg font-semibold">
             {t("ai.explain_title", { name: root.split("/").pop() ?? root })}
           </h2>
-          <Button variant="ghost" size="sm" onClick={() => ref.current?.close()}>
-            {t("common.close")}
-          </Button>
+          <DialogClose onClick={() => ref.current?.close()} />
         </div>
     <AiPanel preview={preview}>
       <p>{answer.project_summary}</p>

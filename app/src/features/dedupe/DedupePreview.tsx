@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { DialogClose } from "@/components/ui/DialogClose";
 import { formatBytes, formatDuration } from "@/lib/format";
 import { api } from "@/lib/api";
 import { dedupeApi } from "@/lib/dedupeApi";
@@ -47,9 +48,12 @@ export function DedupePreview({ summary, strategy, picks, allowHardlink = false,
   return (
     <dialog ref={ref} onClose={onClose} aria-labelledby="dedupe-preview-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
       <div className="grid gap-4 p-6">
-        <h2 id="dedupe-preview-title" className="text-lg font-semibold">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="dedupe-preview-title" className="text-lg font-semibold">
           {t("dedupe.preview_title")}
         </h2>
+          <DialogClose onClick={() => ref.current?.close()} />
+        </div>
         <p className="text-fg-muted">
           {t("dedupe.preview_body", { files: summary.duplicate_files.toLocaleString(i18n.language), groups: summary.groups.toLocaleString(i18n.language), size: formatBytes(summary.wasted_bytes, i18n.language) })}
         </p>

@@ -141,7 +141,8 @@
     "hero_cta_care": "Rawat Mac saya",
     "tile_care": "Rawat",
     "tile_care_body": "Satu klik: pindai, periksa, dan bersihkan yang aman.",
-    "freed_since": "sejak {{date}} ({{days}} hari)"
+    "freed_since": "sejak {{date}} ({{days}} hari)",
+    "empty_trash": "Kosongkan Trash ({{size}})"
   },
   "history": {
     "title": "Riwayat pembersihan",
@@ -717,5 +718,35 @@
     "point_review": "Periksa yang berlabel kuning sebelum mencentangnya. Sapu tidak pernah menyentuh folder yang dilindungi.",
     "point_liability": "Sapu disediakan apa adanya, tanpa jaminan. Pengembang dan PT Sopwer Teknologi Indonesia tidak bertanggung jawab atas kerusakan sistem atau kehilangan data akibat penggunaan aplikasi ini.",
     "accept": "Saya sudah membaca dan menerima ketentuan ini."
+  },
+  "trash": {
+    "title": "Kosongkan Trash",
+    "body": "{{count}} item ({{size}}) di Trash semua disk akan dihapus permanen.",
+    "body_unknown": "Isi Trash di semua disk akan dihapus permanen.",
+    "confirm": "Kosongkan sekarang",
+    "running": "Mengosongkan Trash…",
+    "done": "{{size}} dibebaskan, {{count}} item dihapus permanen.",
+    "failed": "{{count}} item gagal dihapus; lihat Riwayat."
+  },
+  "achievement": {
+    "title": "Pencapaian",
+    "none": "Belum ada pencapaian. Pembersihan pertama membuka lencana pertama.",
+    "next_label": "Menuju lencana berikutnya",
+    "next": "{{size}} lagi menuju {{goal}}",
+    "max": "Lencana tertinggi tercapai.",
+    "level_0": "Pemula: belum 10 GB",
+    "level_1": "Perapi 10 GB",
+    "level_2": "Penyapu 50 GB",
+    "level_3": "Pembersih 100 GB",
+    "level_4": "Pembebas 250 GB",
+    "level_5": "Penakluk 500 GB",
+    "level_6": "Legenda 1 TB"
+  },
+  "rate": {
+    "title": "{{size}} sudah dibebaskan. Terima kasih!",
+    "body": "Kalau Sapu membantu, bintang di toko aplikasi membantu orang lain menemukannya. Sekali ini saja kami bertanya.",
+    "body_soon": "Kalau Sapu membantu, ceritakan ke teman. Tautan untuk memberi bintang di toko aplikasi akan tersedia setelah Sapu terbit di sana.",
+    "later": "Nanti saja",
+    "go": "Beri bintang"
   }
 }

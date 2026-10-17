@@ -258,6 +258,91 @@ pub fn clean_run_start(
         .ok()
         .and_then(|r| r.clone())
         .ok_or_else(|| CommandError::new("no_evaluation", "evaluate first"))?;
+    spawn_run(
+        app,
+        Arc::clone(&session),
+        report,
+        rule_ids,
+        artefacts,
+        apply,
+        permanent_ok,
+    )
+}
+
+/// Only the "empty the Trash" rules (every volume), evaluated on their own
+/// so the Trash can be emptied from Home without a full check.
+fn trash_rules() -> CmdResult<RuleSet> {
+    let all = rules()?;
+    Ok(RuleSet {
+        rules: all
+            .rules
+            .into_iter()
+            .filter(|r| r.group == "trash" && r.permanent)
+            .collect(),
+    })
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TrashStatus {
+    bytes: u64,
+    items: usize,
+}
+
+/// How much the Trash holds right now (all volumes).
+#[tauri::command]
+pub async fn trash_status() -> CmdResult<TrashStatus> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let rules = trash_rules()?;
+        let report = sapu_core::cleaner::evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &Env::system(),
+        );
+        Ok(TrashStatus {
+            bytes: report.findings.iter().map(|f| f.bytes).sum(),
+            items: report.findings.iter().map(|f| f.items.len()).sum(),
+        })
+    })
+    .await
+    .map_err(|e| CommandError::new("io", e.to_string()))?
+}
+
+/// Empties the Trash on every volume as a background run with progress
+/// (same events as a clean run). The UI must have shown the permanent
+/// deletion warning and taken the second confirmation first.
+#[tauri::command]
+pub async fn trash_empty_start(
+    app: AppHandle,
+    session: State<'_, Arc<CleanSession>>,
+) -> CmdResult<()> {
+    let session = Arc::clone(&session);
+    let (report, ids) = tauri::async_runtime::spawn_blocking(|| -> CmdResult<_> {
+        let rules = trash_rules()?;
+        let report = sapu_core::cleaner::evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &Env::system(),
+        );
+        let ids: Vec<String> = report.findings.iter().map(|f| f.rule_id.clone()).collect();
+        Ok((report, ids))
+    })
+    .await
+    .map_err(|e| CommandError::new("io", e.to_string()))??;
+    session.set_report(report.clone());
+    spawn_run(app, session, report, ids, Vec::new(), true, true)
+}
+
+fn spawn_run(
+    app: AppHandle,
+    session: Arc<CleanSession>,
+    report: CleanReport,
+    rule_ids: Vec<String>,
+    artefacts: Vec<std::path::PathBuf>,
+    apply: bool,
+    permanent_ok: bool,
+) -> CmdResult<()> {
     {
         let mut running = session
             .run_running
@@ -268,7 +353,6 @@ pub fn clean_run_start(
         }
         *running = true;
     }
-    let session = Arc::clone(&session);
     std::thread::spawn(move || {
         let start = std::time::Instant::now();
         let result = (|| -> Result<CleanRunReport, CommandError> {

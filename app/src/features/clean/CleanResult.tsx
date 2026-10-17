@@ -34,10 +34,10 @@ export function CleanResult({ result, rows, onSeeHistory, onBack, trashRule = nu
       {!result.dry_run && result.bytes_freed > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-risk-review-border bg-risk-review-bg p-4 text-sm text-risk-review-fg">
           <span className="max-w-[70ch]">{t("clean.trash_note")}</span>
-          {trashRule && onEmptyTrash && (
+          {onEmptyTrash && (
             <Button size="sm" variant="secondary" onClick={onEmptyTrash}>
               <Trash2 aria-hidden className="h-4 w-4" />
-              {trashRule.bytes ? t("clean.trash_empty_sized", { size: formatBytes(trashRule.bytes, i18n.language) }) : t("clean.trash_empty")}
+              {trashRule?.bytes ? t("clean.trash_empty_sized", { size: formatBytes(trashRule.bytes, i18n.language) }) : t("clean.trash_empty")}
             </Button>
           )}
         </div>

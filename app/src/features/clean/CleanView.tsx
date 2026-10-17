@@ -15,6 +15,7 @@ import { ProjectsSection } from "./ProjectsSection";
 import { cn } from "@/lib/utils";
 import { CleanPreview } from "./CleanPreview";
 import { CleanResult } from "./CleanResult";
+import { EmptyTrashDialog } from "./EmptyTrashDialog";
 
 export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHistory: () => void }) {
   const { t, i18n } = useTranslation();
@@ -25,6 +26,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const [preview, setPreview] = useState(false);
   /** Rows the open preview acts on: the selection, or only the Trash rule. */
   const [previewRows, setPreviewRows] = useState<RuleRow[] | null>(null);
+  const [emptyingTrash, setEmptyingTrash] = useState(false);
   const [result, setResult] = useState<CleanRunReport | null>(null);
   const [tab, setTab] = useState<"all" | "dev">("all");
   // "checking" while the background check runs; "ready" once a status
@@ -183,24 +185,17 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
             void load();
           }}
           trashRule={rows.find((r) => r.permanent && r.group === "trash") ?? null}
-          onEmptyTrash={() => {
-            const tr = rows.find((r) => r.permanent && r.group === "trash");
-            if (!tr) return;
-            setPreviewRows([tr]);
-            setPreview(true);
-          }}
+          onEmptyTrash={() => setEmptyingTrash(true)}
         />
-        {preview && previewRows && (
-          <CleanPreview
-            rows={previewRows}
-            onClose={() => {
-              setPreview(false);
-              setPreviewRows(null);
-            }}
-            onDone={(r) => {
-              setPreview(false);
-              setPreviewRows(null);
-              setResult(r);
+        {emptyingTrash && (
+          <EmptyTrashDialog
+            status={(() => {
+              const tr = rows.find((r) => r.permanent && r.group === "trash");
+              return tr ? { bytes: tr.bytes ?? 0, items: tr.items } : null;
+            })()}
+            onClose={(r) => {
+              setEmptyingTrash(false);
+              if (r) setResult(r);
             }}
           />
         )}
