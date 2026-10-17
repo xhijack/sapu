@@ -124,11 +124,11 @@ fn next_id(n: usize) -> String {
 /// Deterministic proposal. Every non-link entry lands in exactly one group.
 pub fn propose(listing: &FolderListing) -> OrganizePlan {
     let mut groups: Vec<Group> = Vec::new();
-    let mut push = |name: String,
-                    source: GroupSource,
-                    confidence: Confidence,
-                    entries: Vec<OrganizeEntry>,
-                    groups: &mut Vec<Group>| {
+    let push = |name: String,
+                source: GroupSource,
+                confidence: Confidence,
+                entries: Vec<OrganizeEntry>,
+                groups: &mut Vec<Group>| {
         let bytes = entries.iter().map(|e| e.bytes).sum();
         groups.push(Group {
             id: next_id(groups.len() + 1),
@@ -193,10 +193,7 @@ pub fn propose(listing: &FolderListing) -> OrganizePlan {
         // Longest run of shared tokens (case-insensitive) decides the name and confidence.
         let token_lists: Vec<Vec<String>> = members.iter().map(|e| tokens(&e.name)).collect();
         let mut shared = 0usize;
-        loop {
-            let Some(first) = token_lists[0].get(shared) else {
-                break;
-            };
+        while let Some(first) = token_lists[0].get(shared) {
             if token_lists
                 .iter()
                 .all(|t| t.get(shared).is_some_and(|x| x.eq_ignore_ascii_case(first)))
