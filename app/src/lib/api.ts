@@ -92,6 +92,9 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
         throw { code: "restore_unsupported", message: "unsupported" } satisfies CommandError;
       }
       return { restored: [], not_found_in_trash: [] } as T;
+    case "open_url":
+      if (typeof window !== "undefined" && typeof window.open === "function") window.open(String(args?.url), "_blank", "noopener");
+      return undefined as T;
     case "open_disk_access_settings":
     case "reveal_app_binary":
     case "relaunch_as_admin":
@@ -115,6 +118,7 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
 export const api = {
   appInfo: () => invoke<AppInfo>("app_info"),
+  openUrl: (url: string) => invoke<void>("open_url", { url }),
   diskAccessStatus: () => invoke<DiskAccess>("disk_access_status"),
   settingsGet: () => invoke<Settings>("settings_get"),
   settingsSet: (settings: Settings) => invoke<void>("settings_set", { settings }),

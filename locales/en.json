@@ -181,7 +181,17 @@
     "notify": "Notify when a long operation finishes",
     "notify_hint": "Useful when you leave the app while it scans.",
     "tray": "Menu bar monitor",
-    "tray_hint": "A small icon with disk space, memory, CPU and a Care shortcut. Takes effect after Sapu restarts."
+    "tray_hint": "A small icon with disk space, memory, CPU and a Care shortcut. Takes effect after Sapu restarts.",
+    "about_title": "About Sapu",
+    "about_version": "Version {{version}} · {{os}}",
+    "about_tagline": "An open source disk cleaner: scan, clean what is safe, remove duplicates. Everything goes to the Trash first.",
+    "about_made_by": "Made by",
+    "about_license": "License",
+    "about_license_body": "Your choice of either. Free to use, change, redistribute and sell as long as the copyright and license notices stay.",
+    "about_repo": "Source code on GitHub",
+    "about_license_link": "Read the license",
+    "about_contribute": "How to contribute",
+    "about_issues": "Report a problem"
   },
   "errors": {
     "protected": "This location is protected.",
@@ -506,9 +516,10 @@
     "api_key_replace": "Paste a new key to replace it",
     "key_saved": "Key stored in the keychain. Sapu never shows it again; the field is cleared on purpose.",
     "load_models": "Load model list",
-    "model_pick": "Pick from the list…",
+    "model_pick": "Pick from the list",
     "model_placeholder": "type or load the list",
-    "model_hint": "Press “Load model list” once the key is stored, then pick one. Typing a name also works."
+    "model_hint": "Load the list once the key is stored, or type a model name.",
+    "model_custom": "Type another model name…"
   },
   "care": {
     "title": "Care",

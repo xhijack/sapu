@@ -184,6 +184,20 @@ fn relaunch_as_admin(app: tauri::AppHandle) -> CmdResult<()> {
     }
 }
 
+/// Opens an https link in the default browser (About screen links).
+#[tauri::command]
+fn open_url(app: tauri::AppHandle, url: String) -> CmdResult<()> {
+    if !url.starts_with("https://") {
+        return Err(CommandError::new(
+            "validation",
+            "only https links can be opened",
+        ));
+    }
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| CommandError::new("opener", e.to_string()))
+}
+
 /// Opens the OS privacy settings where Full Disk Access is granted.
 #[tauri::command]
 fn open_disk_access_settings(app: tauri::AppHandle) -> CmdResult<()> {
@@ -328,6 +342,7 @@ pub fn run() {
             scan::quick_look,
             history_restore,
             open_disk_access_settings,
+            open_url,
         ])
         .build(tauri::generate_context!())
         .map(|app| {

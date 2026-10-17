@@ -7,7 +7,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 repository = "https://github.com/xhijack/sapu"
-authors = ["Ramdani"]
+authors = ["Ramdani <xhijack@gmail.com> (PT Sopwer Teknologi Indonesia)"]
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]

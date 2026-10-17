@@ -229,9 +229,10 @@ impl Provider for OpenAiCompatible {
     }
 
     fn complete(&self, system: &str, user: &str) -> Result<String, ProviderError> {
+        // No sampling parameters: newer models (gpt-5, claude-*-5) reject
+        // `temperature`, and the JSON-only prompt is what keeps answers tight.
         let body = serde_json::json!({
             "model": self.model,
-            "temperature": 0.2,
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system},
@@ -302,7 +303,6 @@ impl Provider for Anthropic {
         let body = serde_json::json!({
             "model": self.model,
             "max_tokens": 1024,
-            "temperature": 0.2,
             "system": system,
             "messages": [{"role": "user", "content": user}]
         });

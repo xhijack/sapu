@@ -5,6 +5,7 @@ import { Card, CardText, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import type { ProtectedEntry, Profile, Settings, Theme } from "@/lib/types";
 import { AiSettings } from "@/features/ai/AiSettings";
+import { About } from "./About";
 
 interface Props {
   settings: Settings;
@@ -120,6 +121,7 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
           ))}
         </ul>
       </Card>
+      <About />
     </div>
   );
 }

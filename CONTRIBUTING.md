@@ -2,6 +2,21 @@
 
 Thank you for helping. Sapu is a disk cleaner, so every change is judged first by one question: can it make a user lose data? Read `CLAUDE.md` for the architecture and safety rules that are not negotiable, and `PRD.md` for what the product is trying to be.
 
+## Ways to help
+
+- **Report a bug**: open an issue with your OS, the Sapu version (Settings → About), what you did and what happened. Screenshots help.
+- **Add a clean-up rule** for an application you know well (see below). This is the most useful contribution a non-Rust developer can make.
+- **Translate**: `locales/id.json` and `locales/en.json` must have the same keys; a test enforces it. A new language is a new file plus one line in `app/src/i18n.ts`.
+- **Code**: pick an issue labelled `good first issue`, or propose a change in an issue first if it touches `safety/`, `cleaner/` or `dedupe/`.
+
+## Pull requests
+
+1. Fork, branch from `main`, keep one topic per pull request.
+2. Run the checks below; CI runs them on macOS, Windows and Linux.
+3. Write the commit message in English following Conventional Commits (`feat:`, `fix:`, `rules(macos):`, …). No AI attribution trailers.
+4. UI text goes through `locales/`, in both languages. Technical terms belong in detail panels, not headlines.
+5. Anything that removes files must go through `safety::DeletePlan`; the build rejects other removal calls.
+
 ## Development
 
 ```sh

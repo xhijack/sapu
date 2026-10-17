@@ -17,6 +17,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const input = "h-10 rounded-lg border border-border bg-surface px-3 text-sm";
+const CUSTOM_MODEL = "__custom__";
 
 /** Provider configuration; keys go to the OS keychain (PRD §12.5). */
 export function AiSettings() {
@@ -27,6 +28,7 @@ export function AiSettings() {
   const [keyHint, setKeyHint] = useState<string | null>(null);
   const [key, setKey] = useState("");
   const [models, setModels] = useState<string[] | null>(null);
+  const [customModel, setCustomModel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +65,9 @@ export function AiSettings() {
     try {
       const m = await aiApi.models();
       setModels(m);
+      setCustomModel(false);
       if (m.length === 0) setNotice(t("ai.no_models"));
+      else if (cfg && cfg.mode === "cloud" && !cfg.cloud_model && m[0]) void save({ ...cfg, cloud_model: m[0] });
     } catch (e) {
       setModels([]);
       setError(errorMessage(e));
@@ -174,23 +178,39 @@ export function AiSettings() {
           </Field>
           <Field label={t("ai.cloud_model")}>
             <div className="flex gap-2">
-              <input list="ai-cloud-models" value={cfg.cloud_model} onChange={(e) => setCfg({ ...cfg, cloud_model: e.target.value })} onBlur={() => void save(cfg)} className={`${input} flex-1`} placeholder={t("ai.model_placeholder")} />
-              <datalist id="ai-cloud-models">{(models ?? []).map((m) => <option key={m} value={m} />)}</datalist>
+              {models && models.length > 0 && !customModel ? (
+                <select
+                  value={models.includes(cfg.cloud_model) ? cfg.cloud_model : CUSTOM_MODEL}
+                  onChange={(e) => {
+                    if (e.target.value === CUSTOM_MODEL) setCustomModel(true);
+                    else void save({ ...cfg, cloud_model: e.target.value });
+                  }}
+                  className={`${input} flex-1`}
+                >
+                  {!models.includes(cfg.cloud_model) && cfg.cloud_model && <option value={CUSTOM_MODEL}>{cfg.cloud_model}</option>}
+                  {models.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_MODEL}>{t("ai.model_custom")}</option>
+                </select>
+              ) : (
+                <input value={cfg.cloud_model} onChange={(e) => setCfg({ ...cfg, cloud_model: e.target.value })} onBlur={() => void save(cfg)} className={`${input} flex-1`} placeholder={t("ai.model_placeholder")} />
+              )}
               <Button variant="outline" onClick={() => void loadModels()}>
-                {t("ai.load_models")}
+                {models && models.length > 0 ? t("ai.refresh_models") : t("ai.load_models")}
               </Button>
             </div>
-            {models && models.length > 0 && (
-              <select aria-label={t("ai.cloud_model")} value={models.includes(cfg.cloud_model) ? cfg.cloud_model : ""} onChange={(e) => void save({ ...cfg, cloud_model: e.target.value })} className={input}>
-                <option value="">{t("ai.model_pick")}</option>
-                {models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            )}
-            <span className="text-xs text-fg-muted">{t("ai.model_hint")}</span>
+            <span className="text-xs text-fg-muted">
+              {models && models.length > 0 && customModel ? (
+                <button type="button" className="text-accent-strong underline-offset-2 hover:underline" onClick={() => setCustomModel(false)}>
+                  {t("ai.model_pick")}
+                </button>
+              ) : (
+                t("ai.model_hint")
+              )}
+            </span>
           </Field>
         </>
       )}

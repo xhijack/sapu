@@ -181,7 +181,17 @@
     "notify": "Notifikasi saat operasi panjang selesai",
     "notify_hint": "Berguna kalau kamu meninggalkan aplikasi saat memindai.",
     "tray": "Monitor di menu bar",
-    "tray_hint": "Ikon kecil dengan ruang disk, memori, CPU, dan pintasan Rawat. Berlaku setelah Sapu dibuka ulang."
+    "tray_hint": "Ikon kecil dengan ruang disk, memori, CPU, dan pintasan Rawat. Berlaku setelah Sapu dibuka ulang.",
+    "about_title": "Tentang Sapu",
+    "about_version": "Versi {{version}} · {{os}}",
+    "about_tagline": "Pembersih disk sumber terbuka: pindai, bersihkan yang aman, buang duplikat. Semua lewat Trash dulu.",
+    "about_made_by": "Dibuat oleh",
+    "about_license": "Lisensi",
+    "about_license_body": "Pilih salah satu. Bebas dipakai, diubah, disebarkan, dan dijual ulang selama pemberitahuan hak cipta dan lisensi ikut disertakan.",
+    "about_repo": "Kode sumber di GitHub",
+    "about_license_link": "Baca lisensi",
+    "about_contribute": "Cara berkontribusi",
+    "about_issues": "Laporkan masalah"
   },
   "errors": {
     "protected": "Lokasi ini dilindungi.",
@@ -506,9 +516,10 @@
     "api_key_replace": "Tempel key baru untuk mengganti",
     "key_saved": "Key disimpan di Keychain. Sapu tidak pernah menampilkannya lagi; kolom dikosongkan dengan sengaja.",
     "load_models": "Muat daftar model",
-    "model_pick": "Pilih dari daftar…",
+    "model_pick": "Pilih dari daftar",
     "model_placeholder": "ketik atau muat daftar",
-    "model_hint": "Tekan “Muat daftar model” setelah key tersimpan, lalu pilih. Bisa juga diketik langsung."
+    "model_hint": "Muat daftar setelah key tersimpan, atau ketik nama model.",
+    "model_custom": "Ketik nama model lain…"
   },
   "care": {
     "title": "Rawat",
