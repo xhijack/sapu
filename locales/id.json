@@ -116,7 +116,6 @@
     "hero_free": "Ruang kosong",
     "hero_of": "dari {{total}}, {{pct}}% terpakai",
     "hero_cta": "Pindai disk sekarang",
-    "hero_last": "Pemindaian terakhir {{date}}: {{size}} terpakai",
     "hero_never": "Belum pernah dipindai. Satu klik untuk melihat apa yang memakan ruang.",
     "tile_scan": "Pindai",
     "tile_scan_body": "Lihat apa yang memakan ruang, per kategori dan folder.",
@@ -139,7 +138,8 @@
     "cores_hint": "{{count}} inti, rata-rata {{avg}}%",
     "hero_cta_care": "Rawat Mac saya",
     "tile_care": "Rawat",
-    "tile_care_body": "Satu klik: pindai, periksa, dan bersihkan yang aman."
+    "tile_care_body": "Satu klik: pindai, periksa, dan bersihkan yang aman.",
+    "freed_since": "sejak {{date}} ({{days}} hari)"
   },
   "history": {
     "title": "Riwayat pembersihan",
@@ -622,12 +622,14 @@
   },
   "statusbar": {
     "label": "Status sistem",
-    "disk": "{{size}} kosong",
+    "disk": "{{size}} kosong dari {{total}} ({{pct}}%)",
     "memory": "Memori {{pct}}%",
     "cpu": "CPU {{pct}}%",
     "open_task": "Buka tugas yang berjalan",
     "task_scan": "Memindai",
     "task_care": "Merawat",
-    "task_dedupe": "Mencari duplikat"
+    "task_dedupe": "Mencari duplikat",
+    "disk_low": "disarankan ≥ {{size}}",
+    "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang."
   }
 }

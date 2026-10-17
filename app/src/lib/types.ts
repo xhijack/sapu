@@ -462,6 +462,7 @@ export interface DiskInfo {
   available_bytes: number;
   removable: boolean;
   file_system: string;
+  recommended_free_bytes: number;
 }
 
 export interface SystemSnapshot {
@@ -567,6 +568,7 @@ export interface HistoryTotals {
   bytes_freed: number;
   items_disposed: number;
   last_session_unix: number | null;
+  first_session_unix: number | null;
 }
 
 // ---- Care (R3) ----

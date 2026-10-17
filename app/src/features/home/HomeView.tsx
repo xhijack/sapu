@@ -85,9 +85,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
               <Search aria-hidden className="h-5 w-5" />
               {t("home.hero_cta")}
             </Button>
-            <span className="num text-sm text-fg-muted">
-              {previous ? t("home.hero_last", { date: formatDate(previous.finished_at_unix, lang), size: formatBytes(previous.total_bytes, lang) }) : t("home.hero_never")}
-            </span>
+            {!previous && <span className="num text-sm text-fg-muted">{t("home.hero_never")}</span>}
           </div>
           <p className="flex items-center gap-2 text-sm text-fg-faint">
             <ShieldCheck aria-hidden className="h-4 w-4 text-accent" />
@@ -112,7 +110,10 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
           {totals && totals.sessions > 0 ? (
             <div>
               <p className="display num text-2xl">{t("home.freed_total", { size: formatBytes(totals.bytes_freed, lang) })}</p>
-              <p className="num text-xs text-fg-muted">{t("home.freed_sessions", { count: totals.sessions, items: totals.items_disposed.toLocaleString(lang) })}</p>
+              <p className="num text-xs text-fg-muted">
+                {totals.first_session_unix ? t("home.freed_since", { date: formatDate(totals.first_session_unix, lang), days: Math.max(1, Math.round((Date.now() / 1000 - totals.first_session_unix) / 86_400)) }) + ", " : ""}
+                {t("home.freed_sessions", { count: totals.sessions, items: totals.items_disposed.toLocaleString(lang) })}
+              </p>
             </div>
           ) : (
             <p className="text-sm text-fg-faint">{t("home.freed_none")}</p>

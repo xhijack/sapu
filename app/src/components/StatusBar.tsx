@@ -66,7 +66,12 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <span className="flex items-center gap-1.5" title={main ? `${main.name || main.mount}: ${diskPct}%` : undefined}>
         <HardDrive aria-hidden className="h-3.5 w-3.5" />
         <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", tone(diskPct))} />
-        <span className="num">{main ? t("statusbar.disk", { size: formatBytes(main.available_bytes, lang) }) : t("home.measuring")}</span>
+        <span className="num">{main ? t("statusbar.disk", { size: formatBytes(main.available_bytes, lang), total: formatBytes(main.total_bytes, lang), pct: 100 - diskPct }) : t("home.measuring")}</span>
+        {main && main.available_bytes < main.recommended_free_bytes && (
+          <span className="num rounded-full bg-risk-review-bg px-1.5 text-[11px] text-risk-review-fg" title={t("statusbar.disk_low_hint")}>
+            {t("statusbar.disk_low", { size: formatBytes(main.recommended_free_bytes, lang) })}
+          </span>
+        )}
       </span>
       <span className="flex items-center gap-1.5" title={snap ? t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) }) : undefined}>
         <MemoryStick aria-hidden className="h-3.5 w-3.5" />

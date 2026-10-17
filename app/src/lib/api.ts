@@ -58,8 +58,8 @@ export const mock = {
     mem_used_bytes: 9.92 * 1024 ** 3,
     swap_used_bytes: 1.1 * 1024 ** 3,
     disks: [
-      { name: "Macintosh HD", mount: "/", total_bytes: 494 * 1024 ** 3, available_bytes: 61 * 1024 ** 3, removable: false, file_system: "apfs" },
-      { name: "Backup", mount: "/Volumes/Backup", total_bytes: 2 * 1024 ** 4, available_bytes: 0.8 * 1024 ** 4, removable: true, file_system: "exfat" },
+      { name: "Macintosh HD", mount: "/", total_bytes: 494 * 1024 ** 3, available_bytes: 61 * 1024 ** 3, removable: false, file_system: "apfs", recommended_free_bytes: 49.4 * 1024 ** 3 },
+      { name: "Backup", mount: "/Volumes/Backup", total_bytes: 2 * 1024 ** 4, available_bytes: 0.8 * 1024 ** 4, removable: true, file_system: "exfat", recommended_free_bytes: 0.2 * 1024 ** 4 },
     ],
     os_name: "macOS 26.0",
   } as SystemSnapshot,
@@ -86,7 +86,7 @@ const mockInvoke: Invoke = async <T,>(cmd: string, args?: Record<string, unknown
     case "history_list":
       return mock.history as T;
     case "history_totals":
-      return { sessions: 3, bytes_freed: 41.2 * 1024 ** 3, items_disposed: 1240, last_session_unix: 1_791_900_000 } as T;
+      return { sessions: 3, bytes_freed: 41.2 * 1024 ** 3, items_disposed: 1240, last_session_unix: 1_791_900_000, first_session_unix: 1_790_700_000 } as T;
     case "history_restore":
       if (mock.info.os === "macos") {
         throw { code: "restore_unsupported", message: "unsupported" } satisfies CommandError;

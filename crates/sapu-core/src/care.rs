@@ -57,6 +57,16 @@ fn linear(value: f64, zero_at: f64, full_at: f64, max: u8) -> u8 {
 }
 
 /// Score a scan plus the clean evaluation that followed it.
+/// How much of a disk should stay free: 10 % of its size or 20 GB,
+/// whichever is larger, but never more than a quarter of a small disk.
+/// APFS snapshots, swap and OS updates need the headroom; below it macOS
+/// and Windows slow down and updates fail. The one threshold every
+/// surface (status bar, Care) uses.
+pub fn recommended_free_bytes(disk_total: u64) -> u64 {
+    const FLOOR: u64 = 20 * 1024 * 1024 * 1024;
+    (disk_total / 10).max(FLOOR.min(disk_total / 4))
+}
+
 pub fn score(scan: &ScanResult, clean: &CleanReport) -> SpaceScore {
     let disk_total = scan.disk_total_bytes.unwrap_or(scan.total_bytes).max(1);
     let free = scan.disk_free_bytes.unwrap_or(0);
@@ -135,7 +145,7 @@ pub fn score(scan: &ScanResult, clean: &CleanReport) -> SpaceScore {
     let total: u32 = components.iter().map(|c| u32::from(c.points)).sum();
 
     let mut recommendations = Vec::new();
-    if free_pct < 10 {
+    if free < recommended_free_bytes(disk_total) {
         recommendations.push(Recommendation::DiskNearlyFull { free_pct });
     }
     if safe_bytes > 0 {
@@ -260,5 +270,14 @@ mod tests {
             Recommendation::CleanSafe { bytes: 80 }
         ));
         assert_eq!(s.components.iter().map(|c| c.max as u32).sum::<u32>(), 100);
+    }
+
+    #[test]
+    fn recommended_free_is_ten_percent_with_a_floor() {
+        const GB: u64 = 1024 * 1024 * 1024;
+        assert_eq!(recommended_free_bytes(494 * GB), 494 * GB / 10);
+        assert_eq!(recommended_free_bytes(120 * GB), 20 * GB);
+        assert_eq!(recommended_free_bytes(40 * GB), 10 * GB);
+        assert_eq!(recommended_free_bytes(0), 0);
     }
 }

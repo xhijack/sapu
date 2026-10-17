@@ -116,7 +116,6 @@
     "hero_free": "Free space",
     "hero_of": "of {{total}}, {{pct}}% used",
     "hero_cta": "Scan the disk now",
-    "hero_last": "Last scan {{date}}: {{size}} used",
     "hero_never": "Never scanned. One click shows what takes up space.",
     "tile_scan": "Scan",
     "tile_scan_body": "See what takes up space, by category and folder.",
@@ -139,7 +138,8 @@
     "cores_hint": "{{count}} cores, average {{avg}}%",
     "hero_cta_care": "Care for my Mac",
     "tile_care": "Care",
-    "tile_care_body": "One click: scan, check, and clean what is safe."
+    "tile_care_body": "One click: scan, check, and clean what is safe.",
+    "freed_since": "since {{date}} ({{days}} days)"
   },
   "history": {
     "title": "Clean-up history",
@@ -622,12 +622,14 @@
   },
   "statusbar": {
     "label": "System status",
-    "disk": "{{size}} free",
+    "disk": "{{size}} free of {{total}} ({{pct}}%)",
     "memory": "Memory {{pct}}%",
     "cpu": "CPU {{pct}}%",
     "open_task": "Open the running task",
     "task_scan": "Scanning",
     "task_care": "Caring",
-    "task_dedupe": "Finding duplicates"
+    "task_dedupe": "Finding duplicates",
+    "disk_low": "recommended ≥ {{size}}",
+    "disk_low_hint": "Keep 10% or at least 20 GB free so the OS, updates and snapshots have room."
   }
 }

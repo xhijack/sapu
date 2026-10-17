@@ -106,6 +106,7 @@ pub struct HistoryTotals {
     bytes_freed: u64,
     items_disposed: usize,
     last_session_unix: Option<u64>,
+    first_session_unix: Option<u64>,
 }
 
 /// Lifetime totals of real (non dry-run) clean sessions.
@@ -118,6 +119,7 @@ fn history_totals() -> CmdResult<HistoryTotals> {
         bytes_freed: real.iter().map(|s| s.bytes_freed).sum(),
         items_disposed: real.iter().map(|s| s.disposed).sum(),
         last_session_unix: real.iter().map(|s| s.finished_at_unix).max(),
+        first_session_unix: real.iter().map(|s| s.finished_at_unix).min(),
     })
 }
 

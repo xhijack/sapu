@@ -7,7 +7,9 @@ import { StatusBar } from "./StatusBar";
 describe("StatusBar", () => {
   it("shows disk, memory and per-core cpu compactly", async () => {
     render(<StatusBar onNavigate={() => undefined} />);
-    expect(await screen.findByText("61,0 GB kosong")).toBeInTheDocument();
+    expect(await screen.findByText("61,0 GB kosong dari 494,0 GB (12%)")).toBeInTheDocument();
+    // 61 GB free is above the 49.4 GB guidance, so no warning badge.
+    expect(screen.queryByText(/disarankan/)).toBeNull();
     expect(screen.getByText("Memori 62%")).toBeInTheDocument();
     expect(screen.getByText("CPU 24%")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "10 inti, rata-rata 24%" })).toBeInTheDocument();
