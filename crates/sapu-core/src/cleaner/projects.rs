@@ -96,6 +96,12 @@ const MARKERS: &[(&str, Ecosystem)] = &[
     ("pom.xml", Ecosystem::Maven),
 ];
 
+/// Does `dir` hold a project marker (`package.json`, `Cargo.toml`, …) or a
+/// git checkout? Such folders are treated as one unit by other features.
+pub fn is_project_root(dir: &Path) -> bool {
+    dir.join(".git").exists() || MARKERS.iter().any(|(m, _)| dir.join(m).is_file())
+}
+
 /// Every folder name that can be a build artefact, used to avoid descending
 /// into them and when measuring project activity.
 const ALL_ARTEFACTS: &[&str] = &[

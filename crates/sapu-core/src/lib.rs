@@ -13,6 +13,7 @@ pub mod cleaner;
 pub mod dedupe;
 pub mod error;
 pub mod eta;
+pub mod organize;
 pub mod platform;
 pub mod progress;
 pub mod rules;
