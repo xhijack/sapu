@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Cpu, HardDrive, MemoryStick } from "lucide-react";
 import { api } from "@/lib/api";
 import { careApi } from "@/lib/careApi";
+import { cleanApi } from "@/lib/cleanApi";
 import { dedupeApi } from "@/lib/dedupeApi";
 import { formatBytes, formatEta } from "@/lib/format";
 import { scanApi } from "@/lib/scanApi";
@@ -49,6 +50,9 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       dedupeApi.onProgress((p) => setTask({ screen: "dedupe", fraction: p.fraction, eta: p.eta })),
       dedupeApi.onDone(clear),
       dedupeApi.onError(clear),
+      cleanApi.onProgress((p) => setTask({ screen: "clean", fraction: p.fraction, eta: p.eta })),
+      cleanApi.onDone(clear),
+      cleanApi.onError(clear),
     ];
     return () => {
       void Promise.all(subs).then((fns) => fns.forEach((f) => f()));
@@ -62,8 +66,8 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   const cpuPct = snap?.cpu_percent == null ? null : Math.round(snap.cpu_percent);
 
   return (
-    <footer aria-label={t("statusbar.label")} className="flex h-8 shrink-0 items-center gap-5 border-t border-border bg-surface px-4 text-[12px] text-fg-muted" style={{ backdropFilter: "blur(16px)" }}>
-      <span className="flex items-center gap-1.5" title={main ? `${main.name || main.mount}: ${diskPct}%` : undefined}>
+    <footer aria-label={t("statusbar.label")} className="flex h-8 shrink-0 items-center gap-4 overflow-hidden whitespace-nowrap border-t border-border bg-surface px-4 text-[12px] text-fg-muted" style={{ backdropFilter: "blur(16px)" }}>
+      <span className="flex shrink-0 items-center gap-1.5" title={main ? `${main.name || main.mount}: ${diskPct}%` : undefined}>
         <HardDrive aria-hidden className="h-3.5 w-3.5" />
         <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", tone(diskPct))} />
         <span className="num">{main ? t("statusbar.disk", { size: formatBytes(main.available_bytes, lang), total: formatBytes(main.total_bytes, lang), pct: 100 - diskPct }) : t("home.measuring")}</span>
@@ -73,12 +77,12 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
           </span>
         )}
       </span>
-      <span className="flex items-center gap-1.5" title={snap ? t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) }) : undefined}>
+      <span className="flex shrink-0 items-center gap-1.5" title={snap ? t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) }) : undefined}>
         <MemoryStick aria-hidden className="h-3.5 w-3.5" />
         <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", tone(memPct ?? 0))} />
         <span className="num">{memPct === null ? "…" : t("statusbar.memory", { pct: memPct })}</span>
       </span>
-      <span className="flex items-center gap-1.5" title={snap ? t("home.cores_hint", { count: snap.cpu_count, avg: cpuPct ?? 0 }) : undefined}>
+      <span className="flex shrink-0 items-center gap-1.5" title={snap ? t("home.cores_hint", { count: snap.cpu_count, avg: cpuPct ?? 0 }) : undefined}>
         <Cpu aria-hidden className="h-3.5 w-3.5" />
         <span className="num">{cpuPct === null ? "…" : t("statusbar.cpu", { pct: cpuPct })}</span>
         {snap && snap.cpu_per_core.length > 0 && (

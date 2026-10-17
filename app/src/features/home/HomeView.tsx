@@ -57,7 +57,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
 
   return (
     <div className="grid max-w-[1280px] gap-6">
-      <section className="rise grid items-center gap-8 md:grid-cols-[auto_1fr]">
+      <section className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
         <SpaceRing
           size={196}
           thickness={18}

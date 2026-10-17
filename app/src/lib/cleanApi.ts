@@ -1,5 +1,19 @@
 import { isTauri } from "./api";
-import type { CleanEvaluation, CleanRunReport, Profile } from "./types";
+import type { CleanCheckProgress, CleanCheckStatus, CleanEvaluation, CleanRunReport, Profile } from "./types";
+
+type Unlisten = () => void;
+
+async function listen<T>(event: string, cb: (payload: T) => void): Promise<Unlisten> {
+  if (isTauri()) {
+    const { listen } = await import("@tauri-apps/api/event");
+    return listen<T>(event, (e) => cb(e.payload));
+  }
+  const handler = (e: Event) => cb((e as CustomEvent<T>).detail);
+  bus.addEventListener(event, handler);
+  return () => bus.removeEventListener(event, handler);
+}
+const bus = new EventTarget();
+const emit = <T,>(event: string, detail: T) => bus.dispatchEvent(new CustomEvent(event, { detail }));
 
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
@@ -10,7 +24,13 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 }
 
 export const cleanApi = {
-  evaluate: (profile: Profile) => invoke<CleanEvaluation>("clean_evaluate", { profile }),
+  /** Starts a background check; listen for `onDone`. */
+  start: (profile: Profile) => invoke<void>("clean_check_start", { profile }),
+  status: () => invoke<CleanCheckStatus>("clean_check_status"),
+  last: () => invoke<CleanEvaluation | null>("clean_last"),
+  onProgress: (cb: (p: CleanCheckProgress) => void) => listen<CleanCheckProgress>("clean://progress", cb),
+  onDone: (cb: (ev: CleanEvaluation) => void) => listen<CleanEvaluation>("clean://done", cb),
+  onError: (cb: (e: { code: string; message: string }) => void) => listen("clean://error", cb),
   execute: (ruleIds: string[], artefacts: string[], apply: boolean, permanentOk: boolean) =>
     invoke<CleanRunReport>("clean_execute", { ruleIds, artefacts, apply, permanentOk }),
 };
@@ -20,8 +40,19 @@ const MB = 1024 ** 2;
 
 export const cleanMock = {
   lastExecute: null as { ruleIds: string[]; artefacts?: string[]; apply: boolean; permanentOk: boolean } | null,
+  /** Tests start with a finished check so the list renders at once; `?fresh=1` in the browser starts empty. */
+  cached: typeof location === "undefined" || !location.search.includes("fresh"),
+  ticks: typeof location !== "undefined" && location.search.includes("slow") ? 12 : 3,
+  tickMs: typeof location !== "undefined" && location.search.includes("slow") ? 700 : 15,
+  running: false,
+  lastEvaluation: null as CleanEvaluation | null,
   reset() {
     this.lastExecute = null;
+    this.cached = true;
+    this.ticks = 3;
+    this.tickMs = 15;
+    this.running = false;
+    this.lastEvaluation = null;
   },
 };
 
@@ -91,13 +122,34 @@ const mockEvaluation = (profile: Profile): CleanEvaluation => {
     rules,
     preselected: ["macos-browser-caches", "macos-old-logs", ...(profile === "developer" ? ["docker-images-dangling"] : [])],
     preselected_artefacts: projects.flatMap((p) => p.artefacts.filter((a) => a.risk === "green").map((a) => a.path)),
+    profile,
+    finished_at_unix: 1_792_000_000,
   };
 };
 
 const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Promise<T> => {
   switch (cmd) {
-    case "clean_evaluate":
-      return mockEvaluation(args?.profile as Profile) as T;
+    case "clean_check_status":
+      return { running: cleanMock.running, has_result: cleanMock.cached || cleanMock.lastEvaluation !== null, finished_at_unix: cleanMock.cached ? 1_792_000_000 : (cleanMock.lastEvaluation?.finished_at_unix ?? null) } as T;
+    case "clean_last":
+      if (cleanMock.lastEvaluation) return cleanMock.lastEvaluation as T;
+      return (cleanMock.cached ? mockEvaluation("general") : null) as T;
+    case "clean_check_start": {
+      const profile = args?.profile as Profile;
+      cleanMock.running = true;
+      let i = 0;
+      const step = () => {
+        i += 1;
+        emit<CleanCheckProgress>("clean://progress", { stage: i === 1 ? "projects" : "rules", done: i, total: cleanMock.ticks, fraction: i === 1 ? null : i / cleanMock.ticks, elapsed_secs: i, eta: i === 1 ? { kind: "indeterminate" } : { kind: "about", secs: (cleanMock.ticks - i) * 10, nanos: 0 } });
+        if (i >= cleanMock.ticks) {
+          cleanMock.running = false;
+          cleanMock.lastEvaluation = { ...mockEvaluation(profile), finished_at_unix: 1_792_000_500 };
+          emit("clean://done", cleanMock.lastEvaluation);
+        } else setTimeout(step, cleanMock.tickMs);
+      };
+      setTimeout(step, cleanMock.tickMs);
+      return undefined as T;
+    }
     case "clean_execute": {
       const ruleIds = args?.ruleIds as string[];
       const artefacts = (args?.artefacts as string[]) ?? [];

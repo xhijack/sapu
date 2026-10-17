@@ -209,6 +209,9 @@ body[data-native="true"] {
 
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 
+/* Grid and flex items may shrink below their content: long paths truncate
+   instead of pushing the page into a horizontal scroll. */
+.grid > *, .flex > * { min-width: 0; }
 .num { font-variant-numeric: tabular-nums; }
 .display { font-family: var(--font-display); letter-spacing: -0.02em; font-weight: 700; }
 .path { font-family: var(--font-mono); font-size: 12.5px; }

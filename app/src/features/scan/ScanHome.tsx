@@ -68,7 +68,7 @@ export function ScanHome({ onStart, error }: Props) {
         <h1 className="display text-2xl">{t("scan.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("scan.intro")}</p>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,1fr)]">
       <div className="grid content-start gap-6">
       <div role="radiogroup" aria-label={t("scan.title")} className="grid divide-y divide-border card-solid">
         {rows.map(({ id, Icon, label, hint, path }) => {

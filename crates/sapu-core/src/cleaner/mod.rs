@@ -8,7 +8,8 @@ mod projects;
 
 pub use command::{CommandOutcome, run_command};
 pub use evaluate::{
-    Candidate, CleanReport, CommandFinding, Finding, dir_size_pub, evaluate, evaluate_with,
+    Candidate, CleanReport, CommandFinding, EvalProgress, Finding, dir_size_pub, evaluate,
+    evaluate_with, evaluate_with_progress,
 };
 pub use execute::{CleanRunReport, RuleOutcome, Selection, execute};
 pub use projects::{Artefact, Ecosystem, Project, ProjectScanOptions, find_projects};

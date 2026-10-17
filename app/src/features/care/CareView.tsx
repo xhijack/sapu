@@ -117,7 +117,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   const previous = history.slice(1, 5);
   return (
     <div className="grid max-w-[1280px] gap-8">
-      <section className="rise grid items-center gap-8 md:grid-cols-[auto_1fr_minmax(280px,360px)]">
+      <section className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(280px,360px)]">
         <SpaceRing size={200} thickness={18} total={100} label={t("care.score_label")} segments={latest ? [{ key: "score", value: latest.score, color: scoreTone(latest.score) }] : []}>
           <div className="grid gap-0.5">
             {latest ? (

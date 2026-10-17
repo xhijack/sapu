@@ -385,7 +385,15 @@
     "tab_dev": "Developer",
     "dev_intro": "What development tools leave on the disk: editor caches, package managers, Docker, Xcode and project build output. All of it can be recreated.",
     "dev_total": "{{size}} across {{count}} sources",
-    "dev_projects": "Projects"
+    "dev_projects": "Projects",
+    "check_now": "Check now",
+    "idle_body": "Sapu checks caches, logs, app leftovers and project build output against clear rules, then shows what is safe to clean. The check runs in the background; you can switch screens.",
+    "last_checked": "Checked {{date}}",
+    "never_checked": "Never checked yet.",
+    "checking_title": "Checking…",
+    "stage_projects": "Finding development projects and sizing them",
+    "stage_rules": "Checking rule {{done}} of {{total}}",
+    "checking_note": "The check runs in the background. Switch screens; the result waits here and in the status bar."
   },
   "dedupe": {
     "title": "Duplicates",
@@ -651,7 +659,8 @@
     "task_care": "Caring",
     "task_dedupe": "Finding duplicates",
     "disk_low": "recommended ≥ {{size}}",
-    "disk_low_hint": "Keep 10% or at least 20 GB free so the OS, updates and snapshots have room."
+    "disk_low_hint": "Keep 10% or at least 20 GB free so the OS, updates and snapshots have room.",
+    "task_clean": "Checking Clean"
   },
   "tips": {
     "title": "Tips for using Sapu",

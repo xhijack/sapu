@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
+import { SpaceRing } from "@/components/viz/SpaceRing";
+import { Tips } from "@/components/Tips";
 import { RiskBadge } from "@/components/RiskBadge";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, formatDate, formatElapsed, formatEta } from "@/lib/format";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
-import type { CleanEvaluation, CleanRunReport, Profile } from "@/lib/types";
+import type { CleanCheckProgress, CleanEvaluation, CleanRunReport, Profile } from "@/lib/types";
 import { ARTEFACT_PREFIX, buildRows, type RuleRow } from "./rows";
 import { ProjectsSection } from "./ProjectsSection";
 import { cn } from "@/lib/utils";
@@ -23,23 +25,64 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const [preview, setPreview] = useState(false);
   const [result, setResult] = useState<CleanRunReport | null>(null);
   const [tab, setTab] = useState<"all" | "dev">("all");
+  // "checking" while the background check runs; "ready" once a status
+  // answer arrived (so the idle screen does not flash before a cached result).
+  const [checking, setChecking] = useState<CleanCheckProgress | null | false>(false);
+  const [ready, setReady] = useState(false);
+  const [lastChecked, setLastChecked] = useState<number | null>(null);
 
-  const load = useCallback(
-    () =>
-      cleanApi
-        .evaluate(profile)
-        .then((ev) => {
-          setEvaluation(ev);
-          setSelected(new Set([...ev.preselected, ...ev.preselected_artefacts.map((p) => ARTEFACT_PREFIX + p)]));
-        })
-        .catch((e) => setError(errorMessage(e))),
+  const adopt = (ev: CleanEvaluation) => {
+    setEvaluation(ev);
+    setLastChecked(ev.finished_at_unix);
+    setSelected(new Set([...ev.preselected, ...ev.preselected_artefacts.map((p) => ARTEFACT_PREFIX + p)]));
+  };
+
+  /** Starts a check in the background; the result arrives through `onDone`. */
+  const load = useCallback(() => {
+    setError(null);
+    setChecking(null);
+    return cleanApi.start(profile).catch((e) => {
+      setChecking(false);
+      setError(errorMessage(e));
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [profile],
-  );
+  }, [profile]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let live = true;
+    cleanApi
+      .status()
+      .then(async (st) => {
+        if (!live) return;
+        if (st.running) setChecking(null);
+        else if (st.has_result) {
+          const ev = await cleanApi.last();
+          if (!live) return;
+          // A result for another profile is stale: check again.
+          if (ev && ev.profile === profile) adopt(ev);
+          else if (ev) void load();
+        }
+        if (live) setReady(true);
+      })
+      .catch(() => live && setReady(true));
+    const subs = [
+      cleanApi.onProgress((p) => setChecking(p)),
+      cleanApi.onDone((ev) => {
+        adopt(ev);
+        setChecking(false);
+        setResult(null);
+      }),
+      cleanApi.onError((e) => {
+        setChecking(false);
+        setError(errorMessage(e));
+      }),
+    ];
+    return () => {
+      live = false;
+      void Promise.all(subs).then((fns) => fns.forEach((f) => f()));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const rows = useMemo(() => (evaluation ? buildRows(evaluation, i18n.language) : []), [evaluation, i18n.language]);
   const artefactRows: RuleRow[] = useMemo(
@@ -86,12 +129,39 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
       />
     );
   }
-  if (!evaluation) {
+  if (checking !== false) {
+    return <CleanChecking progress={checking} />;
+  }
+  if (!ready) {
     return (
       <div className="grid gap-4">
         <h1 className="display text-2xl">{t("clean.title")}</h1>
-        <p className="text-fg-muted">{t("clean.evaluating")}</p>
         <LoadingState />
+      </div>
+    );
+  }
+  if (!evaluation) {
+    return (
+      <div className="grid max-w-[1280px] gap-8">
+        <section className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
+          <SpaceRing size={180} thickness={16} total={1} segments={[]} label={t("clean.title")}>
+            <Sparkles aria-hidden className="mx-auto h-9 w-9 text-accent" />
+          </SpaceRing>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <h1 className="display text-[32px] leading-tight">{t("clean.title")}</h1>
+              <p className="max-w-[60ch] text-fg-muted">{t("clean.idle_body")}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <Button size="lg" onClick={() => void load()}>
+                <Sparkles aria-hidden className="h-5 w-5" />
+                {t("clean.check_now")}
+              </Button>
+              <span className="num text-sm text-fg-muted">{lastChecked ? t("clean.last_checked", { date: formatDate(lastChecked, i18n.language) }) : t("clean.never_checked")}</span>
+            </div>
+          </div>
+        </section>
+        <Tips seed={3} />
       </div>
     );
   }
@@ -135,6 +205,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
               ))}
             </div>
           )}
+          {lastChecked && <span className="num text-sm text-fg-muted">{t("clean.last_checked", { date: formatDate(lastChecked, i18n.language) })}</span>}
           <Button variant="outline" size="sm" onClick={() => void load()}>
             <RefreshCw aria-hidden className="h-4 w-4" />
             {t("clean.reevaluate")}
@@ -237,6 +308,34 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** The check as a moment, like scanning: a ring, the stage, and a promise it keeps running if you leave. */
+function CleanChecking({ progress }: { progress: CleanCheckProgress | null }) {
+  const { t } = useTranslation();
+  const fraction = progress?.fraction ?? null;
+  const pct = fraction === null ? null : Math.floor(fraction * 100);
+  return (
+    <div className="grid max-w-[1280px] gap-8">
+      <section aria-live="polite" className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
+        <div role="progressbar" aria-label={t("clean.checking_title")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
+          <SpaceRing size={200} thickness={18} total={1} spinning={fraction === null} segments={fraction === null ? [] : [{ key: "done", value: fraction, color: "var(--accent)" }]} label={t("clean.checking_title")}>
+            <span className="display num text-[36px] leading-none">{pct === null ? "…" : `${pct}%`}</span>
+          </SpaceRing>
+        </div>
+        <div className="grid gap-3">
+          <h1 className="display text-[32px] leading-tight">{t("clean.checking_title")}</h1>
+          <p className="text-fg">{!progress || progress.stage === "projects" ? t("clean.stage_projects") : t("clean.stage_rules", { done: progress.done, total: progress.total })}</p>
+          <p className="num text-sm text-fg-muted">
+            {progress ? formatEta(t, progress.eta) : t("progress.computing")}
+            {progress && ` · ${formatElapsed(t, progress.elapsed_secs)}`}
+          </p>
+          <p className="text-sm text-fg-muted">{t("clean.checking_note")}</p>
+        </div>
+      </section>
+      <Tips seed={3} />
     </div>
   );
 }

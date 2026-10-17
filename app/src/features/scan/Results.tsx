@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { SpaceRing, type RingSegment } from "@/components/viz/SpaceRing";
 import { useCountUp } from "@/components/viz/useCountUp";
 import { formatBytes, formatDate } from "@/lib/format";
-import type { Category, CleanSession, Profile, ScanSummary } from "@/lib/types";
+import type { Category, CleanEvaluation, CleanSession, Profile, ScanSummary } from "@/lib/types";
 import { useEffect } from "react";
 import { cleanApi } from "@/lib/cleanApi";
 import { ChevronRight, Copy, Sparkles } from "lucide-react";
@@ -46,20 +46,28 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   const [safeBytes, setSafeBytes] = useState<number | null | undefined>(undefined);
   useEffect(() => {
     let live = true;
+    const sum = (ev: CleanEvaluation) => {
+      const ids = new Set(ev.preselected);
+      return (
+        ev.report.findings.filter((f) => ids.has(f.rule_id)).reduce((a, f) => a + f.bytes, 0) +
+        ev.report.commands.filter((c) => ids.has(c.rule_id)).reduce((a, c) => a + (c.estimate_bytes ?? 0), 0) +
+        ev.report.projects.flatMap((p) => p.artefacts).filter((a) => ev.preselected_artefacts.includes(a.path)).reduce((a, x) => a + x.bytes, 0)
+      );
+    };
+    // Use the last check when there is one; otherwise start one in the
+    // background and fill the number in when it lands.
+    const done = cleanApi.onDone((ev) => live && setSafeBytes(sum(ev)));
     cleanApi
-      .evaluate(profile)
+      .last()
       .then((ev) => {
         if (!live) return;
-        const ids = new Set(ev.preselected);
-        const bytes =
-          ev.report.findings.filter((f) => ids.has(f.rule_id)).reduce((a, f) => a + f.bytes, 0) +
-          ev.report.commands.filter((c) => ids.has(c.rule_id)).reduce((a, c) => a + (c.estimate_bytes ?? 0), 0) +
-          ev.report.projects.flatMap((p) => p.artefacts).filter((a) => ev.preselected_artefacts.includes(a.path)).reduce((a, x) => a + x.bytes, 0);
-        setSafeBytes(bytes);
+        if (ev) setSafeBytes(sum(ev));
+        else return cleanApi.start(profile);
       })
       .catch(() => live && setSafeBytes(null));
     return () => {
       live = false;
+      void done.then((f) => f());
     };
   }, [profile, summary.finished_at_unix]);
 
@@ -89,7 +97,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
 
   return (
     <div className="grid max-w-[1280px] gap-6">
-      <header className="rise grid items-center gap-8 md:grid-cols-[auto_1fr_minmax(300px,380px)]">
+      <header className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_minmax(300px,380px)]">
         <SpaceRing size={170} thickness={16} total={diskTotal} segments={ringSegments} label={t("scan.ring_label")}>
           <div className="grid gap-0.5">
             <span className="display num text-[26px] leading-none">{diskTotal > 0 ? Math.round((summary.total_bytes / diskTotal) * 100) : 100}%</span>

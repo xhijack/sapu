@@ -385,7 +385,15 @@
     "tab_dev": "Developer",
     "dev_intro": "Yang memberatkan disk dari tool development: cache editor, package manager, Docker, Xcode, dan hasil build proyek. Semua bisa dibuat ulang.",
     "dev_total": "{{size}} dari {{count}} sumber",
-    "dev_projects": "Proyek"
+    "dev_projects": "Proyek",
+    "check_now": "Periksa sekarang",
+    "idle_body": "Sapu memeriksa cache, log, sisa aplikasi, dan hasil build proyek memakai aturan yang jelas, lalu menampilkan apa yang aman dibersihkan. Pemeriksaan jalan di latar; kamu bisa pindah halaman.",
+    "last_checked": "Diperiksa {{date}}",
+    "never_checked": "Belum pernah diperiksa.",
+    "checking_title": "Memeriksa…",
+    "stage_projects": "Mencari proyek development dan mengukur ukurannya",
+    "stage_rules": "Memeriksa aturan {{done}} dari {{total}}",
+    "checking_note": "Pemeriksaan berjalan di latar. Pindah halaman, hasilnya menunggu di sini dan di bar status."
   },
   "dedupe": {
     "title": "Duplikat",
@@ -651,7 +659,8 @@
     "task_care": "Merawat",
     "task_dedupe": "Mencari duplikat",
     "disk_low": "disarankan ≥ {{size}}",
-    "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang."
+    "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang.",
+    "task_clean": "Memeriksa Bersih"
   },
   "tips": {
     "title": "Tips memakai Sapu",

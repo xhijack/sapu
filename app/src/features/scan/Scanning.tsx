@@ -31,7 +31,7 @@ export function Scanning({ root, progress, live, paused, onPause, onResume, onCa
   const catMax = Math.max(1, ...(liveShown?.categories.map(([, b]) => b) ?? [1]));
   return (
     <div className="grid max-w-[1280px] gap-10">
-      <section aria-live="polite" className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
+      <section aria-live="polite" className="rise grid items-center gap-10 md:grid-cols-[auto_minmax(0,1fr)]">
         <div role="progressbar" aria-label={t("scan.scanning_title", { path: root })} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
         <SpaceRing
           size={236}
@@ -86,7 +86,7 @@ export function Scanning({ root, progress, live, paused, onPause, onResume, onCa
       </section>
 
       {liveShown && (
-        <section aria-live="off" className="rise grid gap-6 md:grid-cols-[1.1fr_1fr]">
+        <section aria-live="off" className="rise grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <div className="grid content-start gap-5">
             <div className="grid gap-1">
               <span className="text-xs font-semibold text-fg-muted">{t("scan.live_reading")}</span>

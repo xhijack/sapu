@@ -376,11 +376,28 @@ export interface CleanReport {
   projects: Project[];
 }
 
+export interface CleanCheckProgress {
+  stage: "projects" | "rules";
+  done: number;
+  total: number;
+  fraction: number | null;
+  elapsed_secs: number;
+  eta: Eta;
+}
+
+export interface CleanCheckStatus {
+  running: boolean;
+  has_result: boolean;
+  finished_at_unix: number | null;
+}
+
 export interface CleanEvaluation {
   report: CleanReport;
   rules: RuleInfo[];
   preselected: string[];
   preselected_artefacts: string[];
+  profile: Profile;
+  finished_at_unix: number;
 }
 
 export type RuleOutcome =

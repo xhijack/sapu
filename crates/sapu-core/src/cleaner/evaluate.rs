@@ -85,16 +85,43 @@ pub fn evaluate_with(
     env: &Env,
     projects: &super::projects::ProjectScanOptions,
 ) -> CleanReport {
+    evaluate_with_progress(rules, profile, protected, env, projects, &mut |_| {})
+}
+
+/// Where an evaluation is, for a progress bar: the project search first
+/// (unmeasurable), then one step per rule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case", tag = "stage")]
+pub enum EvalProgress {
+    Projects,
+    Rules { done: usize, total: usize },
+}
+
+/// [`evaluate_with`] that reports progress after each step.
+pub fn evaluate_with_progress(
+    rules: &RuleSet,
+    profile: Profile,
+    protected: &ProtectedPaths,
+    env: &Env,
+    projects: &super::projects::ProjectScanOptions,
+    on_progress: &mut dyn FnMut(EvalProgress),
+) -> CleanReport {
     let now = SystemTime::now();
     let mut report = CleanReport::default();
     let mut estimates = command::EstimateCache::default();
     if profile == Profile::Developer {
+        on_progress(EvalProgress::Projects);
         report.projects = super::projects::find_projects(projects, env, protected);
     }
-    for rule in &rules.rules {
-        if rule.profile == Profile::Developer && profile == Profile::General {
-            continue;
-        }
+    let applicable: Vec<&Rule> = rules
+        .rules
+        .iter()
+        .filter(|r| !(r.profile == Profile::Developer && profile == Profile::General))
+        .collect();
+    let total = applicable.len();
+    on_progress(EvalProgress::Rules { done: 0, total });
+    for (index, rule) in applicable.into_iter().enumerate() {
+        on_progress(EvalProgress::Rules { done: index, total });
         if let Some(cmd) = &rule.command {
             report
                 .commands
@@ -129,6 +156,7 @@ pub fn evaluate_with(
             }
         }
     }
+    on_progress(EvalProgress::Rules { done: total, total });
     report
 }
 

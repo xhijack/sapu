@@ -89,3 +89,15 @@ describe("CleanView developer tab", () => {
     expect(await screen.findByRole("checkbox", { name: "Cache browser" })).toBeInTheDocument();
   });
 });
+
+describe("CleanView background check", () => {
+  it("starts from an idle screen, shows progress, and lands on the result", async () => {
+    const user = userEvent.setup();
+    cleanMock.cached = false;
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    await user.click(await screen.findByRole("button", { name: "Periksa sekarang" }));
+    expect(await screen.findByRole("progressbar", { name: "Memeriksa…" })).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox", { name: "Cache browser" }, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByText(/Diperiksa /)).toBeInTheDocument();
+  });
+});
