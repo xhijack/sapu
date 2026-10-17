@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState, LoadingState } from "@/components/States";
 import { formatBytes } from "@/lib/format";
 import { dedupeApi } from "@/lib/dedupeApi";
@@ -50,6 +51,7 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
   if (result) {
     return (
       <div className="grid max-w-[1280px] gap-6">
+        <BackButton onClick={onNewSearch} />
         <h1 className="text-2xl font-semibold">{t("dedupe.done_title")}</h1>
         <p className="num text-lg">
           {t("dedupe.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
@@ -89,7 +91,8 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
   }
 
   return (
-    <div className="grid max-w-4xl gap-8">
+    <div className="grid max-w-4xl gap-6">
+      <BackButton onClick={onNewSearch} />
       <header className="grid gap-1">
         <p className="num text-4xl font-semibold tracking-tight">{t("dedupe.headline", { size: formatBytes(summary.wasted_bytes, i18n.language) })}</p>
         <p className="text-sm text-fg-muted">

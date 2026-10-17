@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Copy, FolderInput, FolderSearch, RotateCcw, Sparkles, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { ErrorState } from "@/components/States";
 import { Tips } from "@/components/Tips";
 import { SpaceRing } from "@/components/viz/SpaceRing";
@@ -26,7 +27,13 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const lang = i18n.language;
   const errorMessage = useErrorMessage();
   const aiEnabled = useAiEnabled();
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhaseState] = useState<Phase>("idle");
+  // Event listeners are registered once; they read the live phase here.
+  const phaseRef = useRef<Phase>("idle");
+  const setPhase = (p: Phase) => {
+    phaseRef.current = p;
+    setPhaseState(p);
+  };
   const [targets, setTargets] = useState<OrganizeTarget[]>([]);
   const [root, setRoot] = useState<string | null>(null);
   const [useAi, setUseAi] = useState(true);
@@ -42,12 +49,20 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const [history, setHistory] = useState<OrganizeRun[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  /** Keeps a finished analysis; shows it only if the person is waiting for it. */
+  const receive = (a: OrganizeAnalysis) => {
+    if (phaseRef.current === "analysing") adopt(a);
+    else store(a);
+  };
   const adopt = (a: OrganizeAnalysis) => {
+    store(a);
+    setPhase("plan");
+  };
+  const store = (a: OrganizeAnalysis) => {
     setAnalysis(a);
     setNames(Object.fromEntries(a.plan.groups.map((g) => [g.id, g.name])));
     setExcluded(new Set());
     setTicked(new Set(a.plan.groups.filter((g) => g.confidence === "sure" && movingOf(a.plan.root, g, new Set()).length > 0).map((g) => g.id)));
-    setPhase("plan");
   };
 
   const refreshHistory = () =>
@@ -87,10 +102,10 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     window.addEventListener(ORGANIZE_OPEN_EVENT, open);
     const subs = [
       organizeApi.onProgress((p) => setStage(p)),
-      organizeApi.onPlan((a) => adopt(a)),
+      organizeApi.onPlan((a) => receive(a)),
       organizeApi.onError((e) => {
         setError(errorMessage(e));
-        setPhase("idle");
+        if (phaseRef.current === "analysing") setPhase("idle");
       }),
       organizeApi.onRunProgress((p) => setRun(p)),
       organizeApi.onRunDone((r) => {
@@ -116,6 +131,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     if (!root) return;
     setError(null);
     setStage(null);
+    setAnalysis(null);
     setPhase("analysing");
     try {
       await organizeApi.analyse(root, aiEnabled && useAi);
@@ -160,7 +176,8 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
 
   if (phase === "analysing") {
     return (
-      <div className="grid max-w-[1280px] gap-8">
+      <div className="grid max-w-[1280px] gap-6">
+        <BackButton onClick={() => setPhase("idle")} />
         <section aria-live="polite" className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
           <SpaceRing size={180} thickness={16} total={1} spinning segments={[]} label={t("organize.analysing")}>
             <FolderSearch aria-hidden className="mx-auto h-9 w-9 text-accent" />
@@ -237,6 +254,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   if (phase === "plan" && analysis) {
     return (
       <div className="grid max-w-[1280px] gap-5">
+        <BackButton onClick={() => setPhase("idle")} />
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             <h1 className="display text-2xl">{t("organize.plan_title")}</h1>
@@ -358,6 +376,14 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
               {t("organize.start")}
             </Button>
           </div>
+          {analysis && (
+            <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-accent-soft px-4 py-3 text-sm">
+              <span className="min-w-0">{t("organize.plan_waiting", { folder: analysis.plan.root.split("/").filter(Boolean).pop() ?? analysis.plan.root })}</span>
+              <Button size="sm" onClick={() => setPhase("plan")}>
+                {t("organize.see_plan")}
+              </Button>
+            </div>
+          )}
           {error && <ErrorState message={error} />}
           {undone && (
             <p role="status" className="card-solid px-4 py-2 text-sm">

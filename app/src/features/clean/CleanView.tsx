@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { SpaceRing } from "@/components/viz/SpaceRing";
 import { Tips } from "@/components/Tips";
@@ -33,6 +34,8 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   // answer arrived (so the idle screen does not flash before a cached result).
   const [checking, setChecking] = useState<CleanCheckProgress | null | false>(false);
   const [ready, setReady] = useState(false);
+  // "Back" while re-checking: keep showing the previous result meanwhile.
+  const [checkHidden, setCheckHidden] = useState(false);
   const [lastChecked, setLastChecked] = useState<number | null>(null);
 
   const adopt = (ev: CleanEvaluation) => {
@@ -45,6 +48,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const load = useCallback(() => {
     setError(null);
     setChecking(null);
+    setCheckHidden(false);
     return cleanApi.start(profile).catch((e) => {
       setChecking(false);
       setError(errorMessage(e));
@@ -137,8 +141,8 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
       />
     );
   }
-  if (checking !== false) {
-    return <CleanChecking progress={checking} />;
+  if (checking !== false && !(checkHidden && evaluation)) {
+    return <CleanChecking progress={checking} onBack={evaluation ? () => setCheckHidden(true) : undefined} />;
   }
   if (!ready) {
     return (
@@ -341,12 +345,13 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
 }
 
 /** The check as a moment, like scanning: a ring, the stage, and a promise it keeps running if you leave. */
-function CleanChecking({ progress }: { progress: CleanCheckProgress | null }) {
+function CleanChecking({ progress, onBack }: { progress: CleanCheckProgress | null; onBack?: () => void }) {
   const { t } = useTranslation();
   const fraction = progress?.fraction ?? null;
   const pct = fraction === null ? null : Math.floor(fraction * 100);
   return (
     <div className="grid max-w-[1280px] gap-8">
+      {onBack && <BackButton onClick={onBack} />}
       <section aria-live="polite" className="rise grid items-center gap-8 md:grid-cols-[auto_minmax(0,1fr)]">
         <div role="progressbar" aria-label={t("clean.checking_title")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
           <SpaceRing size={200} thickness={18} total={1} spinning={fraction === null} segments={fraction === null ? [] : [{ key: "done", value: fraction, color: "var(--accent)" }]} label={t("clean.checking_title")}>

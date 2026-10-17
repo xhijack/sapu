@@ -853,6 +853,8 @@
     "after": "After",
     "loose_items": "{{count}} loose items in {{folder}}",
     "new_folders": "{{count}} folders in {{folder}}",
-    "restore_all": "Put everything back"
+    "restore_all": "Put everything back",
+    "plan_waiting": "The proposed groups for {{folder}} are ready.",
+    "see_plan": "See the proposal"
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HeartPulse, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/BackButton";
 import { ErrorState } from "@/components/States";
 import { SpaceRing } from "@/components/viz/SpaceRing";
 import { useCountUp } from "@/components/viz/useCountUp";
@@ -97,10 +98,11 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   };
 
   if (phase.kind === "running") return <Running progress={progress} />;
-  if (phase.kind === "report") return <Report report={phase.report} busy={busy} onClean={() => void cleanSafe(phase.report)} onNavigate={onNavigate} onAgain={start} error={error} />;
+  if (phase.kind === "report") return <Report report={phase.report} busy={busy} onBack={() => setPhase({ kind: "idle" })} onClean={() => void cleanSafe(phase.report)} onNavigate={onNavigate} onAgain={start} error={error} />;
   if (phase.kind === "cleaned") {
     return (
       <div className="grid max-w-[1280px] gap-6">
+        <BackButton onClick={() => setPhase({ kind: "idle" })} />
         <h1 className="display text-2xl">{t("care.done_title")}</h1>
         <p className="num text-lg">{t("care.done_body", { size: formatBytes(phase.run.bytes_freed, lang) })}</p>
         <div className="flex gap-2">
@@ -201,7 +203,7 @@ function Running({ progress }: { progress: CareProgressPayload | null }) {
   );
 }
 
-function Report({ report, busy, onClean, onNavigate, onAgain, error }: { report: CareReport; busy: boolean; onClean: () => void; onNavigate: (s: Screen) => void; onAgain: () => void; error: string | null }) {
+function Report({ report, busy, onBack, onClean, onNavigate, onAgain, error }: { report: CareReport; busy: boolean; onBack: () => void; onClean: () => void; onNavigate: (s: Screen) => void; onAgain: () => void; error: string | null }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const s = report.score;
@@ -223,7 +225,8 @@ function Report({ report, busy, onClean, onNavigate, onAgain, error }: { report:
   const target = (r: Recommendation): Screen | null => (r.kind === "clean_safe" || r.kind === "stale_projects" || r.kind === "review_clutter" ? "clean" : r.kind === "largest_folder" ? "scan" : null);
 
   return (
-    <div className="grid max-w-[1280px] gap-10">
+    <div className="grid max-w-[1280px] gap-6">
+      <BackButton onClick={onBack} />
       <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <SpaceRing size={236} thickness={20} total={100} label={t("care.score_label")} segments={[{ key: "score", value: s.score, color: scoreTone(s.score) }]}>
           <div className="grid gap-0.5">

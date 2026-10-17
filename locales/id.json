@@ -853,6 +853,8 @@
     "after": "Sesudah",
     "loose_items": "{{count}} item lepas di {{folder}}",
     "new_folders": "{{count}} folder di {{folder}}",
-    "restore_all": "Kembalikan semua"
+    "restore_all": "Kembalikan semua",
+    "plan_waiting": "Usulan kelompok untuk {{folder}} sudah siap.",
+    "see_plan": "Lihat usulan"
   }
 }
