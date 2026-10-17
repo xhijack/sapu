@@ -18,5 +18,5 @@ pub use group::{
     sanitize_name,
 };
 pub use history::{MoveRecord, OrganizeSession, OrganizeStore};
-pub use plan::{Move, MovePlan, Selection, build_move_plan, renamed_file};
+pub use plan::{Move, MovePlan, Selection, build_move_plan, default_selection, renamed_file};
 pub use scan::{FolderListing, OrganizeEntry, Unit, scan_folder};

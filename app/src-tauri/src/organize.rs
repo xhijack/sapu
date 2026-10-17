@@ -179,7 +179,8 @@ fn label<T: serde::Serialize>(v: &T) -> String {
         .unwrap_or_default()
 }
 
-/// Most items sent to the AI in one request; the rest keep heuristic groups.
+/// Most items sent to the AI in one request. Items past it get no advice
+/// and stay where they are (listed as unplaced).
 const AI_MAX_ITEMS: usize = 250;
 
 /// Asks the configured AI where each item belongs, plus renames and junk.

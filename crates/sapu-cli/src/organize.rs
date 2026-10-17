@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Args;
 use sapu_core::organize::{
-    Confidence, FolderListing, ItemAdvice, OrganizePlan, OrganizeStore, Selection, Unit, apply,
-    build_move_plan, plan_from_advice, propose, scan_folder, undo,
+    FolderListing, ItemAdvice, OrganizePlan, OrganizeStore, Unit, apply, build_move_plan,
+    default_selection, plan_from_advice, propose, scan_folder, undo,
 };
 use sapu_core::progress::NoProgress;
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -69,17 +69,9 @@ pub fn run(a: OrganizeArgs) -> anyhow::Result<()> {
     if a.ai {
         advise_with_ai(&listing, &mut plan);
     }
-    // Only groups marked sure are moved; groups that move whole folders are
-    // never sure, so `--apply` leaves them alone. Renames are only printed.
-    let selection = Selection {
-        group_ids: plan
-            .groups
-            .iter()
-            .filter(|g| g.confidence == Confidence::Sure)
-            .map(|g| g.id.clone())
-            .collect(),
-        ..Default::default()
-    };
+    // Only sure groups that move files alone; folders, projects and apps
+    // are never moved without the person ticking them. Renames are printed.
+    let selection = default_selection(&plan);
     let moves = build_move_plan(&plan, &selection, &ProtectedPaths::os_defaults())?;
     if a.json {
         println!(

@@ -67,6 +67,15 @@ describe("OrganizeView", () => {
 
     // A group that moves a whole folder is never ticked by default.
     expect(within(screen.getByRole("group", { name: "Arsip Lama" })).getByRole("checkbox", { name: /Pindahkan/ })).not.toBeChecked();
+    expect(within(screen.getByRole("group", { name: "Proyek" })).getByRole("checkbox", { name: /Pindahkan/ })).not.toBeChecked();
+
+    // A file left out of its group is not offered for renaming either.
+    expect(within(screen.getByRole("region", { name: "Saran nama file" })).getByRole("checkbox", { name: /screenshot\.png/ })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("group", { name: "Gambar" })).getByRole("button", { name: /Lihat isi/ }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("checkbox", { name: "screenshot.png" }));
+    await user.click(within(dialog).getByRole("button", { name: "Tutup" }));
+    expect(within(screen.getByRole("region", { name: "Saran nama file" })).queryByRole("checkbox", { name: /screenshot\.png/ })).toBeNull();
 
     // Rename suggestions: unticked, editable, extension shown.
     const renames = screen.getByRole("region", { name: "Saran nama file" });

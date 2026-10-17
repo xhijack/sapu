@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use super::group::{GroupSource, OrganizePlan, sanitize_name};
+use super::group::{Confidence, GroupSource, OrganizePlan, sanitize_name};
 use super::scan::{OrganizeEntry, Unit, plain_folder_or_absent};
 use crate::error::{Result, SapuError};
 use crate::safety::{FileSnapshot, ProtectedPaths};
@@ -38,6 +38,27 @@ pub struct Selection {
     pub file_renames: Vec<(PathBuf, String)>,
 }
 
+/// What is ticked when nobody has looked yet (the CLI's `--apply`, the
+/// app's first view): sure groups whose moves are files only. Groups that
+/// would move a folder, project or app wait for the person.
+pub fn default_selection(plan: &OrganizePlan) -> Selection {
+    let group_ids = plan
+        .groups
+        .iter()
+        .filter(|g| g.confidence == Confidence::Sure)
+        .filter(|g| {
+            let own = plan.root.join(&g.name);
+            let moving: Vec<_> = g.entries.iter().filter(|e| e.path != own).collect();
+            !moving.is_empty() && moving.iter().all(|e| e.unit == Unit::File)
+        })
+        .map(|g| g.id.clone())
+        .collect();
+    Selection {
+        group_ids,
+        ..Selection::default()
+    }
+}
+
 /// A safe new file name that keeps the original extension.
 pub fn renamed_file(original: &str, proposed: &str) -> Option<String> {
     let name = sanitize_name(proposed)?;
@@ -55,7 +76,9 @@ pub fn renamed_file(original: &str, proposed: &str) -> Option<String> {
         }
         _ => name,
     };
-    (named != original).then_some(named)
+    // A case-only change is no rename: on a case-insensitive disk the new
+    // name "exists" already and would end up as "A (2).pdf".
+    (named.to_lowercase() != original.to_lowercase()).then_some(named)
 }
 
 fn invalid(msg: &str) -> SapuError {
@@ -170,6 +193,10 @@ pub fn build_move_plan(
         // cannot receive files: it would open a project or leave the folder.
         let dest_ok = plain_folder_or_absent(&dest_dir);
         for e in &g.entries {
+            // Tried by a ticked group: the in-place pass below leaves it alone.
+            if !excluded.contains(e.path.as_path()) {
+                handled.insert(e.path.clone());
+            }
             if !dest_ok && e.path != dest_dir {
                 skipped.push((
                     e.path.clone(),
@@ -189,7 +216,6 @@ pub fn build_move_plan(
             }
             let target = rename.unwrap_or_else(|| e.name.clone());
             if let Some(m) = plan_one(e, &dest_dir, &target, protected, &mut taken, &mut skipped) {
-                handled.insert(e.path.clone());
                 moves.push(m);
             }
         }
@@ -459,5 +485,79 @@ mod tests {
         );
         let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
         assert!(mp.moves.is_empty(), "{:?}", mp.moves);
+    }
+
+    #[test]
+    fn case_only_renames_are_no_change() {
+        assert_eq!(renamed_file("a.pdf", "A"), None);
+        assert_eq!(renamed_file("a.PDF", "a.pdf"), None);
+        assert_eq!(renamed_file("a.pdf", "b"), Some("b.pdf".into()));
+    }
+
+    #[test]
+    fn a_file_skipped_in_a_ticked_group_is_not_renamed_in_place_and_counted_once() {
+        let t = tempdir();
+        touch(&t.path().join("a.pdf"));
+        touch(&t.path().join("b.pdf"));
+        let mut plan = plan_for(t.path());
+        let docs = plan
+            .groups
+            .iter()
+            .position(|g| g.name == "Dokumen")
+            .expect("docs");
+        // The group's destination exists but is a project: nothing may go in.
+        touch(&t.path().join("Dokumen/package.json"));
+        let id = plan.groups[docs].id.clone();
+        plan.groups[docs].entries.retain(|e| e.unit == Unit::File);
+        let mut protected = ProtectedPaths::os_defaults();
+        protected.add(t.path().join("b.pdf"), Protection::Exact, "test");
+        let sel = sel_with_renames(
+            vec![id],
+            vec![
+                (t.path().join("a.pdf"), "Surat".into()),
+                (t.path().join("b.pdf"), "Kuasa".into()),
+            ],
+        );
+        let mp = build_move_plan(&plan, &sel, &protected).expect("plan");
+        assert!(mp.moves.is_empty(), "{:?}", mp.moves);
+        let times = |f: &str| {
+            mp.skipped
+                .iter()
+                .filter(|(p, _)| *p == t.path().join(f))
+                .count()
+        };
+        assert_eq!(times("a.pdf"), 1);
+        assert_eq!(times("b.pdf"), 1);
+    }
+
+    #[test]
+    fn default_selection_takes_sure_groups_that_move_only_files() {
+        let t = tempdir();
+        touch(&t.path().join("Laporan Keuangan Q1.xlsx"));
+        touch(&t.path().join("Laporan Keuangan Q2.xlsx"));
+        touch(&t.path().join("Laporan Keuangan Q3.xlsx"));
+        touch(&t.path().join("web/package.json"));
+        touch(&t.path().join("Pajak/spt.pdf"));
+        touch(&t.path().join("Bukti Pajak.pdf"));
+        let plan = plan_for(t.path());
+        let id = |n: &str| {
+            plan.groups
+                .iter()
+                .find(|g| g.name == n)
+                .expect(n)
+                .id
+                .clone()
+        };
+        let sel = default_selection(&plan);
+        assert!(sel.group_ids.contains(&id("Laporan Keuangan")));
+        assert!(
+            !sel.group_ids.contains(&id("Proyek")),
+            "projects move only when ticked"
+        );
+        assert!(
+            !sel.group_ids.contains(&id("Pajak")),
+            "a guess into a folder needs checking"
+        );
+        assert!(sel.file_renames.is_empty() && sel.renames.is_empty());
     }
 }

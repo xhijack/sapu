@@ -85,7 +85,7 @@ const mockAnalysis = (useAi: boolean): OrganizeAnalysis => ({
       group("g2", "Proyek", "unit", "sure", [entry("sopwer-hrms", 1.2 * 1024 * MB, "project", "folder"), entry("landing-page", 340 * MB, "project", "folder")]),
       group("g3", useAi ? "Tagihan" : "Invoice", useAi ? "ai" : "prefix", "check", [entry("Invoice-2024-01.pdf", 120 * KB, "file", "pdf"), entry("Invoice-2024-02.pdf", 118 * KB, "file", "pdf"), entry("invoice March.pdf", 99 * KB, "file", "pdf")]),
       group("g4", "Laporan Keuangan", "prefix", "sure", [entry("Laporan Keuangan Q1.xlsx", 2 * MB, "file", "spreadsheet"), entry("Laporan Keuangan Q2.xlsx", 2 * MB, "file", "spreadsheet"), entry("Laporan Keuangan Q3.xlsx", 2 * MB, "file", "spreadsheet")]),
-      group("g5", "Gambar", "kind", "sure", [entry("IMG_4021.HEIC", 3 * MB, "file", "image"), entry("screenshot.png", 900 * KB, "file", "image")]),
+      group("g5", "Gambar", "kind", "sure", [entry("IMG_4021.HEIC", 3 * MB, "file", "image"), { ...entry("screenshot.png", 900 * KB, "file", "image"), suggested_name: "Tangkapan layar.png" }]),
       group("g6", "Arsip Lama", "ai", "sure", [{ ...entry("Foto 2019", 800 * MB, "folder", "folder"), children: ["IMG_0001.JPG", "IMG_0002.JPG"] }]),
     ],
     unplaced: [

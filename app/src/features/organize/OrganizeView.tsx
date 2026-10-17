@@ -70,13 +70,14 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     setAccepted({});
     setDrafts({});
     setTrashed(new Set());
-    // Sure groups are ticked, except ones that would move a whole folder.
+    // Sure groups are ticked, except ones that would move a whole folder,
+    // project or app: those the person decides.
     setTicked(
       new Set(
         a.plan.groups
           .filter((g) => {
             const m = movingOf(a.plan.root, g, new Set());
-            return g.confidence === "sure" && m.length > 0 && !m.some((e) => e.unit === "folder");
+            return g.confidence === "sure" && m.length > 0 && m.every((e) => e.unit === "file");
           })
           .map((g) => g.id),
       ),
@@ -163,11 +164,11 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const moving = (g: OrganizeGroup) => movingOf(analysis?.plan.root ?? "", g, excluded);
   const chosen = groups.filter((g) => ticked.has(g.id) && moving(g).length > 0);
   const unplaced = (analysis?.plan.unplaced ?? []).filter((e) => !trashed.has(e.path));
-  const everything = [...groups.flatMap((g) => g.entries), ...unplaced].filter((e) => !trashed.has(e.path));
+  const everything = [...groups.flatMap((g) => g.entries), ...unplaced].filter((e) => !trashed.has(e.path) && !excluded.has(e.path));
   const renameable = everything.filter((e) => e.unit === "file" && e.suggested_name);
   const junk = everything.filter((e) => e.unit === "file" && e.junk);
   const fileRenames = Object.entries(accepted)
-    .filter(([p, n]) => !trashed.has(p) && n.trim())
+    .filter(([p, n]) => !trashed.has(p) && !excluded.has(p) && n.trim())
     .map(([p, n]) => [p, n.trim()] as [string, string]);
 
   const tickRename = (e: OrganizeEntry, v: boolean) =>

@@ -121,6 +121,11 @@ fn tokens(name: &str) -> Vec<String> {
         .collect()
 }
 
+/// Words of a name in lowercase, for whole-word comparison.
+fn lower_tokens(name: &str) -> Vec<String> {
+    tokens(name).iter().map(|t| t.to_lowercase()).collect()
+}
+
 /// Lowercase letters and digits only: "accel bytes" and "AccelBytes" match.
 fn normalised(s: &str) -> String {
     s.rsplit_once('.')
@@ -193,14 +198,18 @@ pub fn propose(listing: &FolderListing) -> OrganizePlan {
         );
     }
 
-    // 1b. A loose file named after an existing folder goes into it.
+    // 1b. A loose file whose name contains the existing folder's name as
+    // whole words goes into it ("Bukti Pajak" → "Pajak", not "blueprint" →
+    // "Print"). Only a guess, so such a folder is marked to check first.
     let mut into_existing: Vec<(usize, OrganizeEntry)> = Vec::new();
     files.retain(|e| {
-        let name = normalised(&e.name);
+        let words = lower_tokens(&e.name);
         let hit = groups.iter().position(|g| {
             g.source == GroupSource::Existing && {
-                let folder = normalised(&g.name);
-                folder.chars().count() >= 4 && name.contains(&folder)
+                let folder = lower_tokens(&g.name);
+                normalised(&g.name).chars().count() >= 4
+                    && !folder.is_empty()
+                    && words.windows(folder.len()).any(|w| w == folder.as_slice())
             }
         });
         match hit {
@@ -213,6 +222,7 @@ pub fn propose(listing: &FolderListing) -> OrganizePlan {
     });
     for (i, e) in into_existing {
         groups[i].bytes += e.bytes;
+        groups[i].confidence = Confidence::Check;
         groups[i].entries.push(e);
     }
 
@@ -670,5 +680,36 @@ mod tests {
         assert!(names("Saham").contains(&"My Saham.xlsx".to_string()));
         assert!(names("accel bytes").contains(&"AccelBytes.docx".to_string()));
         assert!(!names("Print").contains(&"notes.txt".to_string()));
+    }
+
+    #[test]
+    fn only_whole_words_match_a_folder_and_such_folders_need_checking() {
+        let t = tempdir();
+        touch(&t.path().join("Print/a.pdf"));
+        touch(&t.path().join("Pajak/spt.pdf"));
+        for n in ["blueprint house.pdf", "Bukti Pajak 2024.pdf"] {
+            touch(&t.path().join(n));
+        }
+        let plan = propose(&scan_folder(t.path()).expect("scan"));
+        let print = group(&plan, "Print");
+        assert!(
+            print
+                .entries
+                .iter()
+                .all(|e| e.name != "blueprint house.pdf"),
+            "a word that merely contains the folder name is not a match"
+        );
+        let pajak = group(&plan, "Pajak");
+        assert!(
+            pajak
+                .entries
+                .iter()
+                .any(|e| e.name == "Bukti Pajak 2024.pdf")
+        );
+        assert_eq!(
+            pajak.confidence,
+            Confidence::Check,
+            "files guessed into an existing folder are never pre-ticked"
+        );
     }
 }
