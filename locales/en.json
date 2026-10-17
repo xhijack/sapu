@@ -810,8 +810,6 @@
     },
     "background_note": "Runs in the background. You can switch screens; the result waits here.",
     "plan_title": "Proposed groups",
-    "plan_body": "Sure groups are ticked. Check the yellow ones, rename folders if needed, then organize.",
-    "plan_body_ai": "Group names had AI help. Sure groups are ticked; look at the yellow ones before ticking them.",
     "ai_unavailable": "AI was not available; names come from file patterns.",
     "reanalyse": "Analyse again",
     "duplicates": "Found {{files}} duplicate files ({{size}} wasted).",
@@ -857,17 +855,28 @@
     "plan_waiting": "The proposed groups for {{folder}} are ready.",
     "see_plan": "See the proposal",
     "renames_title": "Suggested file names",
-    "renames_hint": "Clearer names the AI suggests for files with unclear names. Tick the ones you agree with; the extension stays and it can be undone.",
+    "renames_hint": "Tick the names you agree with. The extension stays the same.",
     "rename_tick": "Rename {{name}}",
     "rename_new": "New name for {{name}}",
     "junk_title": "Possibly junk",
-    "junk_hint": "The AI thinks these files may not matter. Check first; the ones you tick go to the Trash, not deleted.",
+    "junk_hint": "Check first. What you tick goes to the Trash, not deleted.",
     "junk_tick": "Select {{name}}",
     "junk_trash": "Move {{count}} to Trash",
     "junk_trashed": "{{count}} files moved to the Trash.",
     "unplaced_title": "Staying in place",
-    "unplaced_hint": "These items fit no group and are not moved.",
+    "unplaced_hint": "Fits no group, so it is not moved.",
     "apply_renames_only": "Rename {{count}} files",
-    "renamed_in_place": "Renamed in {{folder}}"
+    "renamed_in_place": "Renamed in {{folder}}",
+    "status_title": "{{chosen}} of {{total}} groups selected",
+    "status_waiting": "{{count}} groups wait for you: they move whole folders or are not certain yet. Check them, then tick the ones you agree with.",
+    "status_ready": "Every group is selected. Check once more, then press Organize. Everything can be undone.",
+    "select_all": "Select all",
+    "waiting_folder": "Moves a whole folder. Tick it if you agree.",
+    "waiting_check": "Not certain. Look inside first, then tick it.",
+    "waiting_short": "{{count}} groups not selected",
+    "junk_reason": {
+      "office_lock": "Leftover Office lock file, safe to remove when the document is not open.",
+      "duplicate": "Exact copy of {{of}}. One copy is always kept."
+    }
   }
 }

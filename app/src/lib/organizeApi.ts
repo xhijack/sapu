@@ -92,12 +92,17 @@ const mockAnalysis = (useAi: boolean): OrganizeAnalysis => ({
       { ...entry("scan0001.pdf", 400 * KB, "file", "pdf"), suggested_name: "KTP Ramdani.pdf" },
       { ...entry("Untitled (copy 3).docx", 12 * KB), junk: "Salinan tanpa judul, kemungkinan tidak terpakai" },
       entry("catatan.txt", 2 * KB),
+      { ...entry("KTP2.jpeg", 140 * KB, "file", "image"), path: `${ROOT}/KTP/KTP2.jpeg`, junk: "Nama tidak jelas" },
     ],
   },
   unreadable: [],
   duplicate_groups: 2,
   duplicate_files: 5,
   duplicate_bytes: 48 * MB,
+  leftovers: [
+    { path: `${ROOT}/~$ RAMDANI BARU.docx`, name: "~$ RAMDANI BARU.docx", bytes: 162, reason: { kind: "office_lock" } },
+    { path: `${ROOT}/KTP/ktp.jpeg`, name: "ktp.jpeg", bytes: 140 * KB, reason: { kind: "duplicate", of: `${ROOT}/KTP/KTP2.jpeg` } },
+  ],
   ai_used: useAi,
   ai_note: null,
 });

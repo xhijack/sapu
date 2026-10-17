@@ -24,7 +24,7 @@ export function RenameSuggestions({ entries, accepted, drafts, onTick, onEdit }:
         <PenLine aria-hidden className="h-4 w-4 text-accent" />
         {t("organize.renames_title")}
       </h2>
-      <p className="text-xs text-fg-muted">{t("organize.renames_hint")}</p>
+      <p className="text-sm">{t("organize.renames_hint")}</p>
       <ul className="grid gap-1.5">
         {entries.map((e) => (
           <li key={e.path} className="grid items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
@@ -45,7 +45,15 @@ export function RenameSuggestions({ entries, accepted, drafts, onTick, onEdit }:
  * ticked, each shows the reason, and ticked files go to the Trash through
  * the safety layer (recorded, restorable), never deleted.
  */
-export function JunkSuggestions({ entries, onTrash }: { entries: OrganizeEntry[]; onTrash: (paths: string[]) => Promise<number> }) {
+export interface JunkItem {
+  path: string;
+  name: string;
+  bytes: number;
+  /** Already in the person's language. */
+  reason: string;
+}
+
+export function JunkSuggestions({ entries, onTrash }: { entries: JunkItem[]; onTrash: (paths: string[]) => Promise<number> }) {
   const { t, i18n } = useTranslation();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -66,7 +74,7 @@ export function JunkSuggestions({ entries, onTrash }: { entries: OrganizeEntry[]
         <TriangleAlert aria-hidden className="h-4 w-4" />
         {t("organize.junk_title")}
       </h2>
-      <p className="text-xs">{t("organize.junk_hint")}</p>
+      <p className="text-sm">{t("organize.junk_hint")}</p>
       {entries.length > 0 && (
         <ul className="grid gap-1.5">
           {entries.map((e) => (
@@ -89,7 +97,7 @@ export function JunkSuggestions({ entries, onTrash }: { entries: OrganizeEntry[]
                 <span className="path block truncate" title={e.path}>
                   {e.name}
                 </span>
-                <span className="block text-xs text-fg-muted">{e.junk}</span>
+                <span className="block text-xs">{e.reason}</span>
               </span>
               <span className="num shrink-0 text-xs text-fg-muted">{formatBytes(e.bytes, i18n.language)}</span>
             </li>
@@ -122,7 +130,7 @@ export function Unplaced({ entries }: { entries: OrganizeEntry[] }) {
       <h2 className="font-semibold">
         {t("organize.unplaced_title")} <span className="num text-sm font-normal text-fg-muted">· {t("organize.items", { count: entries.length })}</span>
       </h2>
-      <p className="text-xs text-fg-muted">{t("organize.unplaced_hint")}</p>
+      <p className="text-sm">{t("organize.unplaced_hint")}</p>
       <ul className="flex flex-wrap gap-1.5 text-xs">
         {entries.map((e) => (
           <li key={e.path} className="flex max-w-full items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5" title={e.path}>

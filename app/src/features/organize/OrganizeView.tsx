@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Copy, FolderInput, FolderSearch, RotateCcw, Sparkles, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/BackButton";
+import { Callout } from "@/components/ui/Callout";
 import { ErrorState } from "@/components/States";
 import { Tips } from "@/components/Tips";
 import { SpaceRing } from "@/components/viz/SpaceRing";
@@ -17,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { GroupFilesDialog } from "./GroupFilesDialog";
 import { BeforeAfter } from "./BeforeAfter";
 import { PlanGroupCard } from "./PlanGroupCard";
-import { JunkSuggestions, RenameSuggestions, Unplaced } from "./ItemSuggestions";
+import { JunkSuggestions, RenameSuggestions, Unplaced, type JunkItem } from "./ItemSuggestions";
 import { ORGANIZE_OPEN_EVENT, takePendingOrganize } from "./organizeBus";
 
 type Phase = "idle" | "analysing" | "plan" | "applying" | "done";
@@ -166,7 +167,26 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const unplaced = (analysis?.plan.unplaced ?? []).filter((e) => !trashed.has(e.path));
   const everything = [...groups.flatMap((g) => g.entries), ...unplaced].filter((e) => !trashed.has(e.path) && !excluded.has(e.path));
   const renameable = everything.filter((e) => e.unit === "file" && e.suggested_name);
-  const junk = everything.filter((e) => e.unit === "file" && e.junk);
+  // Junk: leftovers found without AI first, then the AI's guesses. The copy
+  // a duplicate group keeps is never offered, so one copy always stays.
+  const kept = new Set((analysis?.leftovers ?? []).flatMap((l) => (l.reason.kind === "duplicate" ? [l.reason.of] : [])));
+  const leftovers: JunkItem[] = (analysis?.leftovers ?? [])
+    .filter((l) => !trashed.has(l.path) && !excluded.has(l.path))
+    .map((l) => ({
+      path: l.path,
+      name: l.name,
+      bytes: l.bytes,
+      reason: l.reason.kind === "duplicate" ? t("organize.junk_reason.duplicate", { of: l.reason.of.split("/").pop() }) : t("organize.junk_reason.office_lock"),
+    }));
+  const junk: JunkItem[] = [
+    ...leftovers,
+    ...everything
+      .filter((e) => e.unit === "file" && e.junk && !kept.has(e.path) && !leftovers.some((l) => l.path === e.path))
+      .map((e) => ({ path: e.path, name: e.name, bytes: e.bytes, reason: e.junk! })),
+  ];
+  const movable = groups.filter((g) => moving(g).length > 0);
+  const waiting = movable.filter((g) => !ticked.has(g.id));
+  const waitingWhy = (g: OrganizeGroup) => (moving(g).some((e) => e.unit !== "file") ? "folder" : "check");
   const fileRenames = Object.entries(accepted)
     .filter(([p, n]) => !trashed.has(p) && !excluded.has(p) && n.trim())
     .map(([p, n]) => [p, n.trim()] as [string, string]);
@@ -317,10 +337,20 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
             {t("organize.reanalyse")}
           </Button>
         </div>
-        <p className="max-w-[80ch] text-sm text-fg-muted">
-          {analysis.ai_used ? t("organize.plan_body_ai") : t("organize.plan_body")}
+        <Callout
+          tone={waiting.length > 0 ? "review" : "info"}
+          title={t("organize.status_title", { chosen: movable.length - waiting.length, total: movable.length })}
+          action={
+            waiting.length > 0 && (
+              <Button variant="secondary" size="sm" onClick={() => setTicked(new Set(movable.map((g) => g.id)))}>
+                {t("organize.select_all")}
+              </Button>
+            )
+          }
+        >
+          {waiting.length > 0 ? t("organize.status_waiting", { count: waiting.length }) : t("organize.status_ready")}
           {analysis.ai_note && ` ${t("organize.ai_unavailable")}`}
-        </p>
+        </Callout>
         {analysis.duplicate_groups > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm">
             <span className="flex items-center gap-2">
@@ -350,6 +380,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
               }
               onRename={(v) => setNames((m) => ({ ...m, [g.id]: v }))}
               onOpen={() => setOpenGroup(g)}
+              waiting={moving(g).length > 0 ? waitingWhy(g) : null}
             />
           ))}
         </div>
@@ -359,7 +390,10 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
           <Unplaced entries={unplaced.filter((e) => !e.junk && !e.suggested_name)} />
         </div>
         <div className="sticky bottom-0 -mx-8 flex items-center justify-between gap-4 border-t border-border bg-bg/95 px-8 py-4 backdrop-blur">
-          <span className="text-sm text-fg-muted">{t("organize.selected", { count: chosen.reduce((a, g) => a + moving(g).length, 0) })}</span>
+          <span className="grid text-sm">
+            <span>{t("organize.selected", { count: chosen.reduce((a, g) => a + moving(g).length, 0) })}</span>
+            {waiting.length > 0 && <span className="font-medium text-risk-review-fg">{t("organize.waiting_short", { count: waiting.length })}</span>}
+          </span>
           <Button size="lg" disabled={(chosen.length === 0 && fileRenames.length === 0) || chosen.some((g) => !(names[g.id] ?? g.name).trim())} onClick={() => void apply()}>
             <FolderInput aria-hidden className="h-4 w-4" />
             {chosen.length === 0 ? t("organize.apply_renames_only", { count: fileRenames.length }) : t("organize.apply", { count: chosen.length })}

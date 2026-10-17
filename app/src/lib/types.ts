@@ -779,8 +779,19 @@ export interface OrganizeAnalysis {
   duplicate_groups: number;
   duplicate_files: number;
   duplicate_bytes: number;
+  /** Office lock files and extra exact copies, found without AI. */
+  leftovers?: OrganizeLeftover[];
   ai_used: boolean;
   ai_note: string | null;
+}
+
+export type LeftoverReason = { kind: "office_lock" } | { kind: "duplicate"; of: string };
+
+export interface OrganizeLeftover {
+  path: string;
+  name: string;
+  bytes: number;
+  reason: LeftoverReason;
 }
 
 export interface OrganizeSelection {

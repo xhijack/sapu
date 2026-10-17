@@ -9,9 +9,9 @@ use std::time::Instant;
 
 use sapu_core::eta::{Estimator, Eta};
 use sapu_core::organize::{
-    FolderListing, ItemAdvice, OrganizePlan, OrganizeSession as RunRecord, OrganizeStore,
-    Selection, UndoReport, Unit, apply, build_move_plan, duplicates_in, plan_from_advice, propose,
-    scan_folder, undo,
+    FolderListing, ItemAdvice, Leftover, OrganizePlan, OrganizeSession as RunRecord, OrganizeStore,
+    Selection, UndoReport, Unit, apply, build_move_plan, duplicates_in, find_leftovers,
+    plan_from_advice, propose, scan_folder, undo,
 };
 use sapu_core::progress::{FnSink, NoProgress, ProgressEvent};
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -36,6 +36,8 @@ pub struct OrganizeAnalysis {
     pub duplicate_groups: u64,
     pub duplicate_files: u64,
     pub duplicate_bytes: u64,
+    /// Office lock files and extra exact copies, offered for the Trash.
+    pub leftovers: Vec<Leftover>,
     /// The AI renamed or merged groups (false when off or it failed).
     pub ai_used: bool,
     /// Why AI was not used, when it was asked for.
@@ -139,6 +141,7 @@ pub fn organize_analyze_start(
             };
             stage("duplicates");
             let dupes = duplicates_in(&root, &ScanControl::new(), &mut NoProgress).ok();
+            let leftovers = find_leftovers(&listing, dupes.as_ref());
             Ok(OrganizeAnalysis {
                 plan,
                 unreadable: listing.unreadable,
@@ -151,6 +154,7 @@ pub fn organize_analyze_start(
                     .as_ref()
                     .map(|d| d.groups.iter().map(|g| g.wasted_bytes).sum())
                     .unwrap_or(0),
+                leftovers,
                 ai_used,
                 ai_note,
             })

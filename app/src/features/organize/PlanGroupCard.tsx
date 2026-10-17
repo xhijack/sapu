@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { FolderOpen, Lock, Sparkles } from "lucide-react";
+import { FolderOpen, Lock, Sparkles, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/format";
 import type { OrganizeEntry, OrganizeGroup } from "@/lib/types";
@@ -14,15 +14,17 @@ interface Props {
   onTick: (v: boolean) => void;
   onRename: (name: string) => void;
   onOpen: () => void;
+  /** Why the group waits for the person (shown while it is not ticked). */
+  waiting?: "folder" | "check" | null;
 }
 
 /** One proposed group: tick, destination name, why it was grouped, examples. */
-export function PlanGroupCard({ group, moving, ticked, name, onTick, onRename, onOpen }: Props) {
+export function PlanGroupCard({ group, moving, ticked, name, onTick, onRename, onOpen, waiting = null }: Props) {
   const { t, i18n } = useTranslation();
   const fixed = group.source === "existing" || group.source === "unit";
   const bytes = moving.reduce((a, e) => a + e.bytes, 0);
   return (
-    <section role="group" aria-label={group.name} className={cn("card-solid grid min-w-0 gap-2 p-4", !ticked && "opacity-75")}>
+    <section role="group" aria-label={group.name} className={cn("card-solid grid min-w-0 gap-2 p-4", !ticked && waiting && "border-dashed border-risk-review-fg/50")}>
       <div className="flex items-start gap-3">
         <input type="checkbox" checked={ticked} disabled={moving.length === 0} onChange={(e) => onTick(e.target.checked)} aria-label={t("organize.tick", { name: group.name })} className="mt-1.5 h-4 w-4 accent-[var(--accent)]" />
         <div className="grid min-w-0 flex-1 gap-1">
@@ -45,6 +47,12 @@ export function PlanGroupCard({ group, moving, ticked, name, onTick, onRename, o
           <div className="text-xs text-fg-muted">{t("organize.items", { count: moving.length })}</div>
         </div>
       </div>
+      {!ticked && waiting && (
+        <p className="flex items-center gap-1.5 pl-7 text-sm font-medium text-risk-review-fg">
+          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0" />
+          {t(`organize.waiting_${waiting}`)}
+        </p>
+      )}
       {moving.length > 0 ? (
         <p className="truncate pl-7 text-xs text-fg-muted" title={moving.map((e) => e.name).join(", ")}>
           {moving

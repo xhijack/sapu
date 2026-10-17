@@ -65,6 +65,22 @@ describe("OrganizeView", () => {
     await user.click(await screen.findByRole("button", { name: "Analisis folder" }));
     await screen.findByText(/5 file ganda/, {}, { timeout: 3000 });
 
+    // The state of the plan is said up front, in a callout, not in grey small print.
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("3 dari 6 kelompok dipilih");
+    expect(note).toHaveTextContent(/3 kelompok menunggu keputusanmu/);
+    expect(within(screen.getByRole("group", { name: "Arsip Lama" })).getByText(/Memindahkan folder utuh/)).toBeVisible();
+    expect(within(screen.getByRole("group", { name: "Invoice" })).getByText(/Belum pasti/)).toBeVisible();
+    expect(screen.getByText("3 kelompok belum dipilih")).toBeVisible();
+
+    // Office lock files and extra exact copies sit in the junk list too, with a plain reason.
+    const junkList = screen.getByRole("region", { name: "Kemungkinan sampah" });
+    expect(within(junkList).getByRole("checkbox", { name: /~\$ RAMDANI BARU\.docx/ })).not.toBeChecked();
+    expect(within(junkList).getByText(/Sisa file kunci Office/)).toBeVisible();
+    expect(within(junkList).getByText(/Salinan persis dari KTP2\.jpeg/)).toBeVisible();
+    // The copy that stays is never offered, even when the AI flags it.
+    expect(within(junkList).queryByRole("checkbox", { name: /Pilih KTP2\.jpeg/ })).toBeNull();
+
     // A group that moves a whole folder is never ticked by default.
     expect(within(screen.getByRole("group", { name: "Arsip Lama" })).getByRole("checkbox", { name: /Pindahkan/ })).not.toBeChecked();
     expect(within(screen.getByRole("group", { name: "Proyek" })).getByRole("checkbox", { name: /Pindahkan/ })).not.toBeChecked();
@@ -110,5 +126,16 @@ describe("OrganizeView", () => {
     expect(sel.file_renames).toEqual([["/Users/you/Documents/scan0001.pdf", "KTP.pdf"]]);
     expect(sel.group_ids).not.toContain("g6");
     trash.mockRestore();
+  });
+
+  it("ticks every waiting group with one button in the callout", async () => {
+    const user = userEvent.setup();
+    render(<OrganizeView onNavigate={vi.fn()} />);
+    await user.click(await screen.findByRole("button", { name: "Analisis folder" }));
+    const note = await screen.findByRole("note", {}, { timeout: 3000 });
+    await user.click(within(note).getByRole("button", { name: "Pilih semua" }));
+    expect(note).toHaveTextContent("6 dari 6 kelompok dipilih");
+    expect(within(screen.getByRole("group", { name: "Arsip Lama" })).getByRole("checkbox", { name: /Pindahkan/ })).toBeChecked();
+    expect(screen.queryByText(/kelompok belum dipilih/)).toBeNull();
   });
 });

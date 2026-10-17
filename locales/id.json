@@ -810,8 +810,6 @@
     },
     "background_note": "Berjalan di latar. Boleh pindah halaman; hasilnya menunggu di sini.",
     "plan_title": "Usulan kelompok",
-    "plan_body": "Kelompok yang pasti sudah dicentang. Periksa yang berlabel kuning, ganti nama folder bila perlu, lalu rapikan.",
-    "plan_body_ai": "Nama kelompok dibantu AI. Kelompok yang pasti sudah dicentang; periksa yang berlabel kuning sebelum mencentangnya.",
     "ai_unavailable": "AI tidak tersedia, nama memakai pola file.",
     "reanalyse": "Analisis ulang",
     "duplicates": "Ditemukan {{files}} file ganda ({{size}} terbuang).",
@@ -857,17 +855,28 @@
     "plan_waiting": "Usulan kelompok untuk {{folder}} sudah siap.",
     "see_plan": "Lihat usulan",
     "renames_title": "Saran nama file",
-    "renames_hint": "Nama baru usulan AI untuk file yang namanya tidak jelas. Centang yang kamu setujui; ekstensi tetap sama dan bisa dikembalikan.",
+    "renames_hint": "Centang nama yang kamu setujui. Ekstensi tetap sama.",
     "rename_tick": "Ganti nama {{name}}",
     "rename_new": "Nama baru untuk {{name}}",
     "junk_title": "Kemungkinan sampah",
-    "junk_hint": "Menurut AI file ini mungkin tidak penting. Periksa dulu; yang kamu centang dipindahkan ke Trash, bukan dihapus.",
+    "junk_hint": "Periksa dulu. Yang kamu centang masuk Trash, tidak langsung dihapus.",
     "junk_tick": "Pilih {{name}}",
     "junk_trash": "Pindahkan {{count}} ke Trash",
     "junk_trashed": "{{count}} file dipindahkan ke Trash.",
     "unplaced_title": "Tetap di tempat",
-    "unplaced_hint": "Item ini tidak masuk kelompok mana pun dan tidak dipindahkan.",
+    "unplaced_hint": "Tidak masuk kelompok mana pun, jadi tidak dipindahkan.",
     "apply_renames_only": "Ganti {{count}} nama file",
-    "renamed_in_place": "Ganti nama di {{folder}}"
+    "renamed_in_place": "Ganti nama di {{folder}}",
+    "status_title": "{{chosen}} dari {{total}} kelompok dipilih",
+    "status_waiting": "{{count}} kelompok menunggu keputusanmu: memindahkan folder utuh atau masih belum pasti. Periksa, lalu centang yang kamu setujui.",
+    "status_ready": "Semua kelompok sudah dipilih. Periksa sekali lagi, lalu tekan Rapikan. Semuanya bisa dikembalikan.",
+    "select_all": "Pilih semua",
+    "waiting_folder": "Memindahkan folder utuh. Centang kalau setuju.",
+    "waiting_check": "Belum pasti. Lihat isinya dulu, lalu centang.",
+    "waiting_short": "{{count}} kelompok belum dipilih",
+    "junk_reason": {
+      "office_lock": "Sisa file kunci Office, aman dibuang kalau dokumennya tidak sedang dibuka.",
+      "duplicate": "Salinan persis dari {{of}}. Satu salinan tetap disimpan."
+    }
   }
 }
