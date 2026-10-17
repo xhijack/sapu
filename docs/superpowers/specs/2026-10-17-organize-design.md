@@ -114,3 +114,20 @@ Frontend: idle → plan → untick a group → apply → result → undo; the st
 ## 7. Delivery
 
 Sprint 1: core `organize/` + AI task + CLI `sapu organize <folder> [--apply]` (dry run by default, like `clean`). Sprint 2: Tauri commands + UI + history undo. Both end with the usual gates (fmt, clippy, tests, lint, typecheck, forbidden-fs script extended with `rename`).
+
+## 8. Revision 1 (17 October 2026): per-item advice
+
+Owner feedback after a real run on `Documents/Pribadi` (14 folders, 25 loose files): the result kept all 14 folders, put 22 files into one "Documents" group by file kind, and moved an Office lock file. Causes: the AI could only rename or merge whole groups, never split one; nothing could go into or out of an existing folder; the AI never saw what folders contain; the CLI asked for English.
+
+Owner decisions: the AI decides a destination **per item**; it may read **folder listings** (names inside folders, never file contents); it may suggest **better file names**; it may flag **likely junk** and recommend removing it.
+
+Changes to §3:
+
+- **Scan** ignores temporary and lock files (`~$*`, `.~lock*`, `Thumbs.db`, `desktop.ini`); they are never moved. Each folder, project and bundle carries up to 8 child names (`children`), read with `read_dir`, nothing opened.
+- **Heuristic** (no AI): a loose file whose normalised name contains the normalised name of an existing folder (letters and digits only, lowercase, folder name at least 4 characters) is proposed into that folder.
+- **AI task `tidy_items`** replaces `tidy` for the app and CLI. Input: language from settings, folder name, up to 250 items (`name`, `kind`, `unit`, `year`, `size_kb`, `children`). Output (strict schema): `categories: [{name}]` (4 to 8, in the person's language) and `items: [{name, category | null, rename | null, junk, reason, confidence}]`. Prompt rules: group by purpose (finance, work, identity, business, worship, letters, …), not by file kind; reuse existing folder names; no folder for a single item unless clearly separate; keep extensions; flag junk only for things like temporary exports, duplicates by name, empty-looking or meaningless names.
+- **Core `organize::advice`** turns the answer into a plan, validating everything: an item must match a listed entry exactly; one destination per item; category names sanitised; a category equal to an existing folder (case-insensitive) is that folder; renames only for files, sanitised, original extension kept; junk only for files; anything unknown is ignored; an invalid answer leaves the heuristic plan.
+- **Existing folders may move** into a category as a whole (one unit, never opened). A group containing a folder is never ticked by default; the person decides.
+- **Renames** are offered per file and unticked by default; a renamed file that stays in place moves to `root/<new name>` (the plan check allows `root/<name>` as well as `root/<group>/<name>`). Undo restores the old name.
+- **Junk** is a separate "Kemungkinan sampah" list, yellow, unticked, each with the AI's reason. Ticked items go to the Trash through `safety` (never permanent, never moved). AI labels stay yellow at most (CLAUDE.md).
+- Groups whose average item confidence is at least 0.75 are "Pasti"; others "Periksa dulu".
