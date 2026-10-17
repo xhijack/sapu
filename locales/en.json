@@ -12,7 +12,8 @@
     "dedupe": "Duplicates",
     "scan": "Scan",
     "care": "Care",
-    "apps": "Apps"
+    "apps": "Apps",
+    "about": "About"
   },
   "common": {
     "next": "Next",
@@ -23,7 +24,8 @@
     "retry": "Try again",
     "loading": "Loading...",
     "error_title": "Something went wrong",
-    "unknown_error": "An unknown error occurred."
+    "unknown_error": "An unknown error occurred.",
+    "close": "Close"
   },
   "risk": {
     "safe": "Safe to remove",
@@ -191,7 +193,10 @@
     "about_repo": "Source code on GitHub",
     "about_license_link": "Read the license",
     "about_contribute": "How to contribute",
-    "about_issues": "Report a problem"
+    "about_issues": "Report a problem",
+    "tab_general": "General",
+    "tab_ai": "AI help",
+    "tab_protected": "Protected locations"
   },
   "errors": {
     "protected": "This location is protected.",
@@ -403,7 +408,14 @@
     "checking_title": "Checking…",
     "stage_projects": "Finding development projects and sizing them",
     "stage_rules": "Checking rule {{done}} of {{total}}",
-    "checking_note": "The check runs in the background. Switch screens; the result waits here and in the status bar."
+    "checking_note": "The check runs in the background. Switch screens; the result waits here and in the status bar.",
+    "run_title": "Cleaning…",
+    "run_preparing": "Preparing…",
+    "run_rule": "Processing {{name}} ({{count}} items)",
+    "run_command": "Running {{cmd}}",
+    "run_counts": "{{done}} of {{total}} items",
+    "run_note": "Runs in the background. You can close this dialog; the result appears here and in History when it finishes.",
+    "run_hide": "Hide"
   },
   "dedupe": {
     "title": "Duplicates",
@@ -519,7 +531,9 @@
     "model_pick": "Pick from the list",
     "model_placeholder": "type or load the list",
     "model_hint": "Load the list once the key is stored, or type a model name.",
-    "model_custom": "Type another model name…"
+    "model_custom": "Type another model name…",
+    "explain_show": "Show the AI explanation",
+    "explain_title": "AI explanation: {{name}}"
   },
   "care": {
     "title": "Care",
@@ -671,7 +685,8 @@
     "task_dedupe": "Finding duplicates",
     "disk_low": "recommended ≥ {{size}}",
     "disk_low_hint": "Keep 10% or at least 20 GB free so the OS, updates and snapshots have room.",
-    "task_clean": "Checking Clean"
+    "task_clean": "Checking Clean",
+    "task_clean_run": "Cleaning"
   },
   "tips": {
     "title": "Tips for using Sapu",
@@ -691,5 +706,13 @@
     "care_body": "A Space Score above 80 means a healthy disk. Keep at least 10% or 20 GB free so the OS and updates have room.",
     "dupes_title": "Duplicates always keep one copy",
     "dupes_body": "Sapu never removes every copy in a group. Pick “keep newest” or a per-folder strategy."
+  },
+  "disclaimer": {
+    "title": "Before you start",
+    "body": "Sapu removes files. It is designed to be safe, but no software is free of mistakes, and the outcome depends on what you choose to remove.",
+    "point_trash": "Every removal goes to the Trash first and is recorded in History; permanent deletion needs a second confirmation.",
+    "point_review": "Look at anything labelled yellow before ticking it. Sapu never touches protected folders.",
+    "point_liability": "Sapu is provided as is, without warranty. The developer and PT Sopwer Teknologi Indonesia are not liable for system damage or data loss resulting from the use of this application.",
+    "accept": "I have read and accept these terms."
   }
 }

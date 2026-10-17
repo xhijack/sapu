@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 ALLOWED="crates/sapu-core/src/safety/dispose.rs"
-PATTERN='remove_file\|remove_dir\|remove_dir_all\|trash::delete\|allow(clippy::disallowed_methods)'
+PATTERN='remove_file\|remove_dir\|remove_dir_all\|trash::delete\|TrashContext\|allow(clippy::disallowed_methods)'
 hits=$(grep -rn --include='*.rs' "$PATTERN" crates app 2>/dev/null | grep -v "^$ALLOWED:" || true)
 if [ -n "$hits" ]; then
   echo "Forbidden file-removal usage outside $ALLOWED:" >&2

@@ -1,5 +1,5 @@
 import { isTauri } from "./api";
-import type { CleanCheckProgress, CleanCheckStatus, CleanEvaluation, CleanRunReport, Profile } from "./types";
+import type { CleanCheckProgress, CleanCheckStatus, CleanEvaluation, CleanRunProgress, CleanRunReport, CleanRunStatus, Profile, RunStep } from "./types";
 
 type Unlisten = () => void;
 
@@ -31,8 +31,23 @@ export const cleanApi = {
   onProgress: (cb: (p: CleanCheckProgress) => void) => listen<CleanCheckProgress>("clean://progress", cb),
   onDone: (cb: (ev: CleanEvaluation) => void) => listen<CleanEvaluation>("clean://done", cb),
   onError: (cb: (e: { code: string; message: string }) => void) => listen("clean://error", cb),
-  execute: (ruleIds: string[], artefacts: string[], apply: boolean, permanentOk: boolean) =>
-    invoke<CleanRunReport>("clean_execute", { ruleIds, artefacts, apply, permanentOk }),
+  /** Starts a clean run in the background; listen for `onRunDone`. */
+  run: (ruleIds: string[], artefacts: string[], apply: boolean, permanentOk: boolean) =>
+    invoke<void>("clean_run_start", { ruleIds, artefacts, apply, permanentOk }),
+  runStatus: () => invoke<CleanRunStatus>("clean_run_status"),
+  runLast: () => invoke<CleanRunReport | null>("clean_run_last"),
+  onRunProgress: (cb: (p: CleanRunProgress) => void) => listen<CleanRunProgress>("clean://run_progress", cb),
+  onRunDone: (cb: (r: CleanRunReport) => void) => listen<CleanRunReport>("clean://run_done", cb),
+  onRunError: (cb: (e: { code: string; message: string }) => void) => listen("clean://run_error", cb),
+  /** Convenience for flows that just want the report (Care). */
+  runAndWait: async (ruleIds: string[], artefacts: string[], apply: boolean, permanentOk: boolean): Promise<CleanRunReport> => {
+    const done = new Promise<CleanRunReport>((resolve, reject) => {
+      const subs = [cleanApi.onRunDone((r) => { cleanup(); resolve(r); }), cleanApi.onRunError((e) => { cleanup(); reject(e); })];
+      const cleanup = () => void Promise.all(subs).then((fns) => fns.forEach((f) => f()));
+    });
+    await cleanApi.run(ruleIds, artefacts, apply, permanentOk);
+    return done;
+  },
 };
 
 const GB = 1024 ** 3;
@@ -45,8 +60,12 @@ export const cleanMock = {
   ticks: typeof location !== "undefined" && location.search.includes("slow") ? 12 : 3,
   tickMs: typeof location !== "undefined" && location.search.includes("slow") ? 700 : 15,
   running: false,
+  runRunning: false,
+  lastRun: null as CleanRunReport | null,
   lastEvaluation: null as CleanEvaluation | null,
   reset() {
+    this.runRunning = false;
+    this.lastRun = null;
     this.lastExecute = null;
     this.cached = true;
     this.ticks = 3;
@@ -150,7 +169,11 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
       setTimeout(step, cleanMock.tickMs);
       return undefined as T;
     }
-    case "clean_execute": {
+    case "clean_run_status":
+      return { running: cleanMock.runRunning, has_result: cleanMock.lastRun !== null } as T;
+    case "clean_run_last":
+      return cleanMock.lastRun as T;
+    case "clean_run_start": {
       const ruleIds = args?.ruleIds as string[];
       const artefacts = (args?.artefacts as string[]) ?? [];
       const apply = args?.apply as boolean;
@@ -180,7 +203,22 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         ruleIds.reduce((a, id) => a + ev.report.findings.filter((f) => f.rule_id === id && (!f.permanent || permanentOk)).reduce((b, f) => b + f.bytes, 0), 0) +
         projectOutcomes.reduce((a, o) => a + o.session.bytes_freed, 0);
       const all = [...outcomes, ...projectOutcomes];
-      return { dry_run: !apply, outcomes: all, bytes_freed: apply ? bytes : 0, disposed: all.length, skipped: 0, failed: 0 } as T;
+      const report: CleanRunReport = { dry_run: !apply, outcomes: all, bytes_freed: apply ? bytes : 0, disposed: all.length, skipped: 0, failed: 0 };
+      // Simulate a run: one step per outcome, then done.
+      cleanMock.runRunning = true;
+      const steps: RunStep[] = all.map((o) => (o.kind === "command" ? { kind: "command", rule_id: o.rule_id, command_line: o.outcome.command_line } : { kind: "rule", rule_id: o.kind === "project" ? o.root : o.rule_id, items: 3 }));
+      let i = 0;
+      const tick = () => {
+        i += 1;
+        emit<CleanRunProgress>("clean://run_progress", { items_done: i, items_total: steps.length, bytes_done: (bytes * i) / Math.max(1, steps.length), bytes_total: bytes, fraction: i / Math.max(1, steps.length), step: steps[Math.min(i, steps.length) - 1] ?? null, elapsed_secs: i, eta: { kind: "about", secs: (steps.length - i) * 2, nanos: 0 } });
+        if (i >= steps.length) {
+          cleanMock.runRunning = false;
+          cleanMock.lastRun = report;
+          emit("clean://run_done", report);
+        } else setTimeout(tick, cleanMock.tickMs);
+      };
+      setTimeout(tick, cleanMock.tickMs);
+      return undefined as T;
     }
     default:
       throw { code: "unknown_command", message: cmd };

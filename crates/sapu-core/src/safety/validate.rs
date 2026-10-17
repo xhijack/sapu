@@ -12,10 +12,20 @@ pub enum ValidationFailure {
     Missing,
     OutsideScope,
     TypeChanged,
-    SizeChanged { expected: u64, actual: u64 },
+    SizeChanged {
+        expected: u64,
+        actual: u64,
+    },
     MtimeChanged,
     SymlinkTargetOutsideScope,
-    Unreadable { message: String },
+    Unreadable {
+        message: String,
+    },
+    /// The current user cannot remove it (owned by another user or root,
+    /// or inside a folder that is not writable). Skipped, never prompted for.
+    NoPermission {
+        message: String,
+    },
 }
 
 impl std::fmt::Display for ValidationFailure {
@@ -30,6 +40,7 @@ impl std::fmt::Display for ValidationFailure {
             Self::MtimeChanged => write!(f, "modification time changed since scan"),
             Self::SymlinkTargetOutsideScope => write!(f, "symlink points outside the plan scope"),
             Self::Unreadable { message } => write!(f, "could not read metadata: {message}"),
+            Self::NoPermission { message } => write!(f, "no permission to remove: {message}"),
         }
     }
 }
@@ -86,6 +97,69 @@ pub fn revalidate(snapshot: &FileSnapshot, scope: &Path) -> Result<(), Validatio
         }
     }
     Ok(())
+}
+
+/// Can this process remove `path` without elevated rights? Removing means
+/// renaming out of the parent folder, so the parent must be writable; a
+/// directory must also be writable itself so its entries can move. On
+/// Unix this is decided from ownership and mode bits; elsewhere the
+/// operation itself reports the error.
+pub fn check_removable(path: &Path) -> Result<(), ValidationFailure> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        // The process's own ids, read from the home folder it owns; no
+        // unsafe libc call. Unknown ids mean "let the operation decide".
+        let Some((uid, gid)) = dirs::home_dir()
+            .and_then(|h| std::fs::metadata(h).ok())
+            .map(|m| (m.uid(), m.gid()))
+        else {
+            return Ok(());
+        };
+        if uid == 0 {
+            return Ok(());
+        }
+        let writable = |m: &std::fs::Metadata| {
+            let mode = m.mode();
+            if m.uid() == uid {
+                mode & 0o200 != 0
+            } else if m.gid() == gid {
+                mode & 0o020 != 0
+            } else {
+                mode & 0o002 != 0
+            }
+        };
+        if let Some(parent) = path.parent() {
+            let pm =
+                std::fs::symlink_metadata(parent).map_err(|e| ValidationFailure::Unreadable {
+                    message: e.to_string(),
+                })?;
+            if !writable(&pm) {
+                return Err(ValidationFailure::NoPermission {
+                    message: format!("parent folder {} is not writable", parent.display()),
+                });
+            }
+        }
+        let m = std::fs::symlink_metadata(path).map_err(|e| ValidationFailure::Unreadable {
+            message: e.to_string(),
+        })?;
+        if m.is_dir() && !writable(&m) {
+            return Err(ValidationFailure::NoPermission {
+                message: "folder is not writable".into(),
+            });
+        }
+        if m.uid() != uid && !m.file_type().is_symlink() && !writable(&m) {
+            return Err(ValidationFailure::NoPermission {
+                message: "owned by another user".into(),
+            });
+        }
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

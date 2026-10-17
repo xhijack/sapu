@@ -34,6 +34,10 @@ pub struct Settings {
     pub notify_when_done: bool,
     /// Menu bar / tray monitor with disk, memory and CPU (needs restart).
     pub menu_bar_monitor: bool,
+    /// The user has read and accepted the no-warranty notice. Shown before
+    /// anything else on first run, and once more for settings from before
+    /// the notice existed.
+    pub disclaimer_accepted: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
@@ -55,6 +59,7 @@ impl Default for Settings {
             theme: Theme::System,
             notify_when_done: true,
             menu_bar_monitor: true,
+            disclaimer_accepted: false,
         }
     }
 }
@@ -112,6 +117,7 @@ mod tests {
             theme: Theme::Dark,
             notify_when_done: false,
             menu_bar_monitor: false,
+            disclaimer_accepted: true,
         };
         s.save(&p).expect("save");
         assert_eq!(Settings::load(&p).expect("load"), s);

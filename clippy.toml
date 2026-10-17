@@ -6,6 +6,8 @@ disallowed-methods = [
   { path = "std::fs::remove_dir_all", reason = "file removal must go through sapu_core::safety" },
   { path = "trash::delete", reason = "file removal must go through sapu_core::safety" },
   { path = "trash::delete_all", reason = "file removal must go through sapu_core::safety" },
+  { path = "trash::TrashContext::delete", reason = "file removal must go through sapu_core::safety" },
+  { path = "trash::TrashContext::delete_all", reason = "file removal must go through sapu_core::safety" },
 ]
 
 allow-unwrap-in-tests = true

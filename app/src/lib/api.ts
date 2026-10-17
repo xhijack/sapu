@@ -33,6 +33,7 @@ export const defaultSettings: Settings = {
   theme: "system",
   notify_when_done: true,
   menu_bar_monitor: true,
+  disclaimer_accepted: false,
 };
 
 /** Mock state, exported for tests. */

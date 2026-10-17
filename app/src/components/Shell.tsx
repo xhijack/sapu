@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { Home, HeartPulse, Search, Sparkles, Copy, AppWindow, History, Settings as SettingsIcon } from "lucide-react";
+import { Home, HeartPulse, Search, Sparkles, Copy, AppWindow, History, Info, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBar } from "./StatusBar";
 
-export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "apps" | "history" | "settings";
+export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "apps" | "history" | "settings" | "about";
 
 const MAIN: { id: Screen; Icon: typeof Home }[] = [
   { id: "home", Icon: Home },
@@ -16,6 +16,7 @@ const MAIN: { id: Screen; Icon: typeof Home }[] = [
 const SECONDARY: { id: Screen; Icon: typeof Home }[] = [
   { id: "history", Icon: History },
   { id: "settings", Icon: SettingsIcon },
+  { id: "about", Icon: Info },
 ];
 
 /** Native-feeling frame: translucent sidebar, hidden title bar, draggable top strip. */
@@ -39,7 +40,7 @@ export function Shell({ screen, onNavigate, children }: { screen: Screen; onNavi
   return (
     <div className="flex h-full">
       <nav aria-label={t("app.name")} className="drag flex w-[232px] shrink-0 flex-col gap-1 border-r border-border px-3 pb-4 pt-12" style={{ background: "var(--sidebar)", backdropFilter: "blur(24px)" }}>
-        <div className="no-drag mb-4 flex items-center gap-2.5 px-2">
+        <button type="button" onClick={() => onNavigate("about")} aria-label={t("nav.about")} className="no-drag mb-4 flex items-center gap-2.5 rounded-xl px-2 py-1 text-left hover:bg-surface-muted">
           <span aria-hidden className="grid h-8 w-8 place-items-center rounded-xl bg-accent text-accent-fg shadow-[var(--shadow-glow)]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 3l7 7" />
@@ -51,7 +52,7 @@ export function Shell({ screen, onNavigate, children }: { screen: Screen; onNavi
             <span className="display text-[17px]">{t("app.name")}</span>
             <span className="text-[10px] leading-tight text-fg-faint">{t("app.full_name")}</span>
           </span>
-        </div>
+        </button>
         <div className="grid gap-1">{MAIN.map(item)}</div>
         <div className="mt-auto grid gap-1">{SECONDARY.map(item)}</div>
       </nav>

@@ -95,6 +95,10 @@ cd app && pnpm check        # lint, typecheck, tests
 
 Bug reports, clean-up rules for an application you know well, translations and code are all welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: it explains how to add a rule safely, what a pull request needs, and why issues labelled `data-loss` come before everything else.
 
+## No warranty
+
+Sapu removes files. It is built to be safe (Trash first, protected paths, re-validation, history), but it is provided **as is, without warranty of any kind**. The developer and PT Sopwer Teknologi Indonesia are not liable for system damage or data loss resulting from the use of this software. The app shows this notice on first run and asks you to accept it. Look at anything labelled yellow before ticking it.
+
 ## License
 
 Dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option. You may use, modify, redistribute and sell Sapu or works derived from it; keep the copyright and license notices.

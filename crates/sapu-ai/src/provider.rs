@@ -302,7 +302,7 @@ impl Provider for Anthropic {
     fn complete(&self, system: &str, user: &str) -> Result<String, ProviderError> {
         let body = serde_json::json!({
             "model": self.model,
-            "max_tokens": 1024,
+            "max_tokens": 4096,
             "system": system,
             "messages": [{"role": "user", "content": user}]
         });
@@ -315,10 +315,28 @@ impl Provider for Anthropic {
             ],
             &body,
         )?;
-        v["content"][0]["text"]
-            .as_str()
-            .map(str::to_string)
-            .ok_or_else(|| ProviderError::Malformed("missing content[0].text".into()))
+        // Newer models may put thinking blocks first and split the answer
+        // over several text blocks; join every text block in order.
+        let text: String = v["content"]
+            .as_array()
+            .map(|blocks| {
+                blocks
+                    .iter()
+                    .filter(|b| b["type"].as_str() == Some("text"))
+                    .filter_map(|b| b["text"].as_str())
+                    .collect::<Vec<_>>()
+                    .join("")
+            })
+            .unwrap_or_default();
+        if text.is_empty() {
+            return Err(ProviderError::Malformed("no text block in content".into()));
+        }
+        if v["stop_reason"].as_str() == Some("max_tokens") {
+            return Err(ProviderError::Malformed(
+                "answer was cut off at the token limit".into(),
+            ));
+        }
+        Ok(text)
     }
 }
 

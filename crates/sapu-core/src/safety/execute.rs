@@ -10,7 +10,7 @@ use super::dispose::{Disposal, dispose};
 use super::history::{CleanSession, HistoryStore, Outcome, SessionEntry};
 use super::protected::ProtectedPaths;
 use super::snapshot::FileSnapshot;
-use super::validate::revalidate;
+use super::validate::{check_removable, revalidate};
 
 /// What to remove. Dry-run by default (S4).
 #[derive(Debug, Clone)]
@@ -196,6 +196,9 @@ impl Safety {
         }
         if plan.dry_run {
             return Outcome::WouldDispose;
+        }
+        if let Err(reason) = check_removable(&item.path) {
+            return Outcome::Skipped { reason };
         }
         match dispose(&item.path, &plan.disposal) {
             Ok(()) => Outcome::Disposed,

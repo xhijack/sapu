@@ -13,7 +13,7 @@ import type { Screen } from "./Shell";
 
 const POLL_MS = 5000;
 
-type Task = { screen: Screen; fraction: number | null; eta: Eta } | null;
+type Task = { screen: Screen; label: string; fraction: number | null; eta: Eta } | null;
 
 const tone = (pct: number) => (pct >= 90 ? "bg-gauge-danger" : pct >= 75 ? "bg-gauge-warn" : "bg-gauge-ok");
 
@@ -41,18 +41,21 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   useEffect(() => {
     const clear = () => setTask(null);
     const subs = [
-      scanApi.onProgress((p) => setTask({ screen: "scan", fraction: p.fraction, eta: p.eta })),
+      scanApi.onProgress((p) => setTask({ screen: "scan", label: "task_scan", fraction: p.fraction, eta: p.eta })),
       scanApi.onDone(clear),
       scanApi.onError(clear),
-      careApi.onProgress((p) => setTask({ screen: "care", fraction: p.fraction, eta: p.eta })),
+      careApi.onProgress((p) => setTask({ screen: "care", label: "task_care", fraction: p.fraction, eta: p.eta })),
       careApi.onDone(clear),
       careApi.onError(clear),
-      dedupeApi.onProgress((p) => setTask({ screen: "dedupe", fraction: p.fraction, eta: p.eta })),
+      dedupeApi.onProgress((p) => setTask({ screen: "dedupe", label: "task_dedupe", fraction: p.fraction, eta: p.eta })),
       dedupeApi.onDone(clear),
       dedupeApi.onError(clear),
-      cleanApi.onProgress((p) => setTask({ screen: "clean", fraction: p.fraction, eta: p.eta })),
+      cleanApi.onProgress((p) => setTask({ screen: "clean", label: "task_clean", fraction: p.fraction, eta: p.eta })),
       cleanApi.onDone(clear),
       cleanApi.onError(clear),
+      cleanApi.onRunProgress((p) => setTask({ screen: "clean", label: "task_clean_run", fraction: p.fraction, eta: p.eta })),
+      cleanApi.onRunDone(clear),
+      cleanApi.onRunError(clear),
     ];
     return () => {
       void Promise.all(subs).then((fns) => fns.forEach((f) => f()));
@@ -101,7 +104,7 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
             <span className={cn("block h-full rounded-full bg-accent transition-[width] duration-500 motion-reduce:transition-none", task.fraction === null && "slide w-1/3")} style={task.fraction === null ? undefined : { width: `${task.fraction * 100}%` }} />
           </span>
           <span className="truncate">
-            {t(`statusbar.task_${task.screen}`)}
+            {t(`statusbar.${task.label}`)}
             {task.fraction !== null && <span className="num"> · {Math.round(task.fraction * 100)}%</span>}
             <span className="text-fg-muted"> · {formatEta(t, task.eta)}</span>
           </span>

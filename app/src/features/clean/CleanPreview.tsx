@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { formatBytes, formatDuration } from "@/lib/format";
+import { formatBytes, formatDuration, formatElapsed, formatEta } from "@/lib/format";
 import { api } from "@/lib/api";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
-import type { CleanRunReport } from "@/lib/types";
+import type { CleanRunProgress, CleanRunReport } from "@/lib/types";
 import type { RuleRow } from "./rows";
 
 interface Props {
@@ -21,7 +21,23 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const [ack, setAck] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<CleanRunProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const subs = [
+      cleanApi.onRunProgress((p) => setProgress(p)),
+      cleanApi.onRunDone((r) => onDone(r)),
+      cleanApi.onRunError((e) => {
+        setError(errorMessage(e));
+        setBusy(false);
+      }),
+    ];
+    return () => {
+      void Promise.all(subs).then((fns) => fns.forEach((f) => f()));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [estimate, setEstimate] = useState<number | null>(null);
 
   useEffect(() => {
@@ -44,19 +60,58 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
 
   const confirm = async () => {
     setBusy(true);
+    setError(null);
     try {
-      const r = await cleanApi.execute(
+      await cleanApi.run(
         rows.filter((r) => !r.artefactPath).map((r) => r.id),
         rows.flatMap((r) => (r.artefactPath ? [r.artefactPath] : [])),
         true,
         hasPermanent && ack,
       );
-      onDone(r);
     } catch (e) {
       setError(errorMessage(e));
       setBusy(false);
     }
   };
+
+  const stepLabel = (p: CleanRunProgress | null) => {
+    if (!p?.step) return t("clean.run_preparing");
+    if (p.step.kind === "command") return t("clean.run_command", { cmd: p.step.command_line });
+    const name = rows.find((r) => r.id === p.step!.rule_id || r.artefactPath === p.step!.rule_id)?.name ?? p.step.rule_id.split("/").pop() ?? p.step.rule_id;
+    return t("clean.run_rule", { name, count: p.step.items });
+  };
+
+  if (busy) {
+    const pct = progress?.fraction == null ? null : Math.round(progress.fraction * 100);
+    return (
+      <dialog ref={ref} onClose={onClose} aria-labelledby="clean-run-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">
+        <div className="grid gap-4 p-6">
+          <h2 id="clean-run-title" className="text-lg font-semibold">
+            {t("clean.run_title")}
+          </h2>
+          <div role="progressbar" aria-label={t("clean.run_title")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined} className="h-2 w-full overflow-hidden rounded-full bg-surface-muted">
+            <span className={`block h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none ${pct === null ? "slide w-1/3" : ""}`} style={pct === null ? undefined : { width: `${pct}%` }} />
+          </div>
+          <p className="text-sm">{stepLabel(progress)}</p>
+          <p className="num text-sm text-fg-muted">
+            {progress?.items_total ? t("clean.run_counts", { done: progress.items_done, total: progress.items_total }) : ""}
+            {progress ? ` · ${formatEta(t, progress.eta)} · ${formatElapsed(t, progress.elapsed_secs)}` : ""}
+          </p>
+          <p className="text-sm text-fg-muted">{t("clean.run_note")}</p>
+          {error && (
+            <p role="alert" className="text-risk-danger-fg">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={() => ref.current?.close()}>
+              {t("clean.run_hide")}
+            </Button>
+          </div>
+        </div>
+      </dialog>
+    );
+  }
 
   return (
     <dialog ref={ref} onClose={onClose} aria-labelledby="clean-preview-title" className="m-auto w-full max-w-lg card-solid p-0 text-fg shadow-xl backdrop:bg-black/40">

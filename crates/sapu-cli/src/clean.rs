@@ -102,6 +102,18 @@ pub fn run(args: CleanArgs) -> anyhow::Result<()> {
                 session.skipped,
                 session.failed
             ),
+            RuleOutcome::Project { root, session } => println!(
+                "  {:<28} {} {} artefact folder(s), {} skipped, {} failed",
+                root.display(),
+                if session.dry_run {
+                    "would remove"
+                } else {
+                    "removed"
+                },
+                session.disposed,
+                session.skipped,
+                session.failed
+            ),
             RuleOutcome::Command { rule_id, outcome } => println!(
                 "  {:<28} {} `{}`",
                 rule_id,

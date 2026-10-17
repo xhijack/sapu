@@ -64,6 +64,11 @@ pub enum RuleOutcome {
         rule_id: String,
         outcome: CommandOutcome,
     },
+    /// Artefact folders of one development project.
+    Project {
+        root: std::path::PathBuf,
+        session: CleanSession,
+    },
     /// Would run (dry run) or skipped because permanent deletion was not confirmed.
     Skipped { rule_id: String, reason: String },
 }
@@ -89,6 +94,43 @@ pub fn execute(
     permanent: Option<PermanentConfirmation>,
     safety: &Safety,
     progress: &mut dyn ProgressSink,
+) -> Result<CleanRunReport> {
+    execute_with_steps(
+        report,
+        rules,
+        selection,
+        apply,
+        permanent,
+        safety,
+        progress,
+        &mut |_| {},
+    )
+}
+
+/// What the run is working on right now, for the UI's "processing …" line.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum RunStep {
+    /// Files of one rule (or one project's artefacts, `rule_id` = root).
+    Rule { rule_id: String, items: u64 },
+    /// An official clean-up command.
+    Command {
+        rule_id: String,
+        command_line: String,
+    },
+}
+
+/// [`execute`] that also announces each rule or command as it starts.
+#[allow(clippy::too_many_arguments)]
+pub fn execute_with_steps(
+    report: &CleanReport,
+    rules: &RuleSet,
+    selection: &Selection,
+    apply: bool,
+    permanent: Option<PermanentConfirmation>,
+    safety: &Safety,
+    progress: &mut dyn ProgressSink,
+    on_step: &mut dyn FnMut(RunStep),
 ) -> Result<CleanRunReport> {
     let mut run = CleanRunReport {
         dry_run: !apply,
@@ -121,6 +163,10 @@ pub fn execute(
         } else {
             Disposal::Trash
         };
+        on_step(RunStep::Rule {
+            rule_id: f.rule_id.clone(),
+            items: f.items.len() as u64,
+        });
         let mut plan = DeletePlan::new(&f.scope).with_disposal(disposal);
         for c in &f.items {
             if let Ok(snap) = FileSnapshot::capture(&c.path) {
@@ -149,6 +195,44 @@ pub fn execute(
         });
     }
 
+    // Development projects: the selected artefact folders, one plan per
+    // project scoped to its root. Never anything git tracks (the evaluator
+    // already left those out).
+    for p in &report.projects {
+        let chosen: Vec<_> = p
+            .artefacts
+            .iter()
+            .filter(|a| selection.artefacts.contains(&a.path))
+            .collect();
+        if chosen.is_empty() {
+            continue;
+        }
+        on_step(RunStep::Rule {
+            rule_id: p.root.to_string_lossy().into_owned(),
+            items: chosen.len() as u64,
+        });
+        let mut plan = DeletePlan::new(&p.root).with_disposal(Disposal::Trash);
+        for a in &chosen {
+            if let Ok(snap) = FileSnapshot::capture(&a.path) {
+                plan.push(snap);
+            }
+        }
+        if apply {
+            plan = plan.apply();
+        }
+        let session = safety.execute(&plan, progress)?;
+        if apply {
+            run.bytes_freed += session.bytes_freed;
+        }
+        run.disposed += session.disposed;
+        run.skipped += session.skipped;
+        run.failed += session.failed;
+        run.outcomes.push(RuleOutcome::Project {
+            root: p.root.clone(),
+            session,
+        });
+    }
+
     for c in report
         .commands
         .iter()
@@ -164,6 +248,10 @@ pub fn execute(
             });
             continue;
         }
+        on_step(RunStep::Command {
+            rule_id: c.rule_id.clone(),
+            command_line: c.command_line.clone(),
+        });
         let outcome = run_command(cmd, Duration::from_secs(600));
         if outcome.success {
             run.disposed += 1;

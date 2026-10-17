@@ -4,11 +4,12 @@ use std::sync::{Arc, Mutex};
 
 use crate::support::{notify_done, record_rate};
 use sapu_core::cleaner::{
-    CleanReport, CleanRunReport, EvalProgress, ProjectScanOptions, Selection,
-    evaluate_with_progress, execute,
+    CleanReport, CleanRunReport, EvalProgress, ProjectScanOptions, RunStep, Selection,
+    evaluate_with_progress, execute_with_steps,
 };
+use sapu_core::eta::Estimator;
 use sapu_core::eta::{Eta, OpKind};
-use sapu_core::progress::NoProgress;
+use sapu_core::progress::{FnSink, ProgressEvent};
 use sapu_core::rules::{
     Env, Localized, Profile, Risk, RuleSet, load_with_user_dir, user_rules_dir,
 };
@@ -23,6 +24,26 @@ pub struct CleanSession {
     /// Last finished check, served to the UI until the next one.
     evaluation: Mutex<Option<CleanEvaluation>>,
     running: Mutex<bool>,
+    run_running: Mutex<bool>,
+    last_run: Mutex<Option<CleanRunReport>>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CleanRunProgress {
+    items_done: u64,
+    items_total: Option<u64>,
+    bytes_done: u64,
+    bytes_total: Option<u64>,
+    fraction: Option<f64>,
+    step: Option<RunStep>,
+    elapsed_secs: u64,
+    eta: Eta,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CleanRunStatus {
+    running: bool,
+    has_result: bool,
 }
 
 impl CleanSession {
@@ -217,53 +238,143 @@ pub fn clean_last(session: State<'_, Arc<CleanSession>>) -> Option<CleanEvaluati
     session.evaluation.lock().ok().and_then(|e| e.clone())
 }
 
-/// Execute `rule_ids` from the last evaluation. `permanent_ok` is the UI's
-/// second confirmation for rules that empty the Trash.
+/// Runs the selection in the background. Progress on `clean://run_progress`
+/// (counts, bytes, the rule being processed, ETA), the report on
+/// `clean://run_done` (kept for `clean_run_last`), failures on
+/// `clean://run_error`. The window can be closed meanwhile. `permanent_ok`
+/// is the UI's second confirmation for rules that empty the Trash.
 #[tauri::command]
-pub async fn clean_execute(
+pub fn clean_run_start(
     app: AppHandle,
     session: State<'_, Arc<CleanSession>>,
     rule_ids: Vec<String>,
     artefacts: Vec<std::path::PathBuf>,
     apply: bool,
     permanent_ok: bool,
-) -> CmdResult<CleanRunReport> {
+) -> CmdResult<()> {
     let report = session
         .report
         .lock()
         .ok()
         .and_then(|r| r.clone())
         .ok_or_else(|| CommandError::new("no_evaluation", "evaluate first"))?;
-    tauri::async_runtime::spawn_blocking(move || {
-        let rules = rules()?;
-        let selection = Selection {
-            rule_ids: rule_ids.into_iter().collect(),
-            artefacts: artefacts.into_iter().collect(),
-        };
-        let permanent =
-            permanent_ok.then(PermanentConfirmation::i_understand_this_cannot_be_undone);
-        let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-        let start = std::time::Instant::now();
-        let run = execute(
-            &report,
-            &rules,
-            &selection,
-            apply,
-            permanent,
-            &safety,
-            &mut NoProgress,
-        )?;
-        if apply {
-            record_rate(OpKind::Clean, run.disposed as u64, start.elapsed());
-            notify_done(
-                &app,
-                start.elapsed(),
-                "Sapu",
-                &format!("Pembersihan selesai: {} item", run.disposed),
-            );
+    {
+        let mut running = session
+            .run_running
+            .lock()
+            .map_err(|_| CommandError::new("io", "poisoned"))?;
+        if *running {
+            return Err(CommandError::new("scan_running", "clean already running"));
         }
-        Ok(run)
-    })
-    .await
-    .map_err(|e| CommandError::new("io", e.to_string()))?
+        *running = true;
+    }
+    let session = Arc::clone(&session);
+    std::thread::spawn(move || {
+        let start = std::time::Instant::now();
+        let result = (|| -> Result<CleanRunReport, CommandError> {
+            let rules = rules()?;
+            let selection = Selection {
+                rule_ids: rule_ids.into_iter().collect(),
+                artefacts: artefacts.into_iter().collect(),
+            };
+            let permanent =
+                permanent_ok.then(PermanentConfirmation::i_understand_this_cannot_be_undone);
+            let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
+            let step = Arc::new(Mutex::new(None::<RunStep>));
+            let step_for_sink = Arc::clone(&step);
+            let mut est = Estimator::default();
+            let app_sink = app.clone();
+            let mut sink = FnSink(move |e: &ProgressEvent| {
+                let elapsed = start.elapsed();
+                est.observe(e, elapsed);
+                let measurable = e.items_total.is_some();
+                let _ = app_sink.emit(
+                    "clean://run_progress",
+                    CleanRunProgress {
+                        items_done: e.items_done,
+                        items_total: e.items_total,
+                        bytes_done: e.bytes_done,
+                        bytes_total: e.bytes_total,
+                        fraction: measurable.then(|| est.fraction(e)),
+                        step: step_for_sink.lock().ok().and_then(|s| s.clone()),
+                        elapsed_secs: elapsed.as_secs(),
+                        eta: est.eta(e, elapsed),
+                    },
+                );
+            });
+            let app_step = app.clone();
+            let mut on_step = |s: RunStep| {
+                if let Ok(mut slot) = step.lock() {
+                    *slot = Some(s.clone());
+                }
+                let _ = app_step.emit(
+                    "clean://run_progress",
+                    CleanRunProgress {
+                        items_done: 0,
+                        items_total: None,
+                        bytes_done: 0,
+                        bytes_total: None,
+                        fraction: None,
+                        step: Some(s),
+                        elapsed_secs: start.elapsed().as_secs(),
+                        eta: Eta::Computing,
+                    },
+                );
+            };
+            let run = execute_with_steps(
+                &report,
+                &rules,
+                &selection,
+                apply,
+                permanent,
+                &safety,
+                &mut sink,
+                &mut on_step,
+            )?;
+            if apply {
+                record_rate(OpKind::Clean, run.disposed as u64, start.elapsed());
+                notify_done(
+                    &app,
+                    start.elapsed(),
+                    "Sapu",
+                    &format!("Pembersihan selesai: {} item", run.disposed),
+                );
+            }
+            Ok(run)
+        })();
+        match result {
+            Ok(run) => {
+                if let Ok(mut slot) = session.last_run.lock() {
+                    *slot = Some(run.clone());
+                }
+                let _ = app.emit("clean://run_done", run);
+            }
+            Err(e) => {
+                let _ = app.emit("clean://run_error", e);
+            }
+        }
+        if let Ok(mut running) = session.run_running.lock() {
+            *running = false;
+        }
+    });
+    Ok(())
+}
+
+#[tauri::command]
+pub fn clean_run_status(session: State<'_, Arc<CleanSession>>) -> CleanRunStatus {
+    CleanRunStatus {
+        running: session.run_running.lock().map(|r| *r).unwrap_or(false),
+        has_result: session
+            .last_run
+            .lock()
+            .map(|r| r.is_some())
+            .unwrap_or(false),
+    }
+}
+
+/// The last finished run, if any (cleared when a new one starts? No: kept
+/// until the next run finishes, so the result survives a closed dialog).
+#[tauri::command]
+pub fn clean_run_last(session: State<'_, Arc<CleanSession>>) -> Option<CleanRunReport> {
+    session.last_run.lock().ok().and_then(|r| r.clone())
 }

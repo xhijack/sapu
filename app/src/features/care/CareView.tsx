@@ -87,7 +87,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   const cleanSafe = async (report: CareReport) => {
     setBusy(true);
     try {
-      const run = await cleanApi.execute(report.preselected, report.preselected_artefacts, true, false);
+      const run = await cleanApi.runAndWait(report.preselected, report.preselected_artefacts, true, false);
       setPhase({ kind: "cleaned", run, report });
     } catch (e) {
       setError(errorMessage(e));

@@ -5,7 +5,9 @@ import { Card, CardText, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import type { ProtectedEntry, Profile, Settings, Theme } from "@/lib/types";
 import { AiSettings } from "@/features/ai/AiSettings";
-import { About } from "./About";
+import { cn } from "@/lib/utils";
+
+type Tab = "general" | "ai" | "protected";
 
 interface Props {
   settings: Settings;
@@ -38,6 +40,7 @@ function Select<T extends string>({ id, label, value, options, onChange }: { id:
 export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
   const { t } = useTranslation();
   const [protectedPaths, setProtectedPaths] = useState<ProtectedEntry[]>([]);
+  const [tab, setTab] = useState<Tab>("general");
   useEffect(() => {
     void api.protectedPaths().then(setProtectedPaths).catch(() => undefined);
   }, []);
@@ -49,9 +52,19 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
   };
 
   return (
-    <div className="grid max-w-2xl gap-6">
-      <h1 className="display text-2xl">{t("settings.title")}</h1>
-      <Card className="grid gap-4">
+    <div className="grid max-w-[1280px] gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="display text-2xl">{t("settings.title")}</h1>
+        <div role="tablist" aria-label={t("settings.title")} className="inline-flex rounded-full bg-surface-muted p-1">
+          {(["general", "ai", "protected"] as Tab[]).map((id) => (
+            <button key={id} role="tab" type="button" aria-selected={tab === id} onClick={() => setTab(id)} className={cn("rounded-full px-4 py-1.5 text-sm font-medium transition-colors", tab === id ? "bg-surface-solid text-fg shadow-[var(--shadow-1)]" : "text-fg-muted hover:text-fg")}>
+              {t(`settings.tab_${id}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+      {tab === "general" && (
+      <Card className="grid max-w-2xl gap-4">
         <Select<Profile>
           id="profile"
           label={t("settings.profile")}
@@ -104,7 +117,9 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
           </Button>
         </div>
       </Card>
-      <AiSettings />
+      )}
+      {tab === "ai" && <AiSettings />}
+      {tab === "protected" && (
       <Card className="grid gap-3">
         <CardTitle>{t("settings.protected_title")}</CardTitle>
         <CardText>{t("settings.protected_body")}</CardText>
@@ -121,7 +136,7 @@ export function SettingsView({ settings, onChange, onRerunOnboarding }: Props) {
           ))}
         </ul>
       </Card>
-      <About />
+      )}
     </div>
   );
 }

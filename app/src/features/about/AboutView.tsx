@@ -10,7 +10,7 @@ export const AUTHOR = "Ramdani";
 export const COMPANY = "PT Sopwer Teknologi Indonesia";
 
 /** Who made Sapu, under which terms, and where to go next. */
-export function About() {
+export function AboutView() {
   const { t } = useTranslation();
   const [info, setInfo] = useState<AppInfo | null>(null);
   useEffect(() => {
@@ -32,6 +32,8 @@ export function About() {
   );
 
   return (
+    <div className="grid max-w-[1280px] gap-6">
+      <h1 className="display text-2xl">{t("settings.about_title")}</h1>
     <Card className="grid gap-5" data-testid="about">
       <div className="flex items-start gap-4">
         <span aria-hidden className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-accent text-accent-fg shadow-[var(--shadow-glow)]">
@@ -70,5 +72,7 @@ export function About() {
         {link(Bug, t("settings.about_issues"), `${REPO_URL}/issues`)}
       </div>
     </Card>
+      <p className="max-w-[80ch] text-xs text-fg-muted">{t("disclaimer.point_liability")}</p>
+    </div>
   );
 }

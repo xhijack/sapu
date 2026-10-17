@@ -66,6 +66,10 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
       })
       .catch(() => live && setReady(true));
     const subs = [
+      cleanApi.onRunDone((r) => {
+        setPreview(false);
+        setResult(r);
+      }),
       cleanApi.onProgress((p) => setChecking(p)),
       cleanApi.onDone((ev) => {
         adopt(ev);

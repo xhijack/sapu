@@ -12,6 +12,8 @@ export interface Settings {
   theme: Theme;
   notify_when_done: boolean;
   menu_bar_monitor: boolean;
+  /** The no-warranty notice was read and accepted. */
+  disclaimer_accepted: boolean;
 }
 
 export type DiskAccess = "not_applicable" | "granted" | "denied" | "unknown";
@@ -383,6 +385,24 @@ export interface CleanCheckProgress {
   fraction: number | null;
   elapsed_secs: number;
   eta: Eta;
+}
+
+export type RunStep = { kind: "rule"; rule_id: string; items: number } | { kind: "command"; rule_id: string; command_line: string };
+
+export interface CleanRunProgress {
+  items_done: number;
+  items_total: number | null;
+  bytes_done: number;
+  bytes_total: number | null;
+  fraction: number | null;
+  step: RunStep | null;
+  elapsed_secs: number;
+  eta: Eta;
+}
+
+export interface CleanRunStatus {
+  running: boolean;
+  has_result: boolean;
 }
 
 export interface CleanCheckStatus {

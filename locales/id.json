@@ -12,7 +12,8 @@
     "dedupe": "Duplikat",
     "scan": "Pindai",
     "care": "Rawat",
-    "apps": "Aplikasi"
+    "apps": "Aplikasi",
+    "about": "Tentang"
   },
   "common": {
     "next": "Lanjut",
@@ -23,7 +24,8 @@
     "retry": "Coba lagi",
     "loading": "Memuat...",
     "error_title": "Ada yang tidak beres",
-    "unknown_error": "Terjadi kesalahan yang tidak dikenal."
+    "unknown_error": "Terjadi kesalahan yang tidak dikenal.",
+    "close": "Tutup"
   },
   "risk": {
     "safe": "Aman dihapus",
@@ -191,7 +193,10 @@
     "about_repo": "Kode sumber di GitHub",
     "about_license_link": "Baca lisensi",
     "about_contribute": "Cara berkontribusi",
-    "about_issues": "Laporkan masalah"
+    "about_issues": "Laporkan masalah",
+    "tab_general": "Umum",
+    "tab_ai": "Bantuan AI",
+    "tab_protected": "Lokasi terlindungi"
   },
   "errors": {
     "protected": "Lokasi ini dilindungi.",
@@ -403,7 +408,14 @@
     "checking_title": "Memeriksa…",
     "stage_projects": "Mencari proyek development dan mengukur ukurannya",
     "stage_rules": "Memeriksa aturan {{done}} dari {{total}}",
-    "checking_note": "Pemeriksaan berjalan di latar. Pindah halaman, hasilnya menunggu di sini dan di bar status."
+    "checking_note": "Pemeriksaan berjalan di latar. Pindah halaman, hasilnya menunggu di sini dan di bar status.",
+    "run_title": "Membersihkan…",
+    "run_preparing": "Menyiapkan…",
+    "run_rule": "Memproses {{name}} ({{count}} item)",
+    "run_command": "Menjalankan {{cmd}}",
+    "run_counts": "{{done}} dari {{total}} item",
+    "run_note": "Berjalan di latar. Dialog ini boleh ditutup; hasilnya muncul di sini dan di Riwayat saat selesai.",
+    "run_hide": "Sembunyikan"
   },
   "dedupe": {
     "title": "Duplikat",
@@ -519,7 +531,9 @@
     "model_pick": "Pilih dari daftar",
     "model_placeholder": "ketik atau muat daftar",
     "model_hint": "Muat daftar setelah key tersimpan, atau ketik nama model.",
-    "model_custom": "Ketik nama model lain…"
+    "model_custom": "Ketik nama model lain…",
+    "explain_show": "Lihat penjelasan AI",
+    "explain_title": "Penjelasan AI: {{name}}"
   },
   "care": {
     "title": "Rawat",
@@ -671,7 +685,8 @@
     "task_dedupe": "Mencari duplikat",
     "disk_low": "disarankan ≥ {{size}}",
     "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang.",
-    "task_clean": "Memeriksa Bersih"
+    "task_clean": "Memeriksa Bersih",
+    "task_clean_run": "Membersihkan"
   },
   "tips": {
     "title": "Tips memakai Sapu",
@@ -691,5 +706,13 @@
     "care_body": "Skor Ruang di atas 80 berarti disk sehat. Sisakan minimal 10% atau 20 GB agar macOS dan pembaruan punya ruang.",
     "dupes_title": "Duplikat selalu menyisakan satu",
     "dupes_body": "Sapu tidak pernah menghapus semua salinan dalam satu grup. Pilih strategi “simpan yang terbaru” atau per folder."
+  },
+  "disclaimer": {
+    "title": "Sebelum mulai",
+    "body": "Sapu menghapus file. Ia dirancang agar aman, tetapi tidak ada perangkat lunak yang bebas dari kesalahan, dan hasilnya bergantung pada apa yang kamu pilih untuk dihapus.",
+    "point_trash": "Semua penghapusan masuk ke Trash lebih dulu dan tercatat di Riwayat; hapus permanen hanya dengan konfirmasi kedua.",
+    "point_review": "Periksa yang berlabel kuning sebelum mencentangnya. Sapu tidak pernah menyentuh folder yang dilindungi.",
+    "point_liability": "Sapu disediakan apa adanya, tanpa jaminan. Pengembang dan PT Sopwer Teknologi Indonesia tidak bertanggung jawab atas kerusakan sistem atau kehilangan data akibat penggunaan aplikasi ini.",
+    "accept": "Saya sudah membaca dan menerima ketentuan ini."
   }
 }

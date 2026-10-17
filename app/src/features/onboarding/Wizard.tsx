@@ -5,8 +5,9 @@ import { SpaceRing } from "@/components/viz/SpaceRing";
 import { api } from "@/lib/api";
 import type { AppInfo, Settings } from "@/lib/types";
 import { AccessStep, AiStep, ProfileStep, SafetyStep, ScanStep, WelcomeStep } from "./steps";
+import { DisclaimerContent } from "./Disclaimer";
 
-const TOTAL = 6;
+const TOTAL = 7;
 
 interface Props {
   settings: Settings;
@@ -31,7 +32,10 @@ export function Wizard({ settings, onFinish }: Props) {
       .catch(() => undefined);
   }, []);
 
-  const finish = () => onFinish({ ...draft, onboarding_done: true });
+  const [accepted, setAccepted] = useState(settings.disclaimer_accepted);
+  // Step 2 (the notice) cannot be skipped or passed without accepting.
+  const canProceed = step !== 2 || accepted;
+  const finish = () => onFinish({ ...draft, onboarding_done: true, disclaimer_accepted: accepted });
   const next = () => (step === TOTAL ? finish() : setStep(step + 1));
   const back = () => setStep(Math.max(1, step - 1));
 
@@ -79,14 +83,15 @@ export function Wizard({ settings, onFinish }: Props) {
                 }}
               />
             )}
-            {step === 2 && <ProfileStep info={info} value={draft.profile} onChange={(profile) => setDraft({ ...draft, profile })} />}
-            {step === 3 && <AccessStep info={info} />}
-            {step === 4 && <SafetyStep />}
-            {step === 5 && <AiStep value={draft.ai_mode} onChange={(ai_mode) => setDraft({ ...draft, ai_mode })} />}
-            {step === 6 && <ScanStep />}
+            {step === 2 && <DisclaimerContent accepted={accepted} onAccept={setAccepted} />}
+            {step === 3 && <ProfileStep info={info} value={draft.profile} onChange={(profile) => setDraft({ ...draft, profile })} />}
+            {step === 4 && <AccessStep info={info} />}
+            {step === 5 && <SafetyStep />}
+            {step === 6 && <AiStep value={draft.ai_mode} onChange={(ai_mode) => setDraft({ ...draft, ai_mode })} />}
+            {step === 7 && <ScanStep />}
           </div>
           <div className="flex items-center justify-between gap-3 pt-2">
-            <Button variant="ghost" onClick={finish}>
+            <Button variant="ghost" onClick={finish} disabled={!accepted}>
               {t("common.skip")}
             </Button>
             <div className="flex gap-2">
@@ -95,7 +100,7 @@ export function Wizard({ settings, onFinish }: Props) {
                   {t("common.back")}
                 </Button>
               )}
-              <Button size="lg" onClick={next} autoFocus>
+              <Button size="lg" onClick={next} autoFocus disabled={!canProceed}>
                 {step === TOTAL ? t("common.done") : t("common.next")}
               </Button>
             </div>

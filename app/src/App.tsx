@@ -4,6 +4,8 @@ import { Shell, type Screen } from "@/components/Shell";
 import { ErrorState, LoadingState } from "@/components/States";
 import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
+import { DisclaimerGate } from "@/features/onboarding/DisclaimerGate";
+import { AboutView } from "@/features/about/AboutView";
 import { ScanView } from "@/features/scan/ScanView";
 import { HomeView } from "@/features/home/HomeView";
 import { CareView } from "@/features/care/CareView";
@@ -91,6 +93,9 @@ export default function App() {
 
   if (error) return <div className="p-8"><ErrorState message={error} onRetry={retry} /></div>;
   if (!settings) return <LoadingState />;
+  if (!showWizard && !settings.disclaimer_accepted) {
+    return <DisclaimerGate onAccept={() => save({ ...settings, disclaimer_accepted: true })} />;
+  }
   if (showWizard) {
     return (
       <Wizard
@@ -128,6 +133,9 @@ export default function App() {
       </Pane>
       <Pane active={screen === "settings"} mounted={visited.has("settings")}>
         <SettingsView settings={settings} onChange={save} onRerunOnboarding={() => setShowWizard(true)} />
+      </Pane>
+      <Pane active={screen === "about"} mounted={visited.has("about")}>
+        <AboutView />
       </Pane>
     </Shell>
   );

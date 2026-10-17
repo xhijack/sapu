@@ -52,7 +52,7 @@ pub enum DisposalKind {
 /// not repeat them.
 pub(super) fn dispose(path: &Path, disposal: &Disposal) -> io::Result<()> {
     match disposal {
-        Disposal::Trash => trash::delete(path).map_err(io::Error::other),
+        Disposal::Trash => trash_silently(path),
         Disposal::Permanent(_) => {
             let meta = std::fs::symlink_metadata(path)?;
             if meta.is_dir() {
@@ -63,6 +63,26 @@ pub(super) fn dispose(path: &Path, disposal: &Disposal) -> io::Result<()> {
                 std::fs::remove_file(path)
             }
         }
+    }
+}
+
+/// Moves `path` to the OS trash without involving a file manager. The
+/// `trash` crate drives Finder through AppleScript by default on macOS,
+/// which plays the trash sound and asks for an administrator password for
+/// every item Finder cannot move on its own; `NSFileManager` is silent and
+/// simply reports the error, which the caller records as "failed".
+fn trash_silently(path: &Path) -> io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        use trash::TrashContext;
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+        let mut ctx = TrashContext::default();
+        ctx.set_delete_method(DeleteMethod::NsFileManager);
+        ctx.delete(path).map_err(io::Error::other)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        trash::delete(path).map_err(io::Error::other)
     }
 }
 
