@@ -15,6 +15,7 @@ mod apps;
 mod care;
 mod clean;
 mod dedupe;
+mod memory;
 mod scan;
 mod support;
 mod tray;
@@ -322,6 +323,9 @@ pub fn run() {
             dedupe::file_preview,
             app_info,
             system_snapshot,
+            memory::memory_snapshot,
+            memory::memory_quit_apps,
+            memory::memory_purge,
             support::estimate_duration,
             ai::ai_status,
             ai::ai_config_set,
