@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Home, HeartPulse, Search, Sparkles, Copy, AppWindow, History, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatusBar } from "./StatusBar";
 
 export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "apps" | "history" | "settings";
 
@@ -54,10 +55,13 @@ export function Shell({ screen, onNavigate, children }: { screen: Screen; onNavi
         <div className="grid gap-1">{MAIN.map(item)}</div>
         <div className="mt-auto grid gap-1">{SECONDARY.map(item)}</div>
       </nav>
-      <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="drag h-10" />
-        <div className="px-10 pb-12">{children}</div>
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="drag h-10" />
+          <div className="px-8 pb-10">{children}</div>
+        </main>
+        <StatusBar onNavigate={onNavigate} />
+      </div>
     </div>
   );
 }

@@ -93,7 +93,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   if (phase.kind === "report") return <Report report={phase.report} busy={busy} onClean={() => void cleanSafe(phase.report)} onNavigate={onNavigate} onAgain={start} error={error} />;
   if (phase.kind === "cleaned") {
     return (
-      <div className="grid max-w-[1040px] gap-6">
+      <div className="grid max-w-[1280px] gap-6">
         <h1 className="display text-2xl">{t("care.done_title")}</h1>
         <p className="num text-lg">{t("care.done_body", { size: formatBytes(phase.run.bytes_freed, lang) })}</p>
         <div className="flex gap-2">
@@ -107,7 +107,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   }
 
   return (
-    <div className="grid max-w-[1040px] gap-10">
+    <div className="grid max-w-[1280px] gap-10">
       <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <SpaceRing size={236} thickness={20} total={100} label={t("care.score_label")} segments={last ? [{ key: "score", value: last.score.score, color: scoreTone(last.score.score) }] : []}>
           <div className="grid gap-0.5">
@@ -146,7 +146,7 @@ function Running({ progress }: { progress: CareProgressPayload | null }) {
   const stage = progress?.stage ?? 1;
   const fraction = progress?.fraction ?? null;
   return (
-    <div className="grid max-w-[1040px] gap-10">
+    <div className="grid max-w-[1280px] gap-10">
       <section aria-live="polite" className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <div role="progressbar" aria-label={t("care.running_title")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={fraction === null ? undefined : Math.floor(fraction * 100)}>
           <SpaceRing size={236} thickness={20} total={1} spinning={fraction === null} segments={fraction === null ? [] : [{ key: "done", value: fraction, color: "var(--accent)" }]} label={t("care.running_title")}>
@@ -192,7 +192,7 @@ function Report({ report, busy, onClean, onNavigate, onAgain, error }: { report:
   const target = (r: Recommendation): Screen | null => (r.kind === "clean_safe" || r.kind === "stale_projects" || r.kind === "review_clutter" ? "clean" : r.kind === "largest_folder" ? "scan" : null);
 
   return (
-    <div className="grid max-w-[1040px] gap-10">
+    <div className="grid max-w-[1280px] gap-10">
       <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <SpaceRing size={236} thickness={20} total={100} label={t("care.score_label")} segments={[{ key: "score", value: s.score, color: scoreTone(s.score) }]}>
           <div className="grid gap-0.5">

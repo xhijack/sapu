@@ -133,7 +133,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
                       const checked = selected.has(r.id);
                       return (
                         <li key={r.id}>
-                          <label className={cn("flex cursor-pointer items-start gap-4 px-4 py-3", disabled && "cursor-not-allowed opacity-60")}>
+                          <label className={cn("flex cursor-pointer items-start gap-4 px-4 py-2.5", disabled && "cursor-not-allowed opacity-60")} style={{ boxShadow: `inset 3px 0 0 ${r.risk === "green" ? "var(--risk-safe-border)" : "var(--risk-review-border)"}` }}>
                             <input
                               type="checkbox"
                               className="mt-1 h-4 w-4 accent-[var(--accent)]"
@@ -157,7 +157,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
                                 {r.permanent && <span className="text-risk-review-fg"> {t("clean.permanent_note")}</span>}
                               </span>
                             </span>
-                            <span className="num shrink-0 text-right">{r.bytes === null ? <span className="text-sm text-fg-muted">{t("clean.estimate_unknown")}</span> : formatBytes(r.bytes, i18n.language)}</span>
+                            <span className="num shrink-0 text-right font-medium">{r.bytes === null ? <span className="text-sm text-fg-muted">{t("clean.estimate_unknown")}</span> : formatBytes(r.bytes, i18n.language)}</span>
                           </label>
                         </li>
                       );

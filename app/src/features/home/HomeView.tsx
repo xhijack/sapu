@@ -53,7 +53,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const freeAnimated = useCountUp(main?.available_bytes ?? 0);
 
   return (
-    <div className="grid max-w-[1040px] gap-10">
+    <div className="grid max-w-[1280px] gap-10">
       <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <SpaceRing
           size={236}
@@ -70,7 +70,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         <div className="grid gap-5">
           <div className="grid gap-1">
             <p className="text-fg-muted">{greeting(t)}</p>
-            <p className="display num text-[52px] leading-[1.05]">
+            <p className={cn("display num text-[52px] leading-[1.05]", pct >= 90 ? "text-gauge-danger" : pct >= 75 ? "text-gauge-warn" : "text-accent-strong")}>
               {main ? formatBytes(freeAnimated, lang) : t("home.measuring")}
               {main && <span className="ml-3 text-2xl font-semibold text-fg-muted">{t("home.hero_free_word")}</span>}
             </p>
@@ -103,7 +103,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         <Tile className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
+      <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
         <div className="card rise grid gap-3 p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-fg-muted">
             <History aria-hidden className="h-4 w-4" />
@@ -138,35 +138,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
             {t("clean.see_history")}
           </button>
         </div>
-        <div className="card rise grid gap-4 p-5">
-          <h2 className="text-sm font-semibold text-fg-muted">{t("home.system_now")}</h2>
-          <div className="grid gap-6">
-            <div className="grid gap-2">
-              <MiniMeter
-                label={t("home.cpu")}
-                value={snap?.cpu_percent ?? null}
-                detail={snap ? t("home.cores_hint", { count: snap.cpu_count, avg: Math.round(snap.cpu_percent ?? 0) }) : ""}
-                measuring={t("home.measuring")}
-              />
-              {snap && snap.cpu_per_core.length > 0 && (
-                <ul aria-label={t("home.cpu")} className="flex h-6 items-end gap-[3px]">
-                  {snap.cpu_per_core.map((c, i) => (
-                    <li key={i} title={`#${i + 1}: ${Math.round(c)}%`} className="flex-1 rounded-sm bg-surface-muted">
-                      <div className={cn("w-full rounded-sm transition-[height] duration-500", c >= 90 ? "bg-gauge-danger" : c >= 75 ? "bg-gauge-warn" : "bg-gauge-ok")} style={{ height: `${Math.max(8, Math.round(c))}%` }} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <MiniMeter
-              label={t("home.memory")}
-              value={snap ? Math.round((snap.mem_used_bytes / Math.max(1, snap.mem_total_bytes)) * 100) : null}
-              detail={snap ? t("home.disk_used_of", { used: formatBytes(snap.mem_used_bytes, lang), total: formatBytes(snap.mem_total_bytes, lang) }) : ""}
-              measuring={t("home.measuring")}
-            />
-          </div>
-        </div>
-        <div className="card rise grid gap-3 p-5">
+        <div className="card rise grid content-start gap-3 p-5">
           <h2 className="text-sm font-semibold text-fg-muted">{t("home.other_disks")}</h2>
           {others.length === 0 ? (
             <p className="text-sm text-fg-faint">—</p>
@@ -194,23 +166,6 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
           )}
         </div>
       </section>
-    </div>
-  );
-}
-
-function MiniMeter({ label, value, detail, measuring }: { label: string; value: number | null; detail: string; measuring: string }) {
-  const v = value ?? 0;
-  const tone = v >= 90 ? "bg-gauge-danger" : v >= 75 ? "bg-gauge-warn" : "bg-gauge-ok";
-  return (
-    <div className="grid gap-2">
-      <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <span className="display num text-xl">{value === null ? <span className="text-xs font-normal text-fg-muted">{measuring}</span> : `${Math.round(value)}%`}</span>
-      </div>
-      <div role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v)} className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-        <div className={cn("h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none", tone)} style={{ width: `${v}%` }} />
-      </div>
-      <span className="num text-xs text-fg-muted">{detail}</span>
     </div>
   );
 }

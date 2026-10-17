@@ -38,7 +38,7 @@ export function LargeFiles({ initialCategory = null, onTrash, removed, onWhatIs,
     };
   }, [filter]);
 
-  const rows: FileRow[] = useMemo(() => (files ?? []).map((f) => ({ path: f.path, name: f.path.split("/").pop() ?? f.path, kind: f.kind, is_dir: false, bytes: f.size, atime: f.atime, mtime: f.mtime })), [files]);
+  const rows: FileRow[] = useMemo(() => (files ?? []).map((f) => ({ path: f.path, name: f.path.split("/").pop() ?? f.path, kind: f.kind, is_dir: false, bytes: f.size, atime: f.atime, mtime: f.mtime, category: f.category })), [files]);
 
   return (
     <div className="grid gap-4">

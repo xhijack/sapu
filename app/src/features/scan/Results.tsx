@@ -91,7 +91,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   };
 
   return (
-    <div className="grid max-w-[1040px] gap-8">
+    <div className="grid max-w-[1280px] gap-8">
       <header className="rise grid items-center gap-8 md:grid-cols-[auto_1fr]">
         <SpaceRing size={200} thickness={18} total={diskTotal} segments={ringSegments} label={t("scan.ring_label")}>
           <div className="grid gap-0.5">

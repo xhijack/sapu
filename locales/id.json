@@ -125,7 +125,6 @@
     "tile_dedupe": "Duplikat",
     "tile_dedupe_body": "File yang isinya sama persis, satu salinan selalu disimpan.",
     "other_disks": "Disk lain",
-    "system_now": "Komputer saat ini",
     "greeting_morning": "Selamat pagi",
     "greeting_day": "Selamat siang",
     "greeting_evening": "Selamat malam",
@@ -620,5 +619,15 @@
     "backup": "Cadangan / sementara",
     "folder": "Folder",
     "other": "Lainnya"
+  },
+  "statusbar": {
+    "label": "Status sistem",
+    "disk": "{{size}} kosong",
+    "memory": "Memori {{pct}}%",
+    "cpu": "CPU {{pct}}%",
+    "open_task": "Buka tugas yang berjalan",
+    "task_scan": "Memindai",
+    "task_care": "Merawat",
+    "task_dedupe": "Mencari duplikat"
   }
 }

@@ -79,7 +79,7 @@ export function AppsView({ onSeeHistory }: { onSeeHistory: () => void }) {
   }
 
   return (
-    <div className="grid max-w-[1040px] gap-6">
+    <div className="grid max-w-[1280px] gap-6">
       <div className="grid gap-1">
         <h1 className="display text-2xl">{t("apps.title")}</h1>
         <p className="max-w-[60ch] text-fg-muted">{t("apps.intro")}</p>

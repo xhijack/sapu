@@ -125,7 +125,6 @@
     "tile_dedupe": "Duplicates",
     "tile_dedupe_body": "Identical files; one copy is always kept.",
     "other_disks": "Other disks",
-    "system_now": "This computer now",
     "greeting_morning": "Good morning",
     "greeting_day": "Good afternoon",
     "greeting_evening": "Good evening",
@@ -620,5 +619,15 @@
     "backup": "Backup / temporary",
     "folder": "Folder",
     "other": "Other"
+  },
+  "statusbar": {
+    "label": "System status",
+    "disk": "{{size}} free",
+    "memory": "Memory {{pct}}%",
+    "cpu": "CPU {{pct}}%",
+    "open_task": "Open the running task",
+    "task_scan": "Scanning",
+    "task_care": "Caring",
+    "task_dedupe": "Finding duplicates"
   }
 }

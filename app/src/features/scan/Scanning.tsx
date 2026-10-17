@@ -30,7 +30,7 @@ export function Scanning({ root, progress, live, paused, onPause, onResume, onCa
   const liveShown = useThrottledValue(live, 400);
   const catMax = Math.max(1, ...(liveShown?.categories.map(([, b]) => b) ?? [1]));
   return (
-    <div className="grid max-w-[1040px] gap-10">
+    <div className="grid max-w-[1280px] gap-10">
       <section aria-live="polite" className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
         <div role="progressbar" aria-label={t("scan.scanning_title", { path: root })} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
         <SpaceRing

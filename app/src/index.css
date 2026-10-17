@@ -11,14 +11,15 @@
   /* light */
   --bg: #eef1f4;
   --bg-2: #e3e8ee;
-  --surface: rgba(255, 255, 255, 0.78);
+  --surface: rgba(255, 255, 255, 0.92);
   --surface-solid: #ffffff;
-  --surface-muted: #e9edf1;
-  --border: rgba(20, 30, 40, 0.08);
-  --border-strong: rgba(20, 30, 40, 0.16);
+  --surface-muted: #e6ebf0;
+  --border: rgba(20, 30, 40, 0.1);
+  --border-strong: rgba(20, 30, 40, 0.2);
   --fg: #10161d;
-  --fg-muted: #5b6672;
-  --fg-faint: #8a95a1;
+  /* 7.2:1 and 4.6:1 on --bg: secondary text stays readable, not grey-on-grey. */
+  --fg-muted: #46525e;
+  --fg-faint: #67737f;
   --accent: #0e8f7c;
   --accent-strong: #0b6f61;
   --accent-soft: rgba(14, 143, 124, 0.12);
@@ -65,8 +66,8 @@
     --border: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.16);
     --fg: #eef2f5;
-    --fg-muted: #9aa6b2;
-    --fg-faint: #67737f;
+    --fg-muted: #a7b2bd;
+    --fg-faint: #7c8894;
     --accent: #2fd4b4;
     --accent-strong: #5de3c8;
     --accent-soft: rgba(47, 212, 180, 0.14);
@@ -108,8 +109,8 @@
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
   --fg: #eef2f5;
-  --fg-muted: #9aa6b2;
-  --fg-faint: #67737f;
+  --fg-muted: #a7b2bd;
+  --fg-faint: #7c8894;
   --accent: #2fd4b4;
   --accent-strong: #5de3c8;
   --accent-soft: rgba(47, 212, 180, 0.14);
@@ -228,6 +229,8 @@ body[data-native="true"] {
 .no-drag { -webkit-app-region: no-drag; }
 
 @keyframes ring-spin { to { transform: rotate(360deg); } }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.slide { animation: slide 1.4s linear infinite; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .rise { animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .rise-2 { animation-delay: 60ms; }

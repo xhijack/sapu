@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { KindIcon } from "@/components/icons/KindIcon";
 import { formatBytes, formatDate } from "@/lib/format";
 import { scanApi } from "@/lib/scanApi";
-import type { FileKind, UnixTime } from "@/lib/types";
+import type { Category, FileKind, UnixTime } from "@/lib/types";
+import { categoryColor } from "../categoryColor";
 import { cn } from "@/lib/utils";
 import { sortRows, type SortKey } from "./sortRows";
 
@@ -18,6 +19,8 @@ export interface FileRow {
   bytes: number;
   atime: UnixTime | null;
   mtime: UnixTime | null;
+  /** Colours the row's left edge when known. */
+  category?: Category | null;
 }
 
 export type { SortKey } from "./sortRows";
@@ -92,7 +95,7 @@ export function FileTable({ rows, onOpenDir, onTrash, onWhatIs, removed, default
                 }}
                 className={cn("group border-b border-border/60 outline-none last:border-0 odd:bg-surface-muted/40 focus-visible:bg-surface-muted hover:bg-surface-muted", gone && "opacity-50")}
               >
-                <td className="min-w-0 px-3 py-1.5">
+                <td className="min-w-0 px-3 py-1" style={r.category ? { boxShadow: `inset 3px 0 0 ${categoryColor(r.category)}` } : undefined}>
                   <span className="flex min-w-0 items-center gap-2">
                     <KindIcon kind={r.kind} size={16} />
                     {r.is_dir && onOpenDir && !gone ? (
@@ -107,9 +110,9 @@ export function FileTable({ rows, onOpenDir, onTrash, onWhatIs, removed, default
                     {nameExtra?.(r)}
                   </span>
                 </td>
-                <td className="truncate px-3 py-1.5 text-fg-muted">{t(`kind.${r.kind}`)}</td>
-                <td className="num truncate px-3 py-1.5 text-fg-muted">{r.atime ? formatDate(r.atime.secs_since_epoch, i18n.language) : r.mtime ? formatDate(r.mtime.secs_since_epoch, i18n.language) : t("browse.never")}</td>
-                <td className="num px-3 py-1.5 text-right">{formatBytes(r.bytes, i18n.language)}</td>
+                <td className="truncate px-3 py-1">{t(`kind.${r.kind}`)}</td>
+                <td className="num truncate px-3 py-1 text-fg-muted">{r.atime ? formatDate(r.atime.secs_since_epoch, i18n.language) : r.mtime ? formatDate(r.mtime.secs_since_epoch, i18n.language) : t("browse.never")}</td>
+                <td className="num px-3 py-1 text-right font-medium">{formatBytes(r.bytes, i18n.language)}</td>
                 <td className="px-1 py-0.5">
                   {!gone && (
                     <span className="flex justify-end gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-focus-visible:opacity-100 group-hover:opacity-100">

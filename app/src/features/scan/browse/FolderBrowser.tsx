@@ -39,7 +39,7 @@ export function FolderBrowser({ root, onTrash, removed, onWhatIs }: Props) {
     return [{ label: root.split("/").filter(Boolean).pop() || root, path: root }, ...parts.map((p, i) => ({ label: p, path: `${root}/${parts.slice(0, i + 1).join("/")}` }))];
   }, [path, root]);
 
-  const rows: FileRow[] = (folder?.entries ?? []).filter((e) => !removed.has(e.path)).map((e) => ({ path: e.path, name: e.name, kind: e.kind, is_dir: e.is_dir, bytes: e.bytes, atime: e.atime, mtime: e.mtime }));
+  const rows: FileRow[] = (folder?.entries ?? []).filter((e) => !removed.has(e.path)).map((e) => ({ path: e.path, name: e.name, kind: e.kind, is_dir: e.is_dir, bytes: e.bytes, atime: e.atime, mtime: e.mtime, category: e.category }));
   const up = () => {
     if (path === root) return;
     const parent = path.slice(0, path.lastIndexOf("/")) || root;
