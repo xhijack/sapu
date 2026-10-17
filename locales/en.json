@@ -294,7 +294,8 @@
     "next_dupes": "Find duplicates",
     "next_dupes_body": "Check this folder for files with identical contents.",
     "tab_browse": "Browse",
-    "live_top_files": "Largest files so far"
+    "live_top_files": "Largest files so far",
+    "recent_empty": "No scans yet. The first result will be listed here."
   },
   "category": {
     "video": "Video",
@@ -531,7 +532,10 @@
     "again": "Care again",
     "done_title": "Care done",
     "done_body": "{{size}} freed. The Space Score updates when you care again.",
-    "last_care": "Last cared {{date}}, score {{score}}"
+    "last_care": "Last cared {{date}}, score {{score}}",
+    "history_title": "Previous Care runs",
+    "history_line": "{{pct}}% free, {{size}} safe to clean",
+    "history_empty": "Never cared for yet. The first score appears after Care now."
   },
   "apps": {
     "title": "Apps",
@@ -648,5 +652,24 @@
     "task_dedupe": "Finding duplicates",
     "disk_low": "recommended ≥ {{size}}",
     "disk_low_hint": "Keep 10% or at least 20 GB free so the OS, updates and snapshots have room."
+  },
+  "tips": {
+    "title": "Tips for using Sapu",
+    "quicklook_title": "Space to peek",
+    "quicklook_body": "In any file list, select a row and press Space for Quick Look before deciding.",
+    "trash_title": "Everything goes to the Trash first",
+    "trash_body": "Sapu never deletes permanently without a second confirmation. Removed the wrong thing? Restore from the Trash or History.",
+    "downloads_title": "Tidy Downloads once a month",
+    "downloads_body": "Scan → Browse → Downloads groups old installers and archives; one button trashes those older than a month.",
+    "dev_title": "The Developer tab in Clean",
+    "dev_body": "The Developer profile shows Docker, Xcode, editor caches and project build output that can be recreated.",
+    "tray_title": "Watch from the menu bar",
+    "tray_body": "The broom icon in the menu bar shows disk, memory and CPU; “Care now” can be started from there.",
+    "close_title": "Close the window, the scan keeps going",
+    "close_body": "Closing the window only hides it. Click the Dock or menu bar icon to come back; Cmd+Q really quits.",
+    "care_title": "Care once a week",
+    "care_body": "A Space Score above 80 means a healthy disk. Keep at least 10% or 20 GB free so the OS and updates have room.",
+    "dupes_title": "Duplicates always keep one copy",
+    "dupes_body": "Sapu never removes every copy in a group. Pick “keep newest” or a per-folder strategy."
   }
 }

@@ -56,24 +56,24 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const freeAnimated = useCountUp(main?.available_bytes ?? 0);
 
   return (
-    <div className="grid max-w-[1280px] gap-10">
-      <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
+    <div className="grid max-w-[1280px] gap-6">
+      <section className="rise grid items-center gap-8 md:grid-cols-[auto_1fr]">
         <SpaceRing
-          size={236}
-          thickness={20}
+          size={196}
+          thickness={18}
           total={main?.total_bytes ?? 1}
           label={main ? `${main.name || main.mount}: ${pct}%` : t("home.measuring")}
           segments={main ? [{ key: "used", value: used, color: pct >= 90 ? "var(--gauge-danger)" : pct >= 75 ? "var(--gauge-warn)" : "var(--gauge-ok)" }] : []}
         >
           <div className="grid gap-0.5">
-            <span className="display num text-[40px] leading-none">{pct}%</span>
+            <span className="display num text-[34px] leading-none">{pct}%</span>
             <span className="text-xs text-fg-muted">{main?.name || main?.mount || ""}</span>
           </div>
         </SpaceRing>
         <div className="grid gap-5">
           <div className="grid gap-1">
             <p className="text-fg-muted">{greeting(t)}</p>
-            <p className={cn("display num text-[52px] leading-[1.05]", pct >= 90 ? "text-gauge-danger" : pct >= 75 ? "text-gauge-warn" : "text-accent-strong")}>
+            <p className={cn("display num text-[44px] leading-[1.05]", pct >= 90 ? "text-gauge-danger" : pct >= 75 ? "text-gauge-warn" : "text-accent-strong")}>
               {main ? formatBytes(freeAnimated, lang) : t("home.measuring")}
               {main && <span className="ml-3 text-2xl font-semibold text-fg-muted">{t("home.hero_free_word")}</span>}
             </p>
@@ -97,15 +97,15 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <Tile className="rise rise-1" tone="var(--gauge-warn)" icon={<HeartPulse className="h-5 w-5" />} title={t("home.tile_care")} body={t("home.tile_care_body")} onClick={() => onNavigate("care")} />
-        <Tile className="rise rise-2" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("home.tile_scan")} body={t("home.tile_scan_body")} onClick={() => onNavigate("scan")} />
-        <Tile className="rise rise-3" tone="var(--accent)" icon={<Sparkles className="h-5 w-5" />} title={t("home.tile_clean")} body={t("home.tile_clean_body")} onClick={() => onNavigate("clean")} />
-        <Tile className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
+      <section className="grid gap-3 md:grid-cols-4">
+        <Tile compact className="rise rise-1" tone="var(--gauge-warn)" icon={<HeartPulse className="h-5 w-5" />} title={t("home.tile_care")} body={t("home.tile_care_body")} onClick={() => onNavigate("care")} />
+        <Tile compact className="rise rise-2" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("home.tile_scan")} body={t("home.tile_scan_body")} onClick={() => onNavigate("scan")} />
+        <Tile compact className="rise rise-3" tone="var(--accent)" icon={<Sparkles className="h-5 w-5" />} title={t("home.tile_clean")} body={t("home.tile_clean_body")} onClick={() => onNavigate("clean")} />
+        <Tile compact className="rise rise-4" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("home.tile_dedupe")} body={t("home.tile_dedupe_body")} onClick={() => onNavigate("dedupe")} />
       </section>
 
       <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
-        <div className="card rise grid gap-3 p-5">
+        <div className="card rise grid gap-2 p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-fg-muted">
             <History aria-hidden className="h-4 w-4" />
             {t("home.activity")}
@@ -142,7 +142,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
             {t("clean.see_history")}
           </button>
         </div>
-        <div className="card rise grid content-start gap-3 p-5">
+        <div className="card rise grid content-start gap-2 p-4">
           <h2 className="text-sm font-semibold text-fg-muted">{t("home.other_disks")}</h2>
           {others.length === 0 ? (
             <p className="text-sm text-fg-faint">—</p>

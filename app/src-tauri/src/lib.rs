@@ -290,6 +290,7 @@ pub fn run() {
             apps::app_icon,
             care::care_run,
             care::care_last,
+            care::care_history,
             clean::clean_evaluate,
             clean::clean_execute,
             dedupe::dedupe_start,

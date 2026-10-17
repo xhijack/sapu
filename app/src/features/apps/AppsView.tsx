@@ -109,7 +109,7 @@ export function AppsView({ onSeeHistory }: { onSeeHistory: () => void }) {
           <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
             <div className="grid content-start gap-3">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("apps.search")} aria-label={t("apps.search")} className="h-10 rounded-lg border border-border bg-surface px-3 text-sm" />
-              <ul className="card-solid max-h-[560px] divide-y divide-border overflow-y-auto">
+              <ul className="card-solid max-h-[calc(100vh-330px)] divide-y divide-border overflow-y-auto">
                 {visible.map((a) => (
                   <li key={a.path}>
                     <button

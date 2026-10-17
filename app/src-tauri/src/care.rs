@@ -5,7 +5,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use sapu_core::care::{SpaceScore, score};
+use sapu_core::care::{
+    CareLogEntry, SpaceScore, append_care_log, care_log_dir, read_care_log, score,
+};
 use sapu_core::cleaner::{Selection, evaluate};
 use sapu_core::eta::{Estimator, Eta, OpKind};
 use sapu_core::progress::{FnSink, ProgressEvent};
@@ -42,6 +44,14 @@ struct CareProgress {
     bytes_done: u64,
     elapsed_secs: u64,
     eta: Eta,
+}
+
+/// Previous Care runs, newest first.
+#[tauri::command]
+pub fn care_history(limit: usize) -> Vec<CareLogEntry> {
+    care_log_dir()
+        .map(|d| read_care_log(&d, limit.min(50)))
+        .unwrap_or_default()
 }
 
 #[tauri::command]
@@ -150,6 +160,17 @@ pub fn care_run(
             Ok(report) => {
                 if let Ok(mut l) = session.last.lock() {
                     *l = Some(report.clone());
+                }
+                if let Ok(dir) = care_log_dir() {
+                    let _ = append_care_log(
+                        &dir,
+                        &CareLogEntry {
+                            finished_at_unix: report.finished_at_unix,
+                            score: report.score.score,
+                            free_pct: report.score.free_pct,
+                            safe_bytes: report.score.safe_bytes,
+                        },
+                    );
                 }
                 notify_done(
                     &app,

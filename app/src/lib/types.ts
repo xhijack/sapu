@@ -607,6 +607,13 @@ export interface CareReport {
   finished_at_unix: number;
 }
 
+export interface CareLogEntry {
+  finished_at_unix: number;
+  score: number;
+  free_pct: number;
+  safe_bytes: number;
+}
+
 export interface CareProgressPayload {
   stage: number;
   total: number;

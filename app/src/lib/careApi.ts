@@ -1,5 +1,6 @@
 import { isTauri } from "./api";
-import type { CareProgressPayload, CareReport } from "./types";
+import type {
+  CareLogEntry, CareProgressPayload, CareReport } from "./types";
 
 type Unlisten = () => void;
 
@@ -24,6 +25,7 @@ async function listen<T>(event: string, cb: (payload: T) => void): Promise<Unlis
 export const careApi = {
   run: () => invoke<void>("care_run"),
   last: () => invoke<CareReport | null>("care_last"),
+  history: (limit: number) => invoke<CareLogEntry[]>("care_history", { limit }),
   onProgress: (cb: (p: CareProgressPayload) => void) => listen<CareProgressPayload>("care://progress", cb),
   onDone: (cb: (r: CareReport) => void) => listen<CareReport>("care://done", cb),
   onError: (cb: (e: { code: string; message: string }) => void) => listen("care://error", cb),
@@ -89,6 +91,11 @@ const mockInvoke = async <T,>(cmd: string, _args?: Record<string, unknown>): Pro
   switch (cmd) {
     case "care_last":
       return careMock.last as T;
+    case "care_history":
+      return [
+        { finished_at_unix: 1_791_900_000, score: 72, free_pct: 14, safe_bytes: 12.1 * GB },
+        { finished_at_unix: 1_790_700_000, score: 48, free_pct: 6, safe_bytes: 31.4 * GB },
+      ] as T;
     case "care_run": {
       let i = 0;
       const step = () => {

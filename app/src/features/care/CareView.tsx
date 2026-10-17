@@ -10,7 +10,8 @@ import { careApi } from "@/lib/careApi";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDate, formatEta } from "@/lib/format";
-import type { CareProgressPayload, CareReport, CleanRunReport, Recommendation } from "@/lib/types";
+import type { CareLogEntry, CareProgressPayload, CareReport, CleanRunReport, Recommendation } from "@/lib/types";
+import { Tips } from "@/components/Tips";
 import type { Screen } from "@/components/Shell";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
   const [progress, setProgress] = useState<CareProgressPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<CareReport | null>(null);
+  const [history, setHistory] = useState<CareLogEntry[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -41,11 +43,16 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
       .last()
       .then((r) => live && setLast(r))
       .catch(() => undefined);
+    careApi
+      .history(6)
+      .then((h) => live && setHistory(h))
+      .catch(() => undefined);
     const subs = [
       careApi.onProgress((p) => setProgress(p)),
       careApi.onDone((report) => {
         setPhase({ kind: "report", report });
         setLast(report);
+        setHistory((h) => [{ finished_at_unix: report.finished_at_unix, score: report.score.score, free_pct: report.score.free_pct, safe_bytes: report.score.safe_bytes }, ...h].slice(0, 6));
         setProgress(null);
       }),
       careApi.onError((e) => {
@@ -106,14 +113,16 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
     );
   }
 
+  const latest = history[0] ?? (last ? { finished_at_unix: last.finished_at_unix, score: last.score.score, free_pct: last.score.free_pct, safe_bytes: last.score.safe_bytes } : null);
+  const previous = history.slice(1, 5);
   return (
-    <div className="grid max-w-[1280px] gap-10">
-      <section className="rise grid items-center gap-10 md:grid-cols-[auto_1fr]">
-        <SpaceRing size={236} thickness={20} total={100} label={t("care.score_label")} segments={last ? [{ key: "score", value: last.score.score, color: scoreTone(last.score.score) }] : []}>
+    <div className="grid max-w-[1280px] gap-8">
+      <section className="rise grid items-center gap-8 md:grid-cols-[auto_1fr_minmax(280px,360px)]">
+        <SpaceRing size={200} thickness={18} total={100} label={t("care.score_label")} segments={latest ? [{ key: "score", value: latest.score, color: scoreTone(latest.score) }] : []}>
           <div className="grid gap-0.5">
-            {last ? (
+            {latest ? (
               <>
-                <span className="display num text-[44px] leading-none">{last.score.score}</span>
+                <span className="display num text-[40px] leading-none">{latest.score}</span>
                 <span className="text-xs text-fg-muted">{t("care.score_label")}</span>
               </>
             ) : (
@@ -121,7 +130,7 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
             )}
           </div>
         </SpaceRing>
-        <div className="grid gap-5">
+        <div className="grid gap-4">
           <div className="grid gap-2">
             <h1 className="display text-[32px] leading-tight">{t("care.title")}</h1>
             <p className="max-w-[56ch] text-fg-muted">{t("care.intro")}</p>
@@ -131,11 +140,33 @@ export function CareView({ onNavigate, autoStart = 0 }: { onNavigate: (s: Screen
               <Sparkles aria-hidden className="h-5 w-5" />
               {t("care.start")}
             </Button>
-            {last && <span className="num text-sm text-fg-muted">{t("care.last_care", { date: formatDate(last.finished_at_unix, lang), score: last.score.score })}</span>}
+            {latest && <span className="num text-sm text-fg-muted">{t("care.last_care", { date: formatDate(latest.finished_at_unix, lang), score: latest.score })}</span>}
           </div>
           {error && <ErrorState message={error} />}
         </div>
+        <aside className="card-solid grid content-start gap-2 p-4">
+          <h2 className="text-sm font-semibold text-fg-muted">{t("care.history_title")}</h2>
+          {latest ? (
+            <ul className="grid gap-1.5 text-sm">
+              {[latest, ...previous].map((h, i) => (
+                <li key={h.finished_at_unix} className="flex items-center gap-3">
+                  <span className="num grid h-7 w-9 place-items-center rounded-md text-xs font-semibold text-white" style={{ background: scoreTone(h.score) }}>
+                    {h.score}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="num block text-xs text-fg-muted">{formatDate(h.finished_at_unix, lang)}</span>
+                    <span className="num block">{t("care.history_line", { pct: h.free_pct, size: formatBytes(h.safe_bytes, lang) })}</span>
+                  </span>
+                  {i === 0 && previous[0] && <span className={cn("num text-xs font-semibold", h.score >= previous[0].score ? "text-gauge-ok" : "text-gauge-danger")}>{h.score >= previous[0].score ? "+" : ""}{h.score - previous[0].score}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-fg-faint">{t("care.history_empty")}</p>
+          )}
+        </aside>
       </section>
+      <Tips seed={1} />
     </div>
   );
 }

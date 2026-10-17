@@ -4,7 +4,10 @@
 //! The score is only about space and clutter. It says nothing about
 //! performance or security (PRD non-goals).
 
+use std::path::{Path, PathBuf};
+
 use crate::cleaner::CleanReport;
+use crate::error::{Result, SapuError};
 use crate::rules::Risk;
 use crate::scanner::ScanResult;
 
@@ -57,6 +60,56 @@ fn linear(value: f64, zero_at: f64, full_at: f64, max: u8) -> u8 {
 }
 
 /// Score a scan plus the clean evaluation that followed it.
+/// One finished Care run, kept so the Care screen can show how the disk
+/// has been doing over time (`care/history.jsonl`, newest last).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct CareLogEntry {
+    pub finished_at_unix: u64,
+    pub score: u8,
+    pub free_pct: u8,
+    pub safe_bytes: u64,
+}
+
+/// `<local data>/sapu/care`.
+pub fn care_log_dir() -> Result<PathBuf> {
+    let base = dirs::data_local_dir().ok_or_else(|| {
+        SapuError::io(
+            "locate local data dir",
+            std::io::Error::new(std::io::ErrorKind::NotFound, "no data dir"),
+        )
+    })?;
+    Ok(base.join("sapu").join("care"))
+}
+
+/// Appends one run; keeps the last 200.
+pub fn append_care_log(dir: &Path, entry: &CareLogEntry) -> Result<()> {
+    std::fs::create_dir_all(dir).map_err(|e| SapuError::io("create care dir", e))?;
+    let path = dir.join("history.jsonl");
+    let mut lines: Vec<String> = std::fs::read_to_string(&path)
+        .map(|s| s.lines().map(str::to_string).collect())
+        .unwrap_or_default();
+    lines.push(serde_json::to_string(entry)?);
+    if lines.len() > 200 {
+        let drop = lines.len() - 200;
+        lines.drain(..drop);
+    }
+    std::fs::write(&path, lines.join("\n") + "\n").map_err(|e| SapuError::io("write care log", e))
+}
+
+/// Newest first.
+pub fn read_care_log(dir: &Path, limit: usize) -> Vec<CareLogEntry> {
+    let Ok(text) = std::fs::read_to_string(dir.join("history.jsonl")) else {
+        return Vec::new();
+    };
+    let mut v: Vec<CareLogEntry> = text
+        .lines()
+        .filter_map(|l| serde_json::from_str(l).ok())
+        .collect();
+    v.reverse();
+    v.truncate(limit);
+    v
+}
+
 /// How much of a disk should stay free: 10 % of its size or 20 GB,
 /// whichever is larger, but never more than a quarter of a small disk.
 /// APFS snapshots, swap and OS updates need the headroom; below it macOS
@@ -187,8 +240,8 @@ mod tests {
     use super::*;
     use crate::cleaner::{CleanReport, Finding};
     use crate::rules::Profile;
+
     use std::collections::HashMap;
-    use std::path::PathBuf;
 
     fn scan(total: u64, disk_total: u64, free: u64) -> ScanResult {
         let mut dirs = HashMap::new();
@@ -279,5 +332,28 @@ mod tests {
         assert_eq!(recommended_free_bytes(120 * GB), 20 * GB);
         assert_eq!(recommended_free_bytes(40 * GB), 10 * GB);
         assert_eq!(recommended_free_bytes(0), 0);
+    }
+
+    #[test]
+    fn care_log_round_trips_newest_first() {
+        let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.test-tmp");
+        std::fs::create_dir_all(&base).expect("mkdir test-tmp");
+        let dir = tempfile::tempdir_in(&base).expect("tempdir");
+        for (i, score) in [40u8, 70, 90].iter().enumerate() {
+            append_care_log(
+                dir.path(),
+                &CareLogEntry {
+                    finished_at_unix: 100 + i as u64,
+                    score: *score,
+                    free_pct: 10,
+                    safe_bytes: 5,
+                },
+            )
+            .expect("append");
+        }
+        let log = read_care_log(dir.path(), 2);
+        assert_eq!(log.len(), 2);
+        assert_eq!(log[0].score, 90);
+        assert_eq!(log[1].score, 70);
     }
 }

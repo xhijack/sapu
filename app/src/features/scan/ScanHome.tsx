@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { FolderSearch, HardDrive, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scanApi } from "@/lib/scanApi";
-import type { PreviousScan, ScanTargets } from "@/lib/types";
+import type { PreviousScan, ScanLogEntry, ScanTargets } from "@/lib/types";
+import { Tips } from "@/components/Tips";
 import { formatBytes, formatDate, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ export function ScanHome({ onStart, error }: Props) {
   const [choice, setChoice] = useState<Choice>("home");
   const [folder, setFolder] = useState<string | null>(null);
   const [previous, setPrevious] = useState<Record<string, PreviousScan | null>>({});
+  const [recent, setRecent] = useState<ScanLogEntry[]>([]);
 
   useEffect(() => {
     const paths = [targets?.home, targets?.disk, folder].filter((p): p is string => !!p);
@@ -38,6 +40,7 @@ export function ScanHome({ onStart, error }: Props) {
   useEffect(() => {
     let live = true;
     scanApi.targets().then((tg) => live && setTargets(tg)).catch(() => undefined);
+    scanApi.history(6).then((h) => live && setRecent(h)).catch(() => undefined);
     return () => {
       live = false;
     };
@@ -60,11 +63,13 @@ export function ScanHome({ onStart, error }: Props) {
   };
 
   return (
-    <div className="grid max-w-2xl gap-8">
+    <div className="grid max-w-[1280px] gap-6">
       <div>
         <h1 className="display text-2xl">{t("scan.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("scan.intro")}</p>
       </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,1fr)]">
+      <div className="grid content-start gap-6">
       <div role="radiogroup" aria-label={t("scan.title")} className="grid divide-y divide-border card-solid">
         {rows.map(({ id, Icon, label, hint, path }) => {
           const active = choice === id;
@@ -104,6 +109,33 @@ export function ScanHome({ onStart, error }: Props) {
         <Button size="lg" disabled={!root} onClick={() => root && onStart(root)}>
           {t("scan.start")}
         </Button>
+      </div>
+      </div>
+      <div className="grid content-start gap-4">
+        <section className="card-solid grid gap-2 p-4" aria-label={t("home.recent_scans")}>
+          <h2 className="text-sm font-semibold text-fg-muted">{t("home.recent_scans")}</h2>
+          {recent.length === 0 ? (
+            <p className="text-sm text-fg-faint">{t("scan.recent_empty")}</p>
+          ) : (
+            <ul className="grid gap-1.5 text-sm">
+              {recent.map((r) => (
+                <li key={`${r.root}-${r.finished_at_unix}`} className="grid gap-0.5">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="path min-w-0 truncate" title={r.root}>
+                      {r.root.split("/").filter(Boolean).pop() || r.root}
+                    </span>
+                    <span className="num shrink-0 font-medium">{formatBytes(r.total_bytes, i18n.language)}</span>
+                  </span>
+                  <span className="num text-xs text-fg-muted">
+                    {formatDate(r.finished_at_unix, i18n.language)}, {t("scan.files_count", { count: r.file_count.toLocaleString(i18n.language) })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <Tips seed={2} />
+      </div>
       </div>
     </div>
   );

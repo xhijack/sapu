@@ -294,7 +294,8 @@
     "next_dupes": "Cari file ganda",
     "next_dupes_body": "Periksa folder ini untuk file yang isinya sama persis.",
     "tab_browse": "Jelajah",
-    "live_top_files": "File terbesar sejauh ini"
+    "live_top_files": "File terbesar sejauh ini",
+    "recent_empty": "Belum ada pemindaian. Hasil pertama akan tercatat di sini."
   },
   "category": {
     "video": "Video",
@@ -531,7 +532,10 @@
     "again": "Rawat lagi",
     "done_title": "Selesai dirawat",
     "done_body": "{{size}} dibebaskan. Skor Ruang akan diperbarui saat kamu merawat lagi.",
-    "last_care": "Terakhir dirawat {{date}}, skor {{score}}"
+    "last_care": "Terakhir dirawat {{date}}, skor {{score}}",
+    "history_title": "Rawat sebelumnya",
+    "history_line": "{{pct}}% kosong, {{size}} aman dibersihkan",
+    "history_empty": "Belum pernah dirawat. Skor pertama muncul setelah Rawat sekarang."
   },
   "apps": {
     "title": "Aplikasi",
@@ -648,5 +652,24 @@
     "task_dedupe": "Mencari duplikat",
     "disk_low": "disarankan ≥ {{size}}",
     "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang."
+  },
+  "tips": {
+    "title": "Tips memakai Sapu",
+    "quicklook_title": "Spasi untuk mengintip",
+    "quicklook_body": "Di daftar file mana pun, pilih baris lalu tekan Spasi untuk Quick Look sebelum memutuskan.",
+    "trash_title": "Semua lewat Trash dulu",
+    "trash_body": "Sapu tidak pernah menghapus permanen tanpa konfirmasi kedua. Salah hapus? Pulihkan dari Trash atau Riwayat.",
+    "downloads_title": "Rapikan Downloads sebulan sekali",
+    "downloads_body": "Pindai → Jelajah → Downloads mengelompokkan installer dan arsip lama; satu tombol membuang yang sudah lebih dari sebulan.",
+    "dev_title": "Tab Developer di Bersih",
+    "dev_body": "Profil Developer menampilkan cache Docker, Xcode, editor, dan hasil build proyek yang bisa dibuat ulang.",
+    "tray_title": "Pantau dari menu bar",
+    "tray_body": "Ikon sapu di menu bar menunjukkan disk, memori, dan CPU; “Rawat sekarang” bisa dijalankan dari sana.",
+    "close_title": "Tutup jendela, scan tetap jalan",
+    "close_body": "Menutup jendela hanya menyembunyikannya. Klik ikon di Dock atau menu bar untuk kembali; Cmd+Q yang benar-benar keluar.",
+    "care_title": "Rawat seminggu sekali",
+    "care_body": "Skor Ruang di atas 80 berarti disk sehat. Sisakan minimal 10% atau 20 GB agar macOS dan pembaruan punya ruang.",
+    "dupes_title": "Duplikat selalu menyisakan satu",
+    "dupes_body": "Sapu tidak pernah menghapus semua salinan dalam satu grup. Pilih strategi “simpan yang terbaru” atau per folder."
   }
 }
