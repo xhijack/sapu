@@ -112,22 +112,32 @@ export function Scanning({ root, progress, live, paused, onPause, onResume, onCa
               </ul>
             </div>
           </div>
-          <div className="card grid content-start gap-2 p-4">
-            <span className="text-xs font-semibold text-fg-muted">{t("scan.live_top")}</span>
-            <ol className="grid gap-1.5 text-sm">
-              {liveShown.top_dirs.map(([p, b], i) => (
-                <li key={p} className="flex items-center gap-3">
-                  <span className="num w-4 text-fg-faint">{i + 1}</span>
-                  <span className="path min-w-0 flex-1 truncate text-left" dir="rtl" title={p}>
-                    <bdi>{p}</bdi>
-                  </span>
-                  <span className="num shrink-0 text-fg-muted">{formatBytes(b, i18n.language)}</span>
-                </li>
-              ))}
-            </ol>
+          <div className="grid content-start gap-4">
+            <TopList title={t("scan.live_top")} items={liveShown.top_dirs} lang={i18n.language} />
+            <TopList title={t("scan.live_top_files")} items={liveShown.top_files} lang={i18n.language} />
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+function TopList({ title, items, lang }: { title: string; items: [string, number][]; lang: string }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="card grid content-start gap-2 p-4">
+      <span className="text-xs font-semibold text-fg-muted">{title}</span>
+      <ol className="grid gap-1.5 text-sm">
+        {items.map(([p, b], i) => (
+          <li key={p} className="flex items-center gap-3">
+            <span className="num w-4 text-fg-faint">{i + 1}</span>
+            <span className="path min-w-0 flex-1 truncate text-left" dir="rtl" title={p}>
+              <bdi>{p}</bdi>
+            </span>
+            <span className="num shrink-0 text-fg-muted">{formatBytes(b, lang)}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

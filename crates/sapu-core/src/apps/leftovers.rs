@@ -171,6 +171,7 @@ mod tests {
             bytes: 0,
             last_used: None,
             is_system: false,
+            support: crate::apps::AppSupport::Unknown,
         }
     }
 

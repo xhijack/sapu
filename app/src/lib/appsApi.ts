@@ -31,10 +31,10 @@ export const appsMock = {
 };
 
 const apps: InstalledApp[] = [
-  { name: "Xcode", bundle_id: "com.apple.dt.Xcode", version: "16.1", path: "/Applications/Xcode.app", bytes: 14.2 * GB, last_used: { secs_since_epoch: 1_791_000_000, nanos_since_epoch: 0 }, is_system: true },
-  { name: "Docker", bundle_id: "com.docker.docker", version: "4.34", path: "/Applications/Docker.app", bytes: 2.1 * GB, last_used: { secs_since_epoch: 1_792_000_000, nanos_since_epoch: 0 }, is_system: false },
-  { name: "Slack", bundle_id: "com.tinyspeck.slackmacgap", version: "4.41", path: "/Applications/Slack.app", bytes: 420 * MB, last_used: { secs_since_epoch: 1_792_000_000, nanos_since_epoch: 0 }, is_system: false },
-  { name: "Zoom", bundle_id: "us.zoom.xos", version: "6.2", path: "/Applications/zoom.us.app", bytes: 310 * MB, last_used: { secs_since_epoch: 1_780_000_000, nanos_since_epoch: 0 }, is_system: false },
+  { name: "Xcode", bundle_id: "com.apple.dt.Xcode", version: "16.1", path: "/Applications/Xcode.app", bytes: 14.2 * GB, last_used: { secs_since_epoch: 1_791_000_000, nanos_since_epoch: 0 }, is_system: true, support: "native" },
+  { name: "Docker", bundle_id: "com.docker.docker", version: "4.34", path: "/Applications/Docker.app", bytes: 2.1 * GB, last_used: { secs_since_epoch: 1_792_000_000, nanos_since_epoch: 0 }, is_system: false, support: "native" },
+  { name: "Slack", bundle_id: "com.tinyspeck.slackmacgap", version: "4.41", path: "/Applications/Slack.app", bytes: 420 * MB, last_used: { secs_since_epoch: 1_792_000_000, nanos_since_epoch: 0 }, is_system: false, support: "native" },
+  { name: "Zoom", bundle_id: "us.zoom.xos", version: "6.2", path: "/Applications/zoom.us.app", bytes: 310 * MB, last_used: { secs_since_epoch: 1_780_000_000, nanos_since_epoch: 0 }, is_system: false, support: "rosetta" },
 ];
 
 const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Promise<T> => {

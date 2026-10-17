@@ -5,13 +5,43 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 use super::category::Category;
+use super::kind::FileKind;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct FileEntry {
     pub path: PathBuf,
     pub size: u64,
     pub mtime: Option<SystemTime>,
+    /// Last access, when the filesystem records it.
+    pub atime: Option<SystemTime>,
     pub category: Category,
+    pub kind: FileKind,
+}
+
+/// One row of the folder browser: a direct child of a scanned folder.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct BrowseEntry {
+    pub path: PathBuf,
+    pub name: String,
+    pub is_dir: bool,
+    pub bytes: u64,
+    pub files: u64,
+    pub mtime: Option<SystemTime>,
+    pub atime: Option<SystemTime>,
+    pub kind: FileKind,
+    pub category: Option<Category>,
+}
+
+/// The browser's view of one folder.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct BrowseFolder {
+    pub path: PathBuf,
+    pub bytes: u64,
+    pub files: u64,
+    /// Direct children, largest first; at most the requested limit.
+    pub entries: Vec<BrowseEntry>,
+    /// Children beyond the limit, folded.
+    pub more: usize,
 }
 
 /// Per-directory totals. `own_*` counts direct children only; `total_*`
@@ -192,6 +222,58 @@ impl ScanResult {
         v.sort_by(|a, b| b.bytes.cmp(&a.bytes).then_with(|| a.path.cmp(&b.path)));
         v.truncate(n);
         v
+    }
+
+    /// Direct children of `path` for the folder browser, largest first.
+    /// `None` when `path` was not part of this scan.
+    pub fn browse(&self, path: &Path, limit: usize) -> Option<BrowseFolder> {
+        let stats = self.dirs.get(path)?;
+        let mut entries: Vec<BrowseEntry> = self
+            .dirs
+            .iter()
+            .filter(|(p, _)| p.parent() == Some(path))
+            .map(|(p, s)| BrowseEntry {
+                path: p.clone(),
+                name: node_name(p),
+                is_dir: true,
+                bytes: s.total_bytes,
+                files: s.total_files,
+                mtime: None,
+                atime: None,
+                kind: if p.extension().is_some_and(|e| e == "app") {
+                    FileKind::Application
+                } else {
+                    FileKind::Folder
+                },
+                category: None,
+            })
+            .collect();
+        entries.extend(
+            self.files
+                .iter()
+                .filter(|f| f.path.parent() == Some(path))
+                .map(|f| BrowseEntry {
+                    path: f.path.clone(),
+                    name: node_name(&f.path),
+                    is_dir: false,
+                    bytes: f.size,
+                    files: 1,
+                    mtime: f.mtime,
+                    atime: f.atime,
+                    kind: f.kind,
+                    category: Some(f.category),
+                }),
+        );
+        entries.sort_by(|a, b| b.bytes.cmp(&a.bytes).then_with(|| a.name.cmp(&b.name)));
+        let more = entries.len().saturating_sub(limit);
+        entries.truncate(limit);
+        Some(BrowseFolder {
+            path: path.to_path_buf(),
+            bytes: stats.total_bytes,
+            files: stats.total_files,
+            entries,
+            more,
+        })
     }
 
     /// Folder tree under `path`, `depth` levels deep, at most `limit` children

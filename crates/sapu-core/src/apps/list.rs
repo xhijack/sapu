@@ -14,6 +14,8 @@ pub struct InstalledApp {
     pub last_used: Option<SystemTime>,
     /// Apple / OS-owned: shown, never removable.
     pub is_system: bool,
+    /// Whether the app's binary fits this machine's CPU.
+    pub support: crate::apps::AppSupport,
 }
 
 /// Apps in the standard locations, largest first.
@@ -82,7 +84,12 @@ mod platform {
             .as_deref()
             .is_some_and(|b| b.starts_with("com.apple."));
         let meta = std::fs::metadata(path).ok();
+        let support = crate::apps::support_for(
+            crate::apps::bundle_arches(path, get("CFBundleExecutable").as_deref()),
+            std::env::consts::ARCH,
+        );
         Some(InstalledApp {
+            support,
             name,
             version: get("CFBundleShortVersionString").or_else(|| get("CFBundleVersion")),
             bytes: crate::cleaner::dir_size_pub(path),

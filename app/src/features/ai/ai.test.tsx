@@ -14,7 +14,7 @@ describe("AI off", () => {
     await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
     await screen.findByTestId("scan-total", {}, { timeout: 3000 });
     expect(screen.queryByRole("button", { name: "Buat ringkasan dengan AI" })).toBeNull();
-    await user.click(screen.getByRole("tab", { name: "Terbesar" }));
+    await user.click(screen.getByRole("tab", { name: "Jelajah" }));
     expect(screen.queryByRole("searchbox")).toBeNull();
     expect(screen.queryByRole("button", { name: "Apa ini?" })).toBeNull();
   });
@@ -39,7 +39,7 @@ describe("AI on", () => {
     await user.click(within(panel).getByRole("button", { name: "Lihat data yang dikirim" }));
     expect(panel).toHaveTextContent(/Hanya ini yang dikirim ke ollama/);
 
-    await user.click(screen.getByRole("tab", { name: "Terbesar" }));
+    await user.click(screen.getByRole("tab", { name: "Jelajah" }));
     await user.type(await screen.findByRole("searchbox"), "video besar lama");
     await user.click(screen.getByRole("button", { name: "Cari" }));
     expect(await screen.findByText(/Dipahami sebagai: video besar yang lama/)).toBeInTheDocument();

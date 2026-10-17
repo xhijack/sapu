@@ -323,6 +323,33 @@ pub fn scan_subtree(
     Ok(r.subtree(&path, depth.min(3), limit.min(200)))
 }
 
+/// Direct children of one scanned folder for the file browser.
+#[tauri::command]
+pub fn scan_browse(
+    session: State<'_, Arc<ScanSession>>,
+    path: Option<PathBuf>,
+    limit: usize,
+) -> CmdResult<Option<sapu_core::scanner::BrowseFolder>> {
+    let r = result(&session)?;
+    let path = path.unwrap_or_else(|| r.root.clone());
+    Ok(r.browse(&path, limit.clamp(1, 2000)))
+}
+
+/// Downloads folder grouped by kind; independent of any scan.
+#[tauri::command]
+pub async fn downloads_report() -> CmdResult<Option<sapu_core::scanner::DownloadsReport>> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let Some(dir) = sapu_core::scanner::downloads_dir() else {
+            return Ok(None);
+        };
+        sapu_core::scanner::scan_downloads(&dir)
+            .map(Some)
+            .map_err(CommandError::from)
+    })
+    .await
+    .map_err(|e| CommandError::new("io", e.to_string()))?
+}
+
 #[tauri::command]
 pub fn reveal_path(app: AppHandle, path: PathBuf) -> CmdResult<()> {
     app.opener()

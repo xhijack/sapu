@@ -1,9 +1,16 @@
 // Scan commands and events. Mocked outside Tauri with a simulated scan so
 // the flow can be developed and tested in a browser / vitest.
 
+import { DOWNLOAD_GROUPS } from "./types";
 import type {
+  BrowseEntry,
+  BrowseFolder,
   CleanSession,
   DirSummary,
+  DownloadEntry,
+  DownloadGroup,
+  DownloadsReport,
+  FileKind,
   PreviousScan,
   ScanLogEntry,
   FileEntry,
@@ -53,6 +60,8 @@ export const scanApi = {
   topDirs: (limit: number) => invoke<DirSummary[]>("scan_top_dirs", { limit }),
   subtree: (path: string | null, depth: number, limit: number) =>
     invoke<TreeNode | null>("scan_subtree", { path, depth, limit }),
+  browse: (path: string | null, limit = 500) => invoke<BrowseFolder | null>("scan_browse", { path, limit }),
+  downloads: () => invoke<DownloadsReport | null>("downloads_report"),
   reveal: (path: string) => invoke<void>("reveal_path", { path }),
   trash: (paths: string[], apply: boolean) => invoke<CleanSession>("trash_paths", { paths, apply }),
   onProgress: (cb: (p: ScanProgressPayload) => void) => listen<ScanProgressPayload>("scan://progress", cb),
@@ -131,8 +140,56 @@ const mockFiles = (root: string): FileEntry[] =>
     path: `${root}/${p as string}`,
     size: size as number,
     mtime: { secs_since_epoch: 1_792_000_000 - i * 40 * 86_400, nanos_since_epoch: 0 },
+    atime: i % 3 === 0 ? null : { secs_since_epoch: 1_792_000_000 - i * 20 * 86_400, nanos_since_epoch: 0 },
     category: category as FileEntry["category"],
+    kind: kindOf(p as string),
   }));
+
+const kindOf = (p: string): FileKind => {
+  const ext = p.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, FileKind> = { mp4: "video", mov: "video", dmg: "disk_image", iso: "disk_image", db: "database", pdf: "pdf", pack: "other", zip: "archive", pkg: "installer", jpg: "image", png: "image", docx: "document" };
+  return map[ext] ?? "other";
+};
+
+const mockBrowse = (root: string, path: string | null): BrowseFolder => {
+  const at = path ?? root;
+  const dirs = mockDirs(root).filter((d) => d.path.startsWith(at + "/") && !d.path.slice(at.length + 1).includes("/"));
+  const files = mockFiles(root).filter((f) => f.path.startsWith(at + "/") && !f.path.slice(at.length + 1).includes("/"));
+  const entries: BrowseEntry[] = [
+    ...dirs.map((d) => ({ path: d.path, name: d.path.split("/").pop() ?? "", is_dir: true, bytes: d.bytes, files: d.files, mtime: null, atime: null, kind: "folder" as const, category: null })),
+    ...files.map((f) => ({ path: f.path, name: f.path.split("/").pop() ?? "", is_dir: false, bytes: f.size, files: 1, mtime: f.mtime, atime: f.atime, kind: f.kind, category: f.category })),
+  ].sort((a, b) => b.bytes - a.bytes);
+  return { path: at, bytes: entries.reduce((a, e) => a + e.bytes, 0), files: entries.reduce((a, e) => a + e.files, 0), entries, more: 0 };
+};
+
+const mockDownloads = (): DownloadsReport => {
+  const entries: DownloadEntry[] = (
+    [
+      ["Xcode_16.dmg", 7.1 * GB, false, "disk_image", "installers", 120],
+      ["ubuntu-24.04.iso", 3.8 * GB, false, "disk_image", "installers", 200],
+      ["Claude.dmg", 330 * MB, false, "disk_image", "installers", 90],
+      ["laporan-q3.zip", 840 * MB, false, "archive", "archives", 30],
+      ["rekaman-rapat.mov", 2.2 * GB, false, "video", "video", 260],
+      ["foto-liburan", 1.9 * GB, true, "folder", "folders", 400],
+      ["invoice-2024.pdf", 2 * MB, false, "pdf", "documents", 10],
+      ["IMG_4021.HEIC", 4 * MB, false, "image", "images", 5],
+    ] as [string, number, boolean, FileKind, DownloadGroup, number][]
+  ).map(([name, bytes, is_dir, kind, group, days]) => ({
+    path: `/Users/you/Downloads/${name}`,
+    name,
+    is_dir,
+    bytes,
+    kind,
+    group,
+    mtime: { secs_since_epoch: 1_792_000_000 - days * 86_400, nanos_since_epoch: 0 },
+    atime: { secs_since_epoch: 1_792_000_000 - Math.floor(days / 2) * 86_400, nanos_since_epoch: 0 },
+  }));
+  entries.sort((a, b) => b.bytes - a.bytes);
+  const groups = DOWNLOAD_GROUPS.map((g) => ({ group: g, bytes: entries.filter((e) => e.group === g).reduce((a, e) => a + e.bytes, 0), count: entries.filter((e) => e.group === g).length }))
+    .filter((g) => g.count > 0)
+    .sort((a, b) => b.bytes - a.bytes);
+  return { dir: "/Users/you/Downloads", bytes: entries.reduce((a, e) => a + e.bytes, 0), count: entries.length, groups, entries };
+};
 
 const mockDirs = (root: string): DirSummary[] =>
   [
@@ -203,6 +260,9 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
             [`${root}/Movies`, 1.1 * GB * i],
             [`${root}/Library/Caches`, 0.6 * GB * i],
           ],
+          top_files: mockFiles(root)
+            .slice(0, Math.min(5, i + 1))
+            .map((f) => [f.path, f.size * Math.min(1, i / 3)] as [string, number]),
           files: Math.floor(1_204_311 * frac),
           bytes: total * frac,
         });
@@ -251,6 +311,10 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
       return mockDirs(scanMock.summary?.root ?? "/Users/you").sort((a, b) => b.bytes - a.bytes) as T;
     case "scan_subtree":
       return mockTree(scanMock.summary?.root ?? "/Users/you") as T;
+    case "scan_browse":
+      return mockBrowse(scanMock.summary?.root ?? "/Users/you", (args?.path as string | null) ?? null) as T;
+    case "downloads_report":
+      return mockDownloads() as T;
     case "reveal_path":
       return undefined as T;
     case "trash_paths": {

@@ -165,11 +165,82 @@ export interface ScanSummary {
   categories: CategorySummary[];
 }
 
+export type UnixTime = { secs_since_epoch: number; nanos_since_epoch: number };
+
+export type FileKind =
+  | "video"
+  | "audio"
+  | "image"
+  | "pdf"
+  | "document"
+  | "spreadsheet"
+  | "presentation"
+  | "archive"
+  | "disk_image"
+  | "installer"
+  | "application"
+  | "code"
+  | "log"
+  | "database"
+  | "font"
+  | "library"
+  | "virtual_disk"
+  | "backup"
+  | "folder"
+  | "other";
+
 export interface FileEntry {
   path: string;
   size: number;
-  mtime: { secs_since_epoch: number; nanos_since_epoch: number } | null;
+  mtime: UnixTime | null;
+  atime: UnixTime | null;
   category: Category;
+  kind: FileKind;
+}
+
+// ---- File browser (Jelajah) ----
+
+export interface BrowseEntry {
+  path: string;
+  name: string;
+  is_dir: boolean;
+  bytes: number;
+  files: number;
+  mtime: UnixTime | null;
+  atime: UnixTime | null;
+  kind: FileKind;
+  category: Category | null;
+}
+
+export interface BrowseFolder {
+  path: string;
+  bytes: number;
+  files: number;
+  entries: BrowseEntry[];
+  more: number;
+}
+
+export type DownloadGroup = "installers" | "archives" | "video" | "audio" | "images" | "documents" | "folders" | "other";
+
+export const DOWNLOAD_GROUPS: DownloadGroup[] = ["installers", "archives", "video", "audio", "images", "documents", "folders", "other"];
+
+export interface DownloadEntry {
+  path: string;
+  name: string;
+  is_dir: boolean;
+  bytes: number;
+  kind: FileKind;
+  group: DownloadGroup;
+  mtime: UnixTime | null;
+  atime: UnixTime | null;
+}
+
+export interface DownloadsReport {
+  dir: string;
+  bytes: number;
+  count: number;
+  groups: { group: DownloadGroup; bytes: number; count: number }[];
+  entries: DownloadEntry[];
 }
 
 export interface DirSummary {
@@ -214,6 +285,7 @@ export interface LiveSnapshot {
   current_dir: string;
   categories: [Category, number][];
   top_dirs: [string, number][];
+  top_files: [string, number][];
   files: number;
   bytes: number;
 }
@@ -551,7 +623,11 @@ export interface InstalledApp {
   bytes: number;
   last_used: { secs_since_epoch: number; nanos_since_epoch: number } | null;
   is_system: boolean;
+  /** Whether the binary fits this machine's CPU (macOS). */
+  support: AppSupport;
 }
+
+export type AppSupport = "native" | "rosetta" | "unsupported" | "unknown";
 
 export type LeftoverKind = "support" | "cache" | "preferences" | "logs" | "container" | "group_container" | "saved_state" | "web_kit" | "launch_agent" | "cookies";
 

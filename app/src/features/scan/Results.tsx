@@ -11,17 +11,16 @@ import { Tile } from "@/components/ui/tile";
 import { Copy, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryTiles } from "./CategoryTiles";
-import { LargestList } from "./LargestList";
+import { BrowseView, type BrowseTab } from "./browse/BrowseView";
 import { Sunburst } from "./Sunburst";
 import { Treemap } from "./Treemap";
 import { TrashDialog } from "./TrashDialog";
 import { categoryColor } from "./categoryColor";
 import { AiReport } from "@/features/ai/AiReport";
-import { AiSearch } from "@/features/ai/AiSearch";
 import { WhatIsDialog } from "@/features/ai/WhatIsDialog";
 import { useAiEnabled } from "@/features/ai/useAiEnabled";
 
-type Tab = "summary" | "map" | "largest";
+type Tab = "summary" | "map" | "browse";
 type MapMode = "sunburst" | "treemap";
 
 interface Props {
@@ -38,6 +37,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   const [tab, setTab] = useState<Tab>("summary");
   const [mapMode, setMapMode] = useState<MapMode>("sunburst");
   const [category, setCategory] = useState<Category | null>(null);
+  const [browseTab, setBrowseTab] = useState<BrowseTab>("large");
   const [trashing, setTrashing] = useState<string[] | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   const tabs: { id: Tab; label: string }[] = [
     { id: "summary", label: t("scan.tab_summary") },
     { id: "map", label: t("scan.tab_map") },
-    { id: "largest", label: t("scan.tab_largest") },
+    { id: "browse", label: t("scan.tab_browse") },
   ];
 
   const onTrashClosed = (s: CleanSession | null) => {
@@ -138,7 +138,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
             onClick={() => onNavigate?.("clean")}
           />
           <Tile className="rise rise-2" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("scan.next_dupes")} body={t("scan.next_dupes_body")} onClick={() => onNavigate?.("dedupe")} />
-          <Tile className="rise rise-3" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("scan.next_largest")} body={t("scan.next_largest_body")} onClick={() => setTab("largest")} />
+          <Tile className="rise rise-3" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("scan.next_largest")} body={t("scan.next_largest_body")} onClick={() => { setBrowseTab("large"); setTab("browse"); }} />
         </div>
       </section>
 
@@ -184,18 +184,14 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
               total={summary.total_bytes}
               onSelect={(c) => {
                 setCategory(c);
-                setTab("largest");
+                setBrowseTab("large");
+                setTab("browse");
               }}
             />
           </div>
         )}
         {tab === "map" && (mapMode === "sunburst" ? <Sunburst root={summary.root} onTrash={setTrashing} /> : <Treemap root={summary.root} />)}
-        {tab === "largest" && (
-          <div className="grid gap-6">
-            {aiEnabled && <AiSearch onTrash={setTrashing} />}
-            <LargestList key={category ?? "all"} initialCategory={category} onTrash={setTrashing} removed={removed} onCopied={() => setNotice(t("scan.copied"))} onWhatIs={aiEnabled ? setWhatIs : undefined} />
-          </div>
-        )}
+        {tab === "browse" && <BrowseView key={`${browseTab}:${category ?? "all"}`} root={summary.root} initialTab={browseTab} initialCategory={category} onTrash={setTrashing} removed={removed} onWhatIs={aiEnabled ? setWhatIs : undefined} aiEnabled={aiEnabled} />}
       </div>
 
       {trashing && <TrashDialog paths={trashing} onClose={onTrashClosed} />}

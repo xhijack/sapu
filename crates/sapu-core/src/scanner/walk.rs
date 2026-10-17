@@ -56,6 +56,8 @@ pub struct LiveSnapshot {
     pub categories: Vec<(Category, u64)>,
     /// Largest folders by their own files so far (up to 5).
     pub top_dirs: Vec<(PathBuf, u64)>,
+    /// Largest single files so far (up to 5).
+    pub top_files: Vec<(PathBuf, u64)>,
     pub files: u64,
     pub bytes: u64,
 }
@@ -125,6 +127,7 @@ pub fn scan_with_live(
     let mut since_report = 0u64;
     let mut cat_bytes: HashMap<Category, u64> = HashMap::new();
     let mut top = TopK::default();
+    let mut top_files = TopK::default();
     let mut last_live = Instant::now();
     let mut current_dir = root.clone();
 
@@ -192,11 +195,14 @@ pub fn scan_with_live(
                 current_dir = parent.to_path_buf();
             }
         }
+        top_files.offer(&path, size);
         files.push(FileEntry {
             category,
+            kind: super::kind::FileKind::of(&path),
             path,
             size,
             mtime: meta.mtime,
+            atime: meta.atime,
         });
         if last_live.elapsed() >= LIVE_EVERY {
             last_live = Instant::now();
@@ -207,6 +213,7 @@ pub fn scan_with_live(
                 current_dir: current_dir.clone(),
                 categories,
                 top_dirs: top.items.clone(),
+                top_files: top_files.items.clone(),
                 files: files.len() as u64,
                 bytes: total_bytes,
             });
@@ -304,6 +311,7 @@ fn now_unix() -> u64 {
 struct Stat {
     size: u64,
     mtime: Option<SystemTime>,
+    atime: Option<SystemTime>,
     #[cfg(unix)]
     dev: u64,
     #[cfg(unix)]
@@ -319,6 +327,7 @@ impl From<&std::fs::Metadata> for Stat {
         Self {
             size: crate::platform::disk_usage_of(m),
             mtime: m.modified().ok(),
+            atime: m.accessed().ok(),
             #[cfg(unix)]
             dev: m.dev(),
             #[cfg(unix)]

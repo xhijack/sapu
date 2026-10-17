@@ -41,7 +41,8 @@ describe("ScanView", () => {
     await screen.findByTestId("scan-total", {}, { timeout: 3000 });
 
     await user.click(screen.getByRole("button", { name: /Video/ }));
-    expect(await screen.findByRole("heading", { name: "File terbesar" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "File besar", selected: true })).toBeInTheDocument();
+    expect(await screen.findByRole("columnheader", { name: /Terakhir dibuka/ })).toBeInTheDocument();
     const rows = await screen.findAllByRole("button", { name: "Pindahkan ke Trash" });
     expect(rows.length).toBeGreaterThan(0);
 

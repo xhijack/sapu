@@ -276,6 +276,8 @@ pub fn run() {
             scan::scan_top_files,
             scan::scan_top_dirs,
             scan::scan_subtree,
+            scan::scan_browse,
+            scan::downloads_report,
             scan::reveal_path,
             scan::trash_paths,
             apps::apps_list,
