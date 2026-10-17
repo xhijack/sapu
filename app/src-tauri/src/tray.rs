@@ -2,6 +2,7 @@
 //! shortcuts to open Sapu or run Care. Values refresh every five seconds.
 
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use sapu_core::platform::SystemMonitor;
@@ -22,6 +23,13 @@ fn human(n: u64) -> String {
     } else {
         format!("{v:.1} {}", U[i])
     }
+}
+
+static INSTALLED: AtomicBool = AtomicBool::new(false);
+
+/// Whether the tray icon was installed in this process.
+pub fn is_installed() -> bool {
+    INSTALLED.load(Ordering::Relaxed)
 }
 
 pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
@@ -97,10 +105,11 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             std::thread::sleep(Duration::from_secs(5));
         }
     });
+    INSTALLED.store(true, Ordering::Relaxed);
     Ok(())
 }
 
-fn show_main<R: Runtime>(app: &AppHandle<R>) {
+pub fn show_main<R: Runtime>(app: &AppHandle<R>) {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.show();
         let _ = w.unminimize();

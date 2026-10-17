@@ -1,6 +1,8 @@
 //! Runs official clean-up commands (e.g. `docker system prune`). The only
 //! place in core that spawns processes for clean-up.
 
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::process::Command as Process;
 use std::time::Duration;
 
@@ -21,25 +23,75 @@ pub fn command_line(cmd: &Command) -> String {
         .join(" ")
 }
 
-/// Is the required binary on PATH?
+/// Is the required binary on PATH (or in a well-known tool folder)?
 pub fn is_available(cmd: &Command) -> bool {
     let bin = cmd.requires.as_deref().unwrap_or(&cmd.program);
-    let Some(path) = std::env::var_os("PATH") else {
-        return false;
-    };
-    std::env::split_paths(&path).any(|d| {
-        d.join(bin).is_file()
-            || (cfg!(windows)
-                && ["exe", "cmd", "bat"]
-                    .iter()
-                    .any(|e| d.join(format!("{bin}.{e}")).is_file()))
+    resolve_program(bin).is_some()
+}
+
+/// Folders searched after `PATH`. GUI apps launched from Finder or a
+/// desktop get a minimal `PATH` that misses Homebrew and Docker Desktop.
+fn extra_bin_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    #[cfg(target_os = "macos")]
+    {
+        dirs.push("/usr/local/bin".into());
+        dirs.push("/opt/homebrew/bin".into());
+        dirs.push("/Applications/Docker.app/Contents/Resources/bin".into());
+        if let Some(h) = dirs::home_dir() {
+            dirs.push(h.join(".docker/bin"));
+            dirs.push(h.join(".cargo/bin"));
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        dirs.push("/usr/local/bin".into());
+        dirs.push("/snap/bin".into());
+        if let Some(h) = dirs::home_dir() {
+            dirs.push(h.join(".local/bin"));
+            dirs.push(h.join(".cargo/bin"));
+        }
+    }
+    #[cfg(windows)]
+    if let Some(pf) = std::env::var_os("ProgramFiles") {
+        dirs.push(PathBuf::from(pf).join("Docker/Docker/resources/bin"));
+    }
+    dirs
+}
+
+/// Absolute path of `bin`, searching `PATH` then [`extra_bin_dirs`].
+pub fn resolve_program(bin: &str) -> Option<PathBuf> {
+    if Path::new(bin).is_absolute() {
+        return Path::new(bin).is_file().then(|| PathBuf::from(bin));
+    }
+    let from_path = std::env::var_os("PATH")
+        .map(|p| std::env::split_paths(&p).collect::<Vec<_>>())
+        .unwrap_or_default();
+    from_path.into_iter().chain(extra_bin_dirs()).find_map(|d| {
+        let direct = d.join(bin);
+        if direct.is_file() {
+            return Some(direct);
+        }
+        if cfg!(windows) {
+            for e in ["exe", "cmd", "bat"] {
+                let p = d.join(format!("{bin}.{e}"));
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+        }
+        None
     })
+}
+
+fn program_for(bin: &str) -> PathBuf {
+    resolve_program(bin).unwrap_or_else(|| PathBuf::from(bin))
 }
 
 /// Runs `cmd` with a timeout; never interprets the output.
 pub fn run_command(cmd: &Command, timeout: Duration) -> CommandOutcome {
     let command_line = command_line(cmd);
-    let child = Process::new(&cmd.program)
+    let child = Process::new(program_for(&cmd.program))
         .args(&cmd.args)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
@@ -86,13 +138,27 @@ pub fn run_command(cmd: &Command, timeout: Duration) -> CommandOutcome {
 
 /// Runs the rule's `estimate` command and sums every size-looking token
 /// in its output (e.g. docker's `1.2GB (40%)` lines). Best effort.
-pub fn estimate_bytes(cmd: &Command) -> Option<u64> {
+/// Output of estimate commands already run during one evaluation, keyed by
+/// the full command line, so four Docker rules cost one `docker system df`.
+#[derive(Default)]
+pub struct EstimateCache(HashMap<Vec<String>, Option<String>>);
+
+/// Like [`estimate_bytes`] but reuses outputs recorded in `cache`.
+pub fn estimate_bytes_cached(cmd: &Command, cache: &mut EstimateCache) -> Option<u64> {
     let (program, args) = cmd.estimate.split_first()?;
-    let out = Process::new(program).args(args).output().ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let text = String::from_utf8_lossy(&out.stdout);
+    let text = cache
+        .0
+        .entry(cmd.estimate.clone())
+        .or_insert_with(|| {
+            let out = Process::new(program_for(program))
+                .args(args)
+                .output()
+                .ok()?;
+            out.status
+                .success()
+                .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+        })
+        .clone()?;
     let mut total = 0u64;
     let mut any = false;
     for line in text.lines() {
@@ -171,5 +237,35 @@ mod tests {
         let out = run_command(&cmd, Duration::from_secs(1));
         assert!(!out.success);
         assert!(!is_available(&cmd));
+    }
+
+    #[test]
+    fn estimate_cache_runs_each_command_once() {
+        let cmd = Command {
+            program: "echo".into(),
+            estimate: if cfg!(windows) {
+                vec!["cmd".into(), "/C".into(), "echo Images\t2GB".into()]
+            } else {
+                vec!["printf".into(), "Images\t2GB\n".into()]
+            },
+            ..Default::default()
+        };
+        let mut cache = EstimateCache::default();
+        let a = estimate_bytes_cached(&cmd, &mut cache);
+        let b = estimate_bytes_cached(&cmd, &mut cache);
+        assert_eq!(a, b);
+        assert_eq!(cache.0.len(), 1);
+        assert!(a.is_some_and(|v| v > 0));
+    }
+
+    #[test]
+    fn resolves_absolute_and_relative_programs() {
+        if cfg!(windows) {
+            return;
+        }
+        let sh = resolve_program("sh").expect("sh on PATH");
+        assert!(sh.is_absolute());
+        assert_eq!(resolve_program(sh.to_str().expect("utf8")), Some(sh));
+        assert!(resolve_program("definitely-not-a-real-binary-sapu").is_none());
     }
 }

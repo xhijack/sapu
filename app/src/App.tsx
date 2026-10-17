@@ -29,8 +29,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
   // Views stay mounted once visited so a running scan or a selection
-  // survives navigation; only the active one is visible.
-  const [visited, setVisited] = useState<Set<Screen>>(new Set(["home"]));
+  // survives navigation; only the active one is visible. Clean and Apps are
+  // mounted from the start so their data is ready before the first click.
+  const [visited, setVisited] = useState<Set<Screen>>(new Set(["home", "clean", "apps"]));
   const navigate = (s: Screen) => {
     setVisited((v) => (v.has(s) ? v : new Set([...v, s])));
     setScreen(s);

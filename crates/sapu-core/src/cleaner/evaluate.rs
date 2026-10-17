@@ -87,6 +87,7 @@ pub fn evaluate_with(
 ) -> CleanReport {
     let now = SystemTime::now();
     let mut report = CleanReport::default();
+    let mut estimates = command::EstimateCache::default();
     if profile == Profile::Developer {
         report.projects = super::projects::find_projects(projects, env, protected);
     }
@@ -95,7 +96,9 @@ pub fn evaluate_with(
             continue;
         }
         if let Some(cmd) = &rule.command {
-            report.commands.push(command_finding(rule, cmd));
+            report
+                .commands
+                .push(command_finding(rule, cmd, &mut estimates));
             continue;
         }
         for m in &rule.matches {
@@ -129,7 +132,11 @@ pub fn evaluate_with(
     report
 }
 
-fn command_finding(rule: &Rule, cmd: &Command) -> CommandFinding {
+fn command_finding(
+    rule: &Rule,
+    cmd: &Command,
+    estimates: &mut command::EstimateCache,
+) -> CommandFinding {
     let available = command::is_available(cmd);
     CommandFinding {
         rule_id: rule.id.clone(),
@@ -139,7 +146,7 @@ fn command_finding(rule: &Rule, cmd: &Command) -> CommandFinding {
         command_line: command::command_line(cmd),
         confirm_separately: cmd.confirm_separately,
         estimate_bytes: if available {
-            command::estimate_bytes(cmd)
+            command::estimate_bytes_cached(cmd, estimates)
         } else {
             None
         },

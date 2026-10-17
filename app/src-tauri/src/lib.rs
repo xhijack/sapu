@@ -210,6 +210,19 @@ pub fn run() {
         .with_target(false)
         .try_init();
     let result = tauri::Builder::default()
+        // Closing the window hides it so a running scan, Care or dedupe keeps
+        // going; the app stays in the Dock / tray. Quit (Cmd+Q, tray "Keluar")
+        // still exits. On Windows/Linux this only applies with the tray on,
+        // otherwise there would be no way back to the window.
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let keep_alive = cfg!(target_os = "macos") || tray::is_installed();
+                if keep_alive {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
@@ -309,7 +322,18 @@ pub fn run() {
             history_restore,
             open_disk_access_settings,
         ])
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!())
+        .map(|app| {
+            app.run(|app, event| {
+                // macOS: clicking the Dock icon while the window is hidden.
+                #[cfg(target_os = "macos")]
+                if let tauri::RunEvent::Reopen { .. } = event {
+                    tray::show_main(app);
+                }
+                #[cfg(not(target_os = "macos"))]
+                let _ = (app, event);
+            });
+        });
     if let Err(e) = result {
         tracing::error!(error = %e, "tauri application failed");
         std::process::exit(1);
