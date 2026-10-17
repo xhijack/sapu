@@ -87,7 +87,9 @@ describe("ScanView live + next steps", () => {
     await user.click(await screen.findByRole("button", { name: "Mulai pindai" }));
     expect(await screen.findByText("Sedang membaca", {}, { timeout: 3000 })).toBeInTheDocument();
     expect(await screen.findByText("Folder terbesar sejauh ini")).toBeInTheDocument();
-    await screen.findByTestId("scan-total", {}, { timeout: 5000 });
+    // 40 mock ticks at 30 ms; generous because CI and a parallel cargo
+    // build can slow the simulated scan down a lot.
+    await screen.findByTestId("scan-total", {}, { timeout: 12000 });
     expect(await screen.findByText(/2,6 GB bisa dibebaskan tanpa risiko/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Cari file ganda/ }));
     expect(nav).toHaveBeenCalledWith("dedupe");
