@@ -34,4 +34,4 @@ pub use execute::{DeletePlan, Safety};
 pub use history::{CleanSession, HistoryStore, Outcome, RestoreReport, SessionEntry};
 pub use protected::{ProtectedEntry, ProtectedPaths, Protection};
 pub use snapshot::FileSnapshot;
-pub use validate::ValidationFailure;
+pub use validate::{ValidationFailure, revalidate};
