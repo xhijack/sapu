@@ -10,7 +10,7 @@ use crate::safety::{
     CleanSession, DeletePlan, Disposal, FileSnapshot, PermanentConfirmation, Safety,
 };
 
-use super::command::{CommandOutcome, run_command};
+use super::command::{CommandOutcome, run_command_streaming};
 use super::evaluate::CleanReport;
 
 /// Which rules to run. Defaults to every green finding.
@@ -121,6 +121,9 @@ pub enum RunStep {
     Command {
         rule_id: String,
         command_line: String,
+        /// The latest line the command printed, so a long command visibly
+        /// keeps working. `None` until it prints something.
+        last_line: Option<String>,
     },
 }
 
@@ -261,8 +264,18 @@ pub fn execute_with_steps(
         on_step(RunStep::Command {
             rule_id: c.rule_id.clone(),
             command_line: c.command_line.clone(),
+            last_line: None,
         });
-        let outcome = run_command(cmd, Duration::from_secs(600));
+        let outcome = run_command_streaming(cmd, Duration::from_secs(600), &mut |line| {
+            let line = line.trim();
+            if !line.is_empty() {
+                on_step(RunStep::Command {
+                    rule_id: c.rule_id.clone(),
+                    command_line: c.command_line.clone(),
+                    last_line: Some(line.chars().take(200).collect()),
+                });
+            }
+        });
         if outcome.success {
             run.disposed += 1;
             if let Some(b) = c.estimate_bytes {
@@ -447,6 +460,63 @@ kind = "dir_contents"
         .expect("run");
         assert_eq!(run.unreadable.len(), 1, "only the selected rule's folder");
         assert_eq!(run.unreadable[0].path, home.join(".Trash"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_running_command_reports_its_output_lines_as_progress() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let rules = parse_rules([(
+            "c.toml",
+            r#"
+[rule]
+id = "say"
+name = { id = "x", en = "x" }
+description = { id = "x", en = "x" }
+risk = "green"
+profile = "general"
+group = "tools"
+[command]
+program = "sh"
+args = ["-c", "echo first; echo last"]
+requires = "sh"
+"#,
+        )])
+        .expect("rules");
+        let env = Env::with_home(tmp.path());
+        let report = evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &env,
+        );
+        let safety = Safety::new(
+            ProtectedPaths::os_defaults(),
+            HistoryStore::with_dir(tmp.path().join("h")).expect("h"),
+        );
+        let sel = Selection {
+            rule_ids: ["say".to_string()].into_iter().collect(),
+            ..Default::default()
+        };
+        let mut steps = Vec::new();
+        let run = execute_with_steps(
+            &report,
+            &rules,
+            &sel,
+            true,
+            None,
+            &safety,
+            &mut crate::progress::NoProgress,
+            &mut |s| steps.push(s),
+        )
+        .expect("run");
+        assert_eq!(run.disposed, 1);
+        assert!(
+            steps
+                .iter()
+                .any(|s| matches!(s, RunStep::Command { last_line: Some(l), .. } if l == "last")),
+            "{steps:?}"
+        );
     }
 
     #[test]

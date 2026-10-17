@@ -376,46 +376,87 @@ fn spawn_run(
             let permanent =
                 permanent_ok.then(PermanentConfirmation::i_understand_this_cannot_be_undone);
             let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-            let step = Arc::new(Mutex::new(None::<RunStep>));
-            let step_for_sink = Arc::clone(&step);
+            // Latest progress, re-sent every second by a heartbeat so the
+            // elapsed time keeps moving while one long item or command runs.
+            let last = Arc::new(Mutex::new(CleanRunProgress {
+                items_done: 0,
+                items_total: None,
+                bytes_done: 0,
+                bytes_total: None,
+                fraction: None,
+                step: None,
+                elapsed_secs: 0,
+                eta: Eta::Computing,
+            }));
+            let alive = Arc::new(std::sync::atomic::AtomicBool::new(true));
+            {
+                let (last, alive, app) = (Arc::clone(&last), Arc::clone(&alive), app.clone());
+                std::thread::spawn(move || {
+                    while alive.load(std::sync::atomic::Ordering::Relaxed) {
+                        std::thread::sleep(std::time::Duration::from_secs(1));
+                        if !alive.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
+                        let p = last.lock().ok().map(|mut p| {
+                            p.elapsed_secs = start.elapsed().as_secs();
+                            p.clone()
+                        });
+                        if let Some(p) = p {
+                            let _ = app.emit("clean://run_progress", p);
+                        }
+                    }
+                });
+            }
+            let _stop_heartbeat = StopOnDrop(Arc::clone(&alive));
             let mut est = Estimator::default();
             let app_sink = app.clone();
+            let last_for_sink = Arc::clone(&last);
             let mut sink = FnSink(move |e: &ProgressEvent| {
                 let elapsed = start.elapsed();
                 est.observe(e, elapsed);
                 let measurable = e.items_total.is_some();
-                let _ = app_sink.emit(
-                    "clean://run_progress",
-                    CleanRunProgress {
-                        items_done: e.items_done,
-                        items_total: e.items_total,
-                        bytes_done: e.bytes_done,
-                        bytes_total: e.bytes_total,
-                        fraction: measurable.then(|| est.fraction(e)),
-                        step: step_for_sink.lock().ok().and_then(|s| s.clone()),
-                        elapsed_secs: elapsed.as_secs(),
-                        eta: est.eta(e, elapsed),
-                    },
-                );
+                let Ok(mut p) = last_for_sink.lock() else {
+                    return;
+                };
+                p.items_done = e.items_done;
+                p.items_total = e.items_total;
+                p.bytes_done = e.bytes_done;
+                p.bytes_total = e.bytes_total;
+                p.fraction = measurable.then(|| est.fraction(e));
+                p.elapsed_secs = elapsed.as_secs();
+                p.eta = est.eta(e, elapsed);
+                let _ = app_sink.emit("clean://run_progress", p.clone());
             });
             let app_step = app.clone();
+            let last_for_step = Arc::clone(&last);
+            let mut last_emit = std::time::Instant::now() - std::time::Duration::from_secs(1);
             let mut on_step = |s: RunStep| {
-                if let Ok(mut slot) = step.lock() {
-                    *slot = Some(s.clone());
-                }
-                let _ = app_step.emit(
-                    "clean://run_progress",
-                    CleanRunProgress {
-                        items_done: 0,
-                        items_total: None,
-                        bytes_done: 0,
-                        bytes_total: None,
-                        fraction: None,
-                        step: Some(s),
-                        elapsed_secs: start.elapsed().as_secs(),
-                        eta: Eta::Computing,
-                    },
+                // Output lines of a chatty command arrive fast: keep the latest,
+                // send at most five a second (the heartbeat sends the rest).
+                let is_output = matches!(
+                    &s,
+                    RunStep::Command {
+                        last_line: Some(_),
+                        ..
+                    }
                 );
+                let Ok(mut p) = last_for_step.lock() else {
+                    return;
+                };
+                if !is_output {
+                    p.items_done = 0;
+                    p.items_total = None;
+                    p.bytes_done = 0;
+                    p.bytes_total = None;
+                    p.fraction = None;
+                    p.eta = Eta::Computing;
+                }
+                p.step = Some(s);
+                p.elapsed_secs = start.elapsed().as_secs();
+                if !is_output || last_emit.elapsed() >= std::time::Duration::from_millis(200) {
+                    last_emit = std::time::Instant::now();
+                    let _ = app_step.emit("clean://run_progress", p.clone());
+                }
             };
             let run = execute_with_steps(
                 &report,
@@ -473,4 +514,13 @@ pub fn clean_run_status(session: State<'_, Arc<CleanSession>>) -> CleanRunStatus
 #[tauri::command]
 pub fn clean_run_last(session: State<'_, Arc<CleanSession>>) -> Option<CleanRunReport> {
     session.last_run.lock().ok().and_then(|r| r.clone())
+}
+
+/// Stops a heartbeat thread when the run ends, however it ends.
+struct StopOnDrop(Arc<std::sync::atomic::AtomicBool>);
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.store(false, std::sync::atomic::Ordering::Relaxed);
+    }
 }

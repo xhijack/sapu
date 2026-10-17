@@ -98,6 +98,11 @@ export function CleanPreview({ rows, onClose, onDone }: Props) {
             <span className={`block h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none ${pct === null ? "slide w-1/3" : ""}`} style={pct === null ? undefined : { width: `${pct}%` }} />
           </div>
           <p className="text-sm">{stepLabel(progress)}</p>
+          {progress?.step?.kind === "command" && progress.step.last_line && (
+            <p aria-label={t("clean.run_output")} className="path truncate rounded-md bg-surface-muted px-2 py-1 text-xs" title={progress.step.last_line}>
+              {progress.step.last_line}
+            </p>
+          )}
           <p className="num text-sm text-fg-muted">
             {progress?.items_total ? t("clean.run_counts", { done: progress.items_done, total: progress.items_total }) : ""}
             {progress ? ` · ${formatEta(t, progress.eta)} · ${formatElapsed(t, progress.elapsed_secs)}` : ""}

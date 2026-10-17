@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/Callout";
-import { api } from "@/lib/api";
+import { AccessHelp } from "@/features/access/AccessHelp";
 import { DialogClose } from "@/components/ui/DialogClose";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
@@ -19,16 +19,9 @@ function failures(r: CleanRunReport): [string, string][] {
 export function TrashUnreadable() {
   const { t } = useTranslation();
   return (
-    <Callout
-      tone="review"
-      title={t("trash.unreadable_title")}
-      action={
-        <Button variant="secondary" size="sm" onClick={() => void api.openDiskAccessSettings()}>
-          {t("access.open_settings")}
-        </Button>
-      }
-    >
-      {t("trash.unreadable_body")}
+    <Callout tone="review" title={t("trash.unreadable_title")}>
+      <p>{t("trash.unreadable_body")}</p>
+      <AccessHelp />
     </Callout>
   );
 }

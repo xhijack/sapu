@@ -65,7 +65,6 @@
     "access_body_macos": "macOS stops apps from reading some folders. To let Sapu see the whole disk, grant Full Disk Access.",
     "access_body_windows": "Sapu works without admin rights. Running as administrator makes scans faster and more complete, but it is optional.",
     "access_body_linux": "Sapu only reads folders your account can access. System folders are shown for information only.",
-    "access_open_settings": "Open permission settings",
     "access_granted": "Access granted",
     "access_denied": "Access not granted yet",
     "access_unknown": "Could not determine access status",
@@ -91,8 +90,6 @@
     "scan_unavailable": "Scanning arrives in the next version. For now, explore History and Settings.",
     "language_title": "Bahasa / Language",
     "language_body": "Choose the display language. You can change it any time in Settings.",
-    "access_reveal_app": "Show app location",
-    "access_dev_note": "The development build runs as a plain program, so it has to be added manually with the + button.",
     "access_run_admin": "Run as administrator",
     "access_run_admin_hint": "The app reopens with admin rights. Optional."
   },
@@ -427,7 +424,8 @@
     "done_moved": "{{count}} items ({{size}}) moved to the Trash. The space is freed once the Trash is emptied.",
     "done_permanent": "{{count}} items deleted permanently, {{size}} freed.",
     "done_counts": "{{skipped}} skipped, {{failed}} failed.",
-    "unreadable_title": "{{count}} places could not be read, so they were not cleaned"
+    "unreadable_title": "{{count}} places could not be read, so they were not cleaned",
+    "run_output": "Latest command output"
   },
   "dedupe": {
     "title": "Duplicates",
@@ -744,7 +742,7 @@
     "left_hint": "Usually because a file is in use by another app, locked, or needs permission. Close the app and try again; the reasons are listed below.",
     "recheck_failed": "Sapu could not check the Trash again, so it may not be empty.",
     "unreadable_title": "Sapu cannot open the Trash yet",
-    "unreadable_body": "macOS only lets apps with Full Disk Access read the Trash. Without it Sapu can neither see nor empty it. Turn Sapu on under Full Disk Access, then reopen Sapu."
+    "unreadable_body": "macOS only lets apps with Full Disk Access read the Trash. Without it Sapu can neither see nor empty it."
   },
   "achievement": {
     "title": "Achievement",
@@ -894,6 +892,10 @@
     }
   },
   "access": {
-    "open_settings": "Open Full Disk Access settings"
+    "open_settings": "Open Full Disk Access settings",
+    "own": "Turn on {{name}} under Full Disk Access. If it is not in the list, press + and choose {{name}}. Then quit and reopen {{name}}.",
+    "inherited": "Sapu is running from {{name}} (a development build), so macOS asks about {{name}}, not Sapu. Turn on {{name}} under Full Disk Access (press + if it is missing), then quit and reopen {{name}}.",
+    "unknown": "Turn on the app used to open Sapu under Full Disk Access (Sapu, or Terminal or your code editor when Sapu runs from there), then reopen that app.",
+    "reveal": "Show {{name}} in Finder"
   }
 }

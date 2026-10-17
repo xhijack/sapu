@@ -67,6 +67,8 @@ export const cleanMock = {
   trash: { bytes: 12.4 * GB, items: 1_204, unreadable: [] } as TrashStatus,
   /** What the Trash holds after emptying (items that could not be removed). */
   afterEmpty: { bytes: 0, items: 0, unreadable: [] } as TrashStatus,
+  /** Keep a clean run "running" after its last step (tests of the live view). */
+  holdRun: false,
   /** Folders the check could not read. */
   evalUnreadable: [] as import("./types").UnreadableDir[],
   /** Folders a clean run could not read. */
@@ -78,6 +80,7 @@ export const cleanMock = {
     this.trash = { bytes: 12.4 * GB, items: 1_204, unreadable: [] };
     this.afterEmpty = { bytes: 0, items: 0, unreadable: [] };
     this.runUnreadable = [];
+    this.holdRun = false;
     this.evalUnreadable = [];
     this.lastRun = null;
     this.lastExecute = null;
@@ -242,11 +245,12 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
       const report: CleanRunReport = { dry_run: !apply, outcomes: all, bytes_freed: apply ? bytes : 0, disposed: all.length, skipped: 0, failed: 0, unreadable: cleanMock.runUnreadable };
       // Simulate a run: one step per outcome, then done.
       cleanMock.runRunning = true;
-      const steps: RunStep[] = all.map((o) => (o.kind === "command" ? { kind: "command", rule_id: o.rule_id, command_line: o.outcome.command_line } : { kind: "rule", rule_id: o.kind === "project" ? o.root : o.rule_id, items: 3 }));
+      const steps: RunStep[] = all.map((o) => (o.kind === "command" ? { kind: "command", rule_id: o.rule_id, command_line: o.outcome.command_line, last_line: "Deleted Images: sha256:4f2a" } : { kind: "rule", rule_id: o.kind === "project" ? o.root : o.rule_id, items: 3 }));
       let i = 0;
       const tick = () => {
         i += 1;
         emit<CleanRunProgress>("clean://run_progress", { items_done: i, items_total: steps.length, bytes_done: (bytes * i) / Math.max(1, steps.length), bytes_total: bytes, fraction: i / Math.max(1, steps.length), step: steps[Math.min(i, steps.length) - 1] ?? null, elapsed_secs: i, eta: { kind: "about", secs: (steps.length - i) * 2, nanos: 0 } });
+        if (i >= steps.length && cleanMock.holdRun) return;
         if (i >= steps.length) {
           cleanMock.runRunning = false;
           cleanMock.lastRun = report;

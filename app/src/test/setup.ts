@@ -10,6 +10,7 @@ import { aiMock } from "../lib/aiApi";
 import { careMock } from "../lib/careApi";
 import { appsMock } from "../lib/appsApi";
 import { memoryMock } from "../lib/memoryApi";
+import { resetPermissionOwner } from "../features/access/permissionOwner";
 
 // jsdom reports en-US; the app follows the system locale, so pin it to Indonesian.
 Object.defineProperty(window.navigator, "language", { value: "id-ID", configurable: true });
@@ -24,6 +25,7 @@ beforeEach(async () => {
   appsMock.reset();
   organizeMock.reset();
   memoryMock.reset();
+  resetPermissionOwner();
   await i18n.changeLanguage("id");
 });
 

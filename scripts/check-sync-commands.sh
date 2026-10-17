@@ -10,7 +10,7 @@ ALLOWED=" scan_pause scan_resume scan_cancel scan_status scan_targets scan_start
 clean_check_start clean_check_status clean_last clean_run_start clean_run_status clean_run_last \
 care_last dedupe_cancel dedupe_start organize_analyze_start organize_apply_start \
 organize_status organize_plan organize_targets protected_paths open_url \
-open_disk_access_settings reveal_path reveal_app_binary relaunch_as_admin "
+open_disk_access_settings reveal_path relaunch_as_admin "
 bad=""
 for f in app/src-tauri/src/*.rs; do
   names=$(awk '/#\[tauri::command/ {getline; if ($0 !~ /async fn/) { sub(/.*fn /, ""); sub(/[(<].*/, ""); print } }' "$f")

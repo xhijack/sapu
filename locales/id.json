@@ -65,7 +65,6 @@
     "access_body_macos": "macOS membatasi aplikasi membaca sebagian folder. Agar Sapu bisa melihat seluruh disk, berikan izin Full Disk Access.",
     "access_body_windows": "Sapu bisa berjalan tanpa hak admin. Menjalankan sebagai administrator membuat pemindaian lebih cepat dan lengkap, tetapi tidak wajib.",
     "access_body_linux": "Sapu hanya membaca folder yang bisa diakses oleh akun kamu. Folder sistem ditampilkan sebagai informasi saja.",
-    "access_open_settings": "Buka pengaturan izin",
     "access_granted": "Izin sudah diberikan",
     "access_denied": "Izin belum diberikan",
     "access_unknown": "Status izin belum bisa dipastikan",
@@ -91,8 +90,6 @@
     "scan_unavailable": "Pemindaian hadir di versi berikutnya. Untuk sekarang, jelajahi Riwayat dan Pengaturan.",
     "language_title": "Bahasa / Language",
     "language_body": "Pilih bahasa tampilan. Bisa diubah kapan saja di Pengaturan.",
-    "access_reveal_app": "Tampilkan lokasi aplikasi",
-    "access_dev_note": "Versi pengembangan berjalan sebagai program biasa, jadi perlu ditambahkan manual lewat tombol +.",
     "access_run_admin": "Jalankan sebagai administrator",
     "access_run_admin_hint": "Aplikasi dibuka ulang dengan hak admin. Tidak wajib."
   },
@@ -427,7 +424,8 @@
     "done_moved": "{{count}} item ({{size}}) dipindahkan ke Trash. Ruangnya baru kosong setelah Trash dikosongkan.",
     "done_permanent": "{{count}} item dihapus permanen, {{size}} dibebaskan.",
     "done_counts": "{{skipped}} dilewati, {{failed}} gagal.",
-    "unreadable_title": "{{count}} lokasi tidak bisa dibaca, jadi tidak dibersihkan"
+    "unreadable_title": "{{count}} lokasi tidak bisa dibaca, jadi tidak dibersihkan",
+    "run_output": "Keluaran perintah terakhir"
   },
   "dedupe": {
     "title": "Duplikat",
@@ -744,7 +742,7 @@
     "left_hint": "Biasanya karena file sedang dipakai aplikasi lain, terkunci, atau butuh izin. Tutup aplikasinya lalu coba lagi; alasannya ada di daftar di bawah.",
     "recheck_failed": "Sapu tidak bisa memeriksa ulang isi Trash, jadi belum pasti kosong.",
     "unreadable_title": "Sapu belum bisa membuka Trash",
-    "unreadable_body": "macOS hanya mengizinkan aplikasi dengan Akses Disk Penuh membaca isi Trash. Tanpa izin itu Sapu tidak bisa melihat atau mengosongkannya. Aktifkan Sapu di Akses Disk Penuh, lalu buka ulang Sapu."
+    "unreadable_body": "macOS hanya mengizinkan aplikasi dengan Akses Disk Penuh membaca isi Trash. Tanpa izin itu Sapu tidak bisa melihat atau mengosongkannya."
   },
   "achievement": {
     "title": "Pencapaian",
@@ -894,6 +892,10 @@
     }
   },
   "access": {
-    "open_settings": "Buka pengaturan Akses Disk Penuh"
+    "open_settings": "Buka pengaturan Akses Disk Penuh",
+    "own": "Aktifkan {{name}} di Akses Disk Penuh. Kalau belum ada di daftar, tekan + lalu pilih {{name}}. Setelah itu tutup dan buka ulang {{name}}.",
+    "inherited": "Sapu sedang dijalankan dari {{name}} (versi pengembangan), jadi macOS menanyakan izin untuk {{name}}, bukan Sapu. Aktifkan {{name}} di Akses Disk Penuh (tekan + kalau belum ada), lalu tutup dan buka ulang {{name}}.",
+    "unknown": "Aktifkan aplikasi yang dipakai untuk membuka Sapu di Akses Disk Penuh (Sapu, atau Terminal/editor kode kalau Sapu dijalankan dari sana), lalu buka ulang aplikasi itu.",
+    "reveal": "Tunjukkan {{name}} di Finder"
   }
 }

@@ -74,6 +74,9 @@ pub struct AppInfo {
     os: &'static str,
     full_disk_access: DiskAccess,
     dev_tools: Vec<DevTool>,
+    /// The app macOS asks about for Full Disk Access (Sapu, or the editor
+    /// or terminal a development build runs from).
+    permission_owner: Option<sapu_core::platform::PermissionOwner>,
 }
 
 #[tauri::command]
@@ -85,6 +88,7 @@ async fn app_info() -> CmdResult<AppInfo> {
                 os: std::env::consts::OS,
                 full_disk_access: full_disk_access(),
                 dev_tools: detect_dev_tools(),
+                permission_owner: sapu_core::platform::permission_owner(),
             }
         })
     })
@@ -169,17 +173,26 @@ async fn system_snapshot(
 /// Reveals the running binary in the file manager so the user can drag it
 /// into the Full Disk Access list (dev builds are not registered apps).
 #[tauri::command]
-fn reveal_app_binary(app: tauri::AppHandle) -> CmdResult<()> {
-    let exe = std::env::current_exe().map_err(|e| CommandError::new("io", e.to_string()))?;
-    // Inside an .app bundle, point at the bundle rather than Contents/MacOS/<bin>.
-    let target = exe
-        .ancestors()
-        .find(|p| p.extension().is_some_and(|e| e == "app"))
-        .map(std::path::Path::to_path_buf)
-        .unwrap_or(exe);
-    app.opener()
-        .reveal_item_in_dir(&target)
-        .map_err(|e| CommandError::new("opener", e.to_string()))
+async fn reveal_app_binary(app: tauri::AppHandle) -> CmdResult<()> {
+    crate::off_main(move || {
+        // The app macOS asks about: Sapu.app, or for a development build the
+        // editor or terminal it runs from. Fallback: this binary or bundle.
+        let target = match sapu_core::platform::permission_owner() {
+            Some(owner) => owner.path,
+            None => {
+                let exe =
+                    std::env::current_exe().map_err(|e| CommandError::new("io", e.to_string()))?;
+                exe.ancestors()
+                    .find(|p| p.extension().is_some_and(|e| e == "app"))
+                    .map(std::path::Path::to_path_buf)
+                    .unwrap_or(exe)
+            }
+        };
+        app.opener()
+            .reveal_item_in_dir(&target)
+            .map_err(|e| CommandError::new("opener", e.to_string()))
+    })
+    .await
 }
 
 /// Windows: start a second, elevated instance of Sapu and quit this one.

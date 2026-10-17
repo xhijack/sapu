@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { api } from "@/lib/api";
+import { api, mock } from "@/lib/api";
 import { cleanMock } from "@/lib/cleanApi";
 import { HomeView } from "./HomeView";
 
@@ -68,9 +68,24 @@ describe("HomeView empty trash", () => {
     const open = vi.spyOn(api, "openDiskAccessSettings");
     cleanMock.trash = { bytes: 0, items: 0, unreadable: ["/Users/you/.Trash"] };
     render(<HomeView onNavigate={vi.fn()} />);
-    const note = await screen.findByText(/Sapu belum bisa membuka Trash/);
-    await user.click(within(note.closest('[role="note"]') as HTMLElement).getByRole("button", { name: "Buka pengaturan Akses Disk Penuh" }));
+    const title = await screen.findByText(/Sapu belum bisa membuka Trash/);
+    const note = title.closest('[role="note"]') as HTMLElement;
+    expect(await within(note).findByText(/Aktifkan Sapu di Akses Disk Penuh/)).toBeInTheDocument();
+    await user.click(within(note).getByRole("button", { name: "Buka pengaturan Akses Disk Penuh" }));
     expect(open).toHaveBeenCalled();
     open.mockRestore();
+  });
+
+  it("names the app that really needs the permission when Sapu runs from another app", async () => {
+    const user = userEvent.setup();
+    const reveal = vi.spyOn(api, "revealAppBinary");
+    mock.info = { ...mock.info, permission_owner: { name: "Visual Studio Code", path: "/Applications/Visual Studio Code.app", inherited: true } };
+    cleanMock.trash = { bytes: 0, items: 0, unreadable: ["/Users/you/.Trash"] };
+    render(<HomeView onNavigate={vi.fn()} />);
+    const note = (await screen.findByText(/Sapu belum bisa membuka Trash/)).closest('[role="note"]') as HTMLElement;
+    expect(await within(note).findByText(/dijalankan dari Visual Studio Code/)).toBeInTheDocument();
+    await user.click(within(note).getByRole("button", { name: "Tunjukkan Visual Studio Code di Finder" }));
+    expect(reveal).toHaveBeenCalled();
+    reveal.mockRestore();
   });
 });

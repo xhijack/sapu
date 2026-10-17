@@ -29,11 +29,21 @@ export type DevTool =
   | "android_sdk"
   | "git";
 
+export interface PermissionOwner {
+  /** Name shown in System Settings, e.g. "Visual Studio Code". */
+  name: string;
+  path: string;
+  /** True for a development build started from another app. */
+  inherited: boolean;
+}
+
 export interface AppInfo {
   version: string;
   os: string;
   full_disk_access: DiskAccess;
   dev_tools: DevTool[];
+  /** The app macOS asks about for Full Disk Access; null when unknown. */
+  permission_owner?: PermissionOwner | null;
 }
 
 export type Protection = "Exact" | "Subtree";
@@ -391,7 +401,7 @@ export interface CleanCheckProgress {
   eta: Eta;
 }
 
-export type RunStep = { kind: "rule"; rule_id: string; items: number } | { kind: "command"; rule_id: string; command_line: string };
+export type RunStep = { kind: "rule"; rule_id: string; items: number } | { kind: "command"; rule_id: string; command_line: string; last_line?: string | null };
 
 export interface CleanRunProgress {
   items_done: number;

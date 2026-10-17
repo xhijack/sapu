@@ -90,6 +90,24 @@ fn program_for(bin: &str) -> PathBuf {
 
 /// Runs `cmd` with a timeout; never interprets the output.
 pub fn run_command(cmd: &Command, timeout: Duration) -> CommandOutcome {
+    run_command_streaming(cmd, timeout, &mut |_| {})
+}
+
+/// Most output kept per stream; the rest scrolls away (the person sees each
+/// line live through `on_line`).
+const KEEP_BYTES: usize = 256 * 1024;
+
+/// Runs `cmd` and hands every output line to `on_line` as it appears, so a
+/// long command shows it is alive. Both pipes are drained while the command
+/// runs: reading only at the end blocks a chatty command on a full pipe.
+pub fn run_command_streaming(
+    cmd: &Command,
+    timeout: Duration,
+    on_line: &mut dyn FnMut(&str),
+) -> CommandOutcome {
+    use std::io::BufRead;
+    use std::sync::mpsc::{RecvTimeoutError, channel};
+
     let command_line = command_line(cmd);
     let child = Process::new(program_for(&cmd.program))
         .args(&cmd.args)
@@ -108,31 +126,81 @@ pub fn run_command(cmd: &Command, timeout: Duration) -> CommandOutcome {
             };
         }
     };
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => break,
-            Ok(None) if start.elapsed() > timeout => {
-                let _ = child.kill();
-                break;
+    let (tx, rx) = channel::<(bool, String)>();
+    let mut readers = Vec::new();
+    if let Some(out) = child.stdout.take() {
+        let tx = tx.clone();
+        readers.push(std::thread::spawn(move || {
+            for line in std::io::BufReader::new(out).lines().map_while(Result::ok) {
+                if tx.send((false, line)).is_err() {
+                    break;
+                }
             }
-            Ok(None) => std::thread::sleep(Duration::from_millis(100)),
-            Err(_) => break,
+        }));
+    }
+    if let Some(err) = child.stderr.take() {
+        let tx = tx.clone();
+        readers.push(std::thread::spawn(move || {
+            for line in std::io::BufReader::new(err).lines().map_while(Result::ok) {
+                if tx.send((true, line)).is_err() {
+                    break;
+                }
+            }
+        }));
+    }
+    drop(tx);
+
+    let start = std::time::Instant::now();
+    let (mut stdout, mut stderr) = (String::new(), String::new());
+    let mut killed = false;
+    loop {
+        match rx.recv_timeout(Duration::from_millis(100)) {
+            Ok((is_err, line)) => {
+                on_line(&line);
+                keep_tail(if is_err { &mut stderr } else { &mut stdout }, &line);
+            }
+            // Both pipes closed: the command (and anything it started) is done.
+            Err(RecvTimeoutError::Disconnected) => break,
+            Err(RecvTimeoutError::Timeout) => {}
+        }
+        if !killed && start.elapsed() > timeout {
+            let _ = child.kill();
+            killed = true;
+        }
+        // A grandchild may keep a pipe open after the kill; do not wait forever.
+        if killed && start.elapsed() > timeout + Duration::from_secs(5) {
+            break;
         }
     }
-    match child.wait_with_output() {
-        Ok(out) => CommandOutcome {
-            command_line,
-            success: out.status.success(),
-            stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
-        },
-        Err(e) => CommandOutcome {
-            command_line,
-            success: false,
-            stdout: String::new(),
-            stderr: e.to_string(),
-        },
+    let status = child.wait();
+    for r in readers {
+        if r.is_finished() {
+            let _ = r.join();
+        }
+    }
+    if killed {
+        stderr.push_str(&format!(
+            "stopped after {} s without finishing\n",
+            timeout.as_secs()
+        ));
+    }
+    CommandOutcome {
+        command_line,
+        success: !killed && status.map(|s| s.success()).unwrap_or(false),
+        stdout,
+        stderr,
+    }
+}
+
+fn keep_tail(buf: &mut String, line: &str) {
+    buf.push_str(line);
+    buf.push('\n');
+    if buf.len() > KEEP_BYTES {
+        let mut cut = buf.len() - KEEP_BYTES;
+        while !buf.is_char_boundary(cut) {
+            cut += 1;
+        }
+        buf.drain(..cut);
     }
 }
 
@@ -226,6 +294,36 @@ mod tests {
         let out = run_command(&cmd, Duration::from_secs(5));
         assert!(out.success);
         assert!(out.stdout.contains("hi"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_command_that_prints_a_lot_finishes_and_streams_its_lines() {
+        // Far more than a pipe buffer: reading only at the end deadlocks
+        // the child until the timeout.
+        let cmd = Command {
+            program: "sh".into(),
+            args: vec![
+                "-c".into(),
+                "i=0; while [ $i -lt 20000 ]; do echo line$i; i=$((i+1)); done; echo done".into(),
+            ],
+            ..Default::default()
+        };
+        let start = std::time::Instant::now();
+        let mut lines = 0usize;
+        let mut last = String::new();
+        let out = run_command_streaming(&cmd, Duration::from_secs(20), &mut |l: &str| {
+            lines += 1;
+            last = l.to_string();
+        });
+        assert!(out.success, "{}", out.stderr);
+        assert!(
+            start.elapsed() < Duration::from_secs(15),
+            "took {:?}",
+            start.elapsed()
+        );
+        assert!(lines >= 20_001, "{lines}");
+        assert_eq!(last, "done");
     }
 
     #[test]

@@ -1,6 +1,7 @@
+import { AccessHelp } from "@/features/access/AccessHelp";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, Trash2, History, Lock, Eye, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Trash2, History, Lock, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardText, CardTitle } from "@/components/ui/card";
 import { ChoiceGroup } from "@/components/ui/choice";
@@ -90,21 +91,12 @@ export function AccessStep({ info }: { info: AppInfo | null }) {
       )}
       {os === "macos" && (
         <div className="grid gap-3">
-          <Button variant="outline" onClick={() => void api.openDiskAccessSettings()}>
-            <ExternalLink aria-hidden className="h-4 w-4" />
-            {t("onboarding.access_open_settings")}
-          </Button>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-fg-muted">
             <li>{t("onboarding.access_steps_macos_1")}</li>
             <li>{t("onboarding.access_steps_macos_2")}</li>
             <li>{t("onboarding.access_steps_macos_3")}</li>
           </ol>
-          <div>
-            <Button variant="secondary" size="sm" onClick={() => void api.revealAppBinary()}>
-              {t("onboarding.access_reveal_app")}
-            </Button>
-          </div>
-          {import.meta.env.DEV && <p className="text-xs text-fg-muted">{t("onboarding.access_dev_note")}</p>}
+          <AccessHelp />
           <AccessStatus status={status} />
         </div>
       )}

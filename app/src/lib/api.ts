@@ -45,6 +45,7 @@ export const mock = {
     os: "macos",
     full_disk_access: "denied",
     dev_tools: ["docker", "node"],
+    permission_owner: { name: "Sapu", path: "/Applications/Sapu.app", inherited: false },
   } as AppInfo,
   history: [] as CleanSession[],
   protected: [
@@ -68,7 +69,7 @@ export const mock = {
   reset() {
     this.settings = { ...defaultSettings };
     this.history = [];
-    this.info = { ...this.info, full_disk_access: "denied" };
+    this.info = { ...this.info, full_disk_access: "denied", permission_owner: { name: "Sapu", path: "/Applications/Sapu.app", inherited: false } };
   },
 };
 

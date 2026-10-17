@@ -68,6 +68,18 @@ describe("CleanView", () => {
     expect(within(note).getByRole("button", { name: "Buka pengaturan Akses Disk Penuh" })).toBeInTheDocument();
   });
 
+  it("shows a command's latest output while it runs, not just a spinner", async () => {
+    const user = userEvent.setup();
+    cleanMock.holdRun = true;
+    render(<CleanView profile="developer" onSeeHistory={vi.fn()} />);
+    await screen.findByText("docker image prune -f", { exact: false });
+    await user.click(screen.getByRole("button", { name: /Bersihkan/ }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Bersihkan" }));
+    const running = await screen.findByRole("dialog", { name: /Membersihkan/ });
+    expect(await within(running).findByText("Deleted Images: sha256:4f2a", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+
   it("nothing is executed when the preview is cancelled", async () => {
     const user = userEvent.setup();
     render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
