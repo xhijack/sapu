@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cpu, HardDrive, MemoryStick } from "lucide-react";
+import { Cpu, HardDrive, MemoryStick, Wind } from "lucide-react";
 import { api } from "@/lib/api";
+import { requestMemoryDialog } from "@/features/memory/memoryBus";
 import { careApi } from "@/lib/careApi";
 import { cleanApi } from "@/lib/cleanApi";
 import { dedupeApi } from "@/lib/dedupeApi";
 import { formatBytes, formatEta } from "@/lib/format";
 import { scanApi } from "@/lib/scanApi";
-import type { Eta, SystemSnapshot } from "@/lib/types";
+import type { Eta, SpaceLevel, SystemSnapshot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { Screen } from "./Shell";
 
@@ -16,6 +17,8 @@ const POLL_MS = 5000;
 type Task = { screen: Screen; label: string; fraction: number | null; eta: Eta } | null;
 
 const tone = (pct: number) => (pct >= 90 ? "bg-gauge-danger" : pct >= 75 ? "bg-gauge-warn" : "bg-gauge-ok");
+/** Disk colour comes from core's SpaceLevel so the app and the tray agree. */
+const levelTone = (level: SpaceLevel | undefined) => (level === "critical" ? "bg-gauge-danger" : level === "low" ? "bg-gauge-warn" : "bg-gauge-ok");
 
 /**
  * One quiet line at the bottom of every screen: main disk, memory, CPU
@@ -72,7 +75,7 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
     <footer aria-label={t("statusbar.label")} className="flex h-8 shrink-0 items-center gap-4 overflow-hidden whitespace-nowrap border-t border-border bg-surface px-4 text-[12px] text-fg-muted" style={{ backdropFilter: "blur(16px)" }}>
       <span className="flex shrink-0 items-center gap-1.5" title={main ? `${main.name || main.mount}: ${diskPct}%` : undefined}>
         <HardDrive aria-hidden className="h-3.5 w-3.5" />
-        <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", tone(diskPct))} />
+        <span aria-hidden data-level={main?.level ?? "ok"} className={cn("h-1.5 w-1.5 rounded-full", levelTone(main?.level))} />
         <span className="num">{main ? t("statusbar.disk", { size: formatBytes(main.available_bytes, lang), total: formatBytes(main.total_bytes, lang), pct: 100 - diskPct }) : t("home.measuring")}</span>
         {main && main.available_bytes < main.recommended_free_bytes && (
           <span className="num rounded-full bg-risk-review-bg px-1.5 text-[11px] text-risk-review-fg" title={t("statusbar.disk_low_hint")}>
@@ -84,6 +87,10 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
         <MemoryStick aria-hidden className="h-3.5 w-3.5" />
         <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", tone(memPct ?? 0))} />
         <span className="num">{memPct === null ? "…" : t("statusbar.memory", { pct: memPct })}</span>
+        <button type="button" onClick={requestMemoryDialog} title={t("memory.free_hint")} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-accent hover:bg-surface-muted">
+          <Wind aria-hidden className="h-3 w-3" />
+          {t("memory.free_button")}
+        </button>
       </span>
       <span className="flex shrink-0 items-center gap-1.5" title={snap ? t("home.cores_hint", { count: snap.cpu_count, avg: cpuPct ?? 0 }) : undefined}>
         <Cpu aria-hidden className="h-3.5 w-3.5" />

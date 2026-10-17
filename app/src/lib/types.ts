@@ -499,6 +499,9 @@ export type FilePreview = { kind: "image"; data_url: string } | { kind: "text"; 
 
 // ---- System (home dashboard) ----
 
+/** Free-space band shared with the tray (core `care::space_level`). */
+export type SpaceLevel = "ok" | "low" | "critical";
+
 export interface DiskInfo {
   name: string;
   mount: string;
@@ -507,6 +510,7 @@ export interface DiskInfo {
   removable: boolean;
   file_system: string;
   recommended_free_bytes: number;
+  level: SpaceLevel;
 }
 
 export interface SystemSnapshot {
@@ -518,6 +522,52 @@ export interface SystemSnapshot {
   swap_used_bytes: number;
   disks: DiskInfo[];
   os_name: string;
+}
+
+// ---- Memory ("Bebaskan memori") ----
+
+export type PressureLevel = "normal" | "elevated" | "high";
+
+export interface MemoryPressure {
+  total_bytes: number;
+  used_bytes: number;
+  available_bytes: number;
+  used_pct: number;
+  swap_used_bytes: number;
+  level: PressureLevel;
+}
+
+export interface MemoryProcess {
+  pid: number;
+  name: string;
+  memory_bytes: number;
+  process_count: number;
+  exe: string | null;
+  bundle_id: string | null;
+  quittable: boolean;
+}
+
+export interface MemorySnapshot {
+  pressure: MemoryPressure;
+  processes: MemoryProcess[];
+}
+
+export type QuitMethod = "apple_event" | "sigterm" | "taskkill" | "refused";
+
+export interface QuitOutcome {
+  pid: number;
+  name: string;
+  method: QuitMethod;
+  requested: boolean;
+  message: string;
+}
+
+export interface PurgeOutcome {
+  ok: boolean;
+  cancelled: boolean;
+  used_before_bytes: number;
+  used_after_bytes: number;
+  message: string;
 }
 
 // ---- AI (PRD §12) ----
