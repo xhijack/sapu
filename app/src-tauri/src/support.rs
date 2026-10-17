@@ -24,13 +24,16 @@ pub fn record_rate(kind: OpKind, amount: u64, elapsed: Duration) {
 /// Rounded estimate in seconds for processing `amount` units, when the
 /// device has history for this operation.
 #[tauri::command]
-pub fn estimate_duration(kind: OpKind, amount: u64) -> CmdResult<Option<u64>> {
-    let Some(path) = RateHistory::default_path() else {
-        return Ok(None);
-    };
-    Ok(RateHistory::load(&path)
-        .estimate(kind, amount)
-        .map(|d| d.as_secs()))
+pub async fn estimate_duration(kind: OpKind, amount: u64) -> CmdResult<Option<u64>> {
+    crate::off_main(move || {
+        let Some(path) = RateHistory::default_path() else {
+            return Ok(None);
+        };
+        Ok(RateHistory::load(&path)
+            .estimate(kind, amount)
+            .map(|d| d.as_secs()))
+    })
+    .await
 }
 
 const NOTIFY_AFTER: Duration = Duration::from_secs(10);

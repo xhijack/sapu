@@ -32,6 +32,8 @@ jobs:
         run: sh scripts/check-forbidden-fs.sh
       - name: AI crate isolation
         run: sh scripts/check-ai-isolation.sh
+      - name: No blocking work on the main thread
+        run: sh scripts/check-sync-commands.sh
       - name: Format
         run: cargo fmt --all --check
       - name: Clippy

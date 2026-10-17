@@ -35,44 +35,47 @@ pub async fn apps_orphans() -> CmdResult<Vec<Leftover>> {
 }
 
 #[tauri::command]
-pub fn apps_is_running(path: PathBuf) -> bool {
-    is_running(&path)
+pub async fn apps_is_running(path: PathBuf) -> CmdResult<bool> {
+    crate::off_main(move || Ok(is_running(&path))).await
 }
 
 /// Move the bundle (optional) and the chosen leftovers to the Trash.
 /// Refused while the app is running or when it is OS-owned.
 #[tauri::command]
-pub fn apps_uninstall(
+pub async fn apps_uninstall(
     app: Option<InstalledApp>,
     leftovers: Vec<PathBuf>,
     apply: bool,
 ) -> CmdResult<CleanSession> {
-    if let Some(a) = &app {
-        if a.is_system {
-            return Err(CommandError::new("protected", "system app"));
+    crate::off_main(move || {
+        if let Some(a) = &app {
+            if a.is_system {
+                return Err(CommandError::new("protected", "system app"));
+            }
+            if apply && is_running(&a.path) {
+                return Err(CommandError::new("app_running", "quit the app first"));
+            }
         }
-        if apply && is_running(&a.path) {
-            return Err(CommandError::new("app_running", "quit the app first"));
+        let mut paths: Vec<PathBuf> = leftovers;
+        if let Some(a) = &app {
+            paths.insert(0, a.path.clone());
         }
-    }
-    let mut paths: Vec<PathBuf> = leftovers;
-    if let Some(a) = &app {
-        paths.insert(0, a.path.clone());
-    }
-    if paths.is_empty() {
-        return Err(CommandError::new("io", "nothing selected"));
-    }
-    let scope = DeletePlan::common_scope(paths.iter().map(PathBuf::as_path))
-        .ok_or_else(|| CommandError::new("io", "no common scope"))?;
-    let mut plan = DeletePlan::new(scope);
-    for p in &paths {
-        plan.push(FileSnapshot::capture(p)?);
-    }
-    if apply {
-        plan = plan.apply();
-    }
-    let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-    Ok(safety.execute(&plan, &mut NoProgress)?)
+        if paths.is_empty() {
+            return Err(CommandError::new("io", "nothing selected"));
+        }
+        let scope = DeletePlan::common_scope(paths.iter().map(PathBuf::as_path))
+            .ok_or_else(|| CommandError::new("io", "no common scope"))?;
+        let mut plan = DeletePlan::new(scope);
+        for p in &paths {
+            plan.push(FileSnapshot::capture(p)?);
+        }
+        if apply {
+            plan = plan.apply();
+        }
+        let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
+        Ok(safety.execute(&plan, &mut NoProgress)?)
+    })
+    .await
 }
 
 /// App icon as a PNG data URL (macOS: converted from the bundle's .icns

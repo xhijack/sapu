@@ -81,52 +81,65 @@ pub struct PreviousScan {
 }
 
 #[tauri::command]
-pub fn scan_previous(root: PathBuf) -> Option<PreviousScan> {
-    let dir = ScanStats::default_dir().ok()?;
-    let root = std::path::absolute(&root).ok()?;
-    let prev = ScanStats::load(&dir, &root)?;
-    let estimated_secs = sapu_core::eta::RateHistory::default_path()
-        .and_then(|p| {
-            sapu_core::eta::RateHistory::load(&p).estimate(OpKind::Scan, prev.total_bytes)
-        })
-        .map(|d| d.as_secs());
-    Some(PreviousScan {
-        finished_at_unix: prev.finished_at_unix,
-        total_bytes: prev.total_bytes,
-        file_count: prev.file_count,
-        estimated_secs,
+pub async fn scan_previous(root: PathBuf) -> CmdResult<Option<PreviousScan>> {
+    crate::off_main(move || {
+        Ok((|| {
+            let dir = ScanStats::default_dir().ok()?;
+            let root = std::path::absolute(&root).ok()?;
+            let prev = ScanStats::load(&dir, &root)?;
+            let estimated_secs = sapu_core::eta::RateHistory::default_path()
+                .and_then(|p| {
+                    sapu_core::eta::RateHistory::load(&p).estimate(OpKind::Scan, prev.total_bytes)
+                })
+                .map(|d| d.as_secs());
+            Some(PreviousScan {
+                finished_at_unix: prev.finished_at_unix,
+                total_bytes: prev.total_bytes,
+                file_count: prev.file_count,
+                estimated_secs,
+            })
+        })())
     })
+    .await
 }
 
 /// Recent finished scans (newest first) for the home screen.
 #[tauri::command]
-pub fn scan_history(limit: usize) -> Vec<sapu_core::scanner::ScanLogEntry> {
-    ScanStats::default_dir()
-        .map(|d| ScanStats::read_log(&d, limit.min(100)))
-        .unwrap_or_default()
+pub async fn scan_history(limit: usize) -> CmdResult<Vec<sapu_core::scanner::ScanLogEntry>> {
+    crate::off_main(move || {
+        Ok({
+            ScanStats::default_dir()
+                .map(|d| ScanStats::read_log(&d, limit.min(100)))
+                .unwrap_or_default()
+        })
+    })
+    .await
 }
 
 /// macOS Quick Look for a file (Space in Finder); elsewhere reveals the file.
 #[tauri::command]
-pub fn quick_look(app: AppHandle, path: PathBuf) -> CmdResult<()> {
-    #[cfg(target_os = "macos")]
-    {
-        let _ = &app;
-        std::process::Command::new("qlmanage")
-            .arg("-p")
-            .arg(&path)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .map(|_| ())
-            .map_err(|e| CommandError::new("io", e.to_string()))
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        app.opener()
-            .reveal_item_in_dir(&path)
-            .map_err(|e| CommandError::new("opener", e.to_string()))
-    }
+pub async fn quick_look(app: AppHandle, path: PathBuf) -> CmdResult<()> {
+    crate::off_main(move || {
+        #[cfg(target_os = "macos")]
+        {
+            let _ = &app;
+            std::process::Command::new("qlmanage")
+                .arg("-p")
+                .arg(&path)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .map(|_| ())
+                .map_err(|e| CommandError::new("io", e.to_string()))
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            app.opener()
+                .reveal_item_in_dir(&path)
+                .map_err(|e| CommandError::new("opener", e.to_string()))
+        }
+    })
+    .await
 }
 
 #[tauri::command]
@@ -290,49 +303,60 @@ fn result(session: &ScanSession) -> CmdResult<Arc<ScanResult>> {
 }
 
 #[tauri::command]
-pub fn scan_summary(session: State<'_, Arc<ScanSession>>) -> CmdResult<ScanSummary> {
-    Ok(result(&session)?.summary())
+pub async fn scan_summary(session: State<'_, Arc<ScanSession>>) -> CmdResult<ScanSummary> {
+    let session = session.inner().clone();
+    crate::off_main(move || Ok(result(&session)?.summary())).await
 }
 
 #[tauri::command]
-pub fn scan_top_files(
+pub async fn scan_top_files(
     session: State<'_, Arc<ScanSession>>,
     filter: FileFilter,
     limit: usize,
 ) -> CmdResult<Vec<FileEntry>> {
-    Ok(result(&session)?.top_files(&filter, limit.min(1000)))
+    let session = session.inner().clone();
+    crate::off_main(move || Ok(result(&session)?.top_files(&filter, limit.min(1000)))).await
 }
 
 #[tauri::command]
-pub fn scan_top_dirs(
+pub async fn scan_top_dirs(
     session: State<'_, Arc<ScanSession>>,
     limit: usize,
 ) -> CmdResult<Vec<DirSummary>> {
-    Ok(result(&session)?.top_dirs(limit.min(1000)))
+    let session = session.inner().clone();
+    crate::off_main(move || Ok(result(&session)?.top_dirs(limit.min(1000)))).await
 }
 
 #[tauri::command]
-pub fn scan_subtree(
+pub async fn scan_subtree(
     session: State<'_, Arc<ScanSession>>,
     path: Option<PathBuf>,
     depth: usize,
     limit: usize,
 ) -> CmdResult<Option<TreeNode>> {
-    let r = result(&session)?;
-    let path = path.unwrap_or_else(|| r.root.clone());
-    Ok(r.subtree(&path, depth.min(3), limit.min(200)))
+    let session = session.inner().clone();
+    crate::off_main(move || {
+        let r = result(&session)?;
+        let path = path.unwrap_or_else(|| r.root.clone());
+        Ok(r.subtree(&path, depth.min(3), limit.min(200)))
+    })
+    .await
 }
 
 /// Direct children of one scanned folder for the file browser.
 #[tauri::command]
-pub fn scan_browse(
+pub async fn scan_browse(
     session: State<'_, Arc<ScanSession>>,
     path: Option<PathBuf>,
     limit: usize,
 ) -> CmdResult<Option<sapu_core::scanner::BrowseFolder>> {
-    let r = result(&session)?;
-    let path = path.unwrap_or_else(|| r.root.clone());
-    Ok(r.browse(&path, limit.clamp(1, 2000)))
+    let session = session.inner().clone();
+    crate::off_main(move || {
+        let r = result(&session)?;
+        let path = path.unwrap_or_else(|| r.root.clone());
+        Ok(r.browse(&path, limit.clamp(1, 2000)))
+    })
+    .await
 }
 
 /// Downloads folder grouped by kind; independent of any scan.
@@ -360,16 +384,22 @@ pub fn reveal_path(app: AppHandle, path: PathBuf) -> CmdResult<()> {
 /// Moves the given items to the trash through the safety layer. Dry run
 /// unless `apply`; the returned session is the preview or the record.
 #[tauri::command]
-pub fn trash_paths(paths: Vec<PathBuf>, apply: bool) -> CmdResult<sapu_core::safety::CleanSession> {
-    let scope = DeletePlan::common_scope(paths.iter().map(PathBuf::as_path))
-        .ok_or_else(|| CommandError::new("io", "cannot derive a common scope"))?;
-    let mut plan = DeletePlan::new(scope);
-    for p in &paths {
-        plan.push(FileSnapshot::capture(p)?);
-    }
-    if apply {
-        plan = plan.apply();
-    }
-    let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-    Ok(safety.execute(&plan, &mut sapu_core::progress::NoProgress)?)
+pub async fn trash_paths(
+    paths: Vec<PathBuf>,
+    apply: bool,
+) -> CmdResult<sapu_core::safety::CleanSession> {
+    crate::off_main(move || {
+        let scope = DeletePlan::common_scope(paths.iter().map(PathBuf::as_path))
+            .ok_or_else(|| CommandError::new("io", "cannot derive a common scope"))?;
+        let mut plan = DeletePlan::new(scope);
+        for p in &paths {
+            plan.push(FileSnapshot::capture(p)?);
+        }
+        if apply {
+            plan = plan.apply();
+        }
+        let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
+        Ok(safety.execute(&plan, &mut sapu_core::progress::NoProgress)?)
+    })
+    .await
 }

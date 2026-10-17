@@ -132,17 +132,22 @@ pub fn dedupe_start(
 /// Desktop, Movies, Music. Used by the "keep the copy in my main folder"
 /// strategy.
 #[tauri::command]
-pub fn dedupe_primary_folders() -> Vec<PathBuf> {
-    [
-        dirs::document_dir(),
-        dirs::picture_dir(),
-        dirs::desktop_dir(),
-        dirs::video_dir(),
-        dirs::audio_dir(),
-    ]
-    .into_iter()
-    .flatten()
-    .collect()
+pub async fn dedupe_primary_folders() -> CmdResult<Vec<PathBuf>> {
+    crate::off_main(move || {
+        Ok({
+            [
+                dirs::document_dir(),
+                dirs::picture_dir(),
+                dirs::desktop_dir(),
+                dirs::video_dir(),
+                dirs::audio_dir(),
+            ]
+            .into_iter()
+            .flatten()
+            .collect()
+        })
+    })
+    .await
 }
 
 #[tauri::command]
@@ -164,39 +169,48 @@ fn result(session: &DedupeSession) -> CmdResult<Arc<DedupeResult>> {
 }
 
 #[tauri::command]
-pub fn dedupe_summary(session: State<'_, Arc<DedupeSession>>) -> CmdResult<DedupeSummary> {
-    Ok(result(&session)?.summary.clone())
+pub async fn dedupe_summary(session: State<'_, Arc<DedupeSession>>) -> CmdResult<DedupeSummary> {
+    let session = session.inner().clone();
+    crate::off_main(move || Ok(result(&session)?.summary.clone())).await
 }
 
 #[tauri::command]
-pub fn dedupe_groups(
+pub async fn dedupe_groups(
     session: State<'_, Arc<DedupeSession>>,
     offset: usize,
     limit: usize,
 ) -> CmdResult<Vec<DuplicateGroup>> {
-    Ok(result(&session)?
-        .groups
-        .iter()
-        .skip(offset)
-        .take(limit.min(200))
-        .cloned()
-        .collect())
+    let session = session.inner().clone();
+    crate::off_main(move || {
+        Ok(result(&session)?
+            .groups
+            .iter()
+            .skip(offset)
+            .take(limit.min(200))
+            .cloned()
+            .collect())
+    })
+    .await
 }
 
 #[tauri::command]
-pub fn dedupe_folder_pairs(
+pub async fn dedupe_folder_pairs(
     session: State<'_, Arc<DedupeSession>>,
     limit: usize,
 ) -> CmdResult<Vec<FolderPair>> {
-    let mut pairs = folder_pairs(&result(&session)?.groups);
-    pairs.truncate(limit.min(200));
-    Ok(pairs)
+    let session = session.inner().clone();
+    crate::off_main(move || {
+        let mut pairs = folder_pairs(&result(&session)?.groups);
+        pairs.truncate(limit.min(200));
+        Ok(pairs)
+    })
+    .await
 }
 
 /// Build and run the plan. `keeps` overrides the strategy per group id;
 /// `group_ids` restricts the run (empty = all groups).
 #[tauri::command]
-pub fn dedupe_execute(
+pub async fn dedupe_execute(
     session: State<'_, Arc<DedupeSession>>,
     strategy: KeepStrategy,
     keeps: HashMap<u64, PathBuf>,
@@ -204,21 +218,25 @@ pub fn dedupe_execute(
     apply: bool,
     hardlink: bool,
 ) -> CmdResult<DedupeRunReport> {
-    let r = result(&session)?;
-    let mut plan = DedupePlan::build(&r.summary.root, &r.groups, &strategy, |g| {
-        keeps.get(&g.id).cloned()
+    let session = session.inner().clone();
+    crate::off_main(move || {
+        let r = result(&session)?;
+        let mut plan = DedupePlan::build(&r.summary.root, &r.groups, &strategy, |g| {
+            keeps.get(&g.id).cloned()
+        })
+        .map_err(|e| CommandError::new("plan", e.to_string()))?;
+        if !group_ids.is_empty() {
+            plan = plan.retain(&group_ids);
+        }
+        let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
+        let mode = if hardlink {
+            ReplaceMode::Hardlink
+        } else {
+            ReplaceMode::Trash
+        };
+        Ok(execute(&plan, &safety, apply, mode, &mut NoProgress)?)
     })
-    .map_err(|e| CommandError::new("plan", e.to_string()))?;
-    if !group_ids.is_empty() {
-        plan = plan.retain(&group_ids);
-    }
-    let safety = Safety::new(ProtectedPaths::os_defaults(), HistoryStore::open_default()?);
-    let mode = if hardlink {
-        ReplaceMode::Hardlink
-    } else {
-        ReplaceMode::Trash
-    };
-    Ok(execute(&plan, &safety, apply, mode, &mut NoProgress)?)
+    .await
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -243,76 +261,81 @@ const MAX_IMAGE: u64 = 20 * 1024 * 1024;
 /// Side-by-side preview data. Images are inlined as a data URL; text files
 /// give their first 2 KB; anything else returns `None` (UI shows metadata).
 #[tauri::command]
-pub fn file_preview(path: PathBuf) -> FilePreview {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.to_ascii_lowercase())
-        .unwrap_or_default();
-    let mime = match ext.as_str() {
-        "jpg" | "jpeg" => Some("image/jpeg"),
-        "png" => Some("image/png"),
-        "gif" => Some("image/gif"),
-        "webp" => Some("image/webp"),
-        "bmp" => Some("image/bmp"),
-        "svg" => Some("image/svg+xml"),
-        _ => None,
-    };
-    let Ok(meta) = std::fs::symlink_metadata(&path) else {
-        return FilePreview::None;
-    };
-    if let Some(mime) = mime {
-        if meta.len() > MAX_IMAGE {
-            return FilePreview::None;
-        }
-        return match std::fs::read(&path) {
-            Ok(bytes) => FilePreview::Image {
-                data_url: format!("data:{mime};base64,{}", base64(&bytes)),
-            },
-            Err(_) => FilePreview::None,
-        };
-    }
-    if ext == "pdf" {
-        return FilePreview::Document {
-            doc_kind: "pdf".into(),
-            pages: pdf_page_count(&path),
-        };
-    }
-    if matches!(
-        ext.as_str(),
-        "doc"
-            | "docx"
-            | "xls"
-            | "xlsx"
-            | "ppt"
-            | "pptx"
-            | "odt"
-            | "ods"
-            | "odp"
-            | "pages"
-            | "numbers"
-            | "key"
-            | "epub"
-    ) {
-        return FilePreview::Document {
-            doc_kind: ext.clone(),
-            pages: None,
-        };
-    }
-    if matches!(
-        ext.as_str(),
-        "txt" | "md" | "csv" | "json" | "log" | "xml" | "html" | "rtf"
-    ) {
-        let mut buf = vec![0u8; 2048];
-        if let Ok(mut f) = std::fs::File::open(&path)
-            && let Ok(n) = f.read(&mut buf)
-        {
-            return FilePreview::Text {
-                excerpt: String::from_utf8_lossy(&buf[..n]).into_owned(),
+pub async fn file_preview(path: PathBuf) -> CmdResult<FilePreview> {
+    crate::off_main(move || {
+        Ok((|| {
+            let ext = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.to_ascii_lowercase())
+                .unwrap_or_default();
+            let mime = match ext.as_str() {
+                "jpg" | "jpeg" => Some("image/jpeg"),
+                "png" => Some("image/png"),
+                "gif" => Some("image/gif"),
+                "webp" => Some("image/webp"),
+                "bmp" => Some("image/bmp"),
+                "svg" => Some("image/svg+xml"),
+                _ => None,
             };
-        }
-    }
-    FilePreview::None
+            let Ok(meta) = std::fs::symlink_metadata(&path) else {
+                return FilePreview::None;
+            };
+            if let Some(mime) = mime {
+                if meta.len() > MAX_IMAGE {
+                    return FilePreview::None;
+                }
+                return match std::fs::read(&path) {
+                    Ok(bytes) => FilePreview::Image {
+                        data_url: format!("data:{mime};base64,{}", base64(&bytes)),
+                    },
+                    Err(_) => FilePreview::None,
+                };
+            }
+            if ext == "pdf" {
+                return FilePreview::Document {
+                    doc_kind: "pdf".into(),
+                    pages: pdf_page_count(&path),
+                };
+            }
+            if matches!(
+                ext.as_str(),
+                "doc"
+                    | "docx"
+                    | "xls"
+                    | "xlsx"
+                    | "ppt"
+                    | "pptx"
+                    | "odt"
+                    | "ods"
+                    | "odp"
+                    | "pages"
+                    | "numbers"
+                    | "key"
+                    | "epub"
+            ) {
+                return FilePreview::Document {
+                    doc_kind: ext.clone(),
+                    pages: None,
+                };
+            }
+            if matches!(
+                ext.as_str(),
+                "txt" | "md" | "csv" | "json" | "log" | "xml" | "html" | "rtf"
+            ) {
+                let mut buf = vec![0u8; 2048];
+                if let Ok(mut f) = std::fs::File::open(&path)
+                    && let Ok(n) = f.read(&mut buf)
+                {
+                    return FilePreview::Text {
+                        excerpt: String::from_utf8_lossy(&buf[..n]).into_owned(),
+                    };
+                }
+            }
+            FilePreview::None
+        })())
+    })
+    .await
 }
 
 /// Reads the page count from the PDF catalog (`/Type /Pages ... /Count N`)

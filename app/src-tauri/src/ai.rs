@@ -71,56 +71,65 @@ pub struct AiStatus {
 }
 
 #[tauri::command]
-pub fn ai_status() -> CmdResult<AiStatus> {
-    let config = AiConfig::load(&config_path()?);
-    let key = sapu_ai::keys::get_api_key(key_name(&config)).unwrap_or(None);
-    let key_hint = key.as_deref().map(|k| {
-        let tail: String = k
-            .chars()
-            .rev()
-            .take(4)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect();
-        format!("…{tail}")
-    });
-    Ok(AiStatus {
-        enabled: config.is_enabled(),
-        config,
-        has_key: key.is_some(),
-        key_hint,
+pub async fn ai_status() -> CmdResult<AiStatus> {
+    crate::off_main(move || {
+        let config = AiConfig::load(&config_path()?);
+        let key = sapu_ai::keys::get_api_key(key_name(&config)).unwrap_or(None);
+        let key_hint = key.as_deref().map(|k| {
+            let tail: String = k
+                .chars()
+                .rev()
+                .take(4)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect();
+            format!("…{tail}")
+        });
+        Ok(AiStatus {
+            enabled: config.is_enabled(),
+            config,
+            has_key: key.is_some(),
+            key_hint,
+        })
     })
+    .await
 }
 
 #[tauri::command]
-pub fn ai_config_set(config: AiConfig) -> CmdResult<()> {
-    config
-        .save(&config_path()?)
-        .map_err(|e| CommandError::new("io", e.to_string()))?;
-    // Keep the core setting in sync so the wizard/settings reflect the mode.
-    if let Ok(p) = Settings::default_path()
-        && let Ok(mut s) = Settings::load(&p)
-    {
-        s.ai_mode = match config.mode {
-            AiMode::Off => sapu_core::settings::AiMode::Off,
-            AiMode::Local => sapu_core::settings::AiMode::Local,
-            AiMode::Cloud => sapu_core::settings::AiMode::Cloud,
-        };
-        let _ = s.save(&p);
-    }
-    Ok(())
+pub async fn ai_config_set(config: AiConfig) -> CmdResult<()> {
+    crate::off_main(move || {
+        config
+            .save(&config_path()?)
+            .map_err(|e| CommandError::new("io", e.to_string()))?;
+        // Keep the core setting in sync so the wizard/settings reflect the mode.
+        if let Ok(p) = Settings::default_path()
+            && let Ok(mut s) = Settings::load(&p)
+        {
+            s.ai_mode = match config.mode {
+                AiMode::Off => sapu_core::settings::AiMode::Off,
+                AiMode::Local => sapu_core::settings::AiMode::Local,
+                AiMode::Cloud => sapu_core::settings::AiMode::Cloud,
+            };
+            let _ = s.save(&p);
+        }
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
-pub fn ai_set_api_key(key: String) -> CmdResult<()> {
-    let cfg = AiConfig::load(&config_path()?);
-    if key.trim().is_empty() {
-        sapu_ai::keys::delete_api_key(key_name(&cfg))?;
-    } else {
-        sapu_ai::keys::set_api_key(key_name(&cfg), key.trim())?;
-    }
-    Ok(())
+pub async fn ai_set_api_key(key: String) -> CmdResult<()> {
+    crate::off_main(move || {
+        let cfg = AiConfig::load(&config_path()?);
+        if key.trim().is_empty() {
+            sapu_ai::keys::delete_api_key(key_name(&cfg))?;
+        } else {
+            sapu_ai::keys::set_api_key(key_name(&cfg), key.trim())?;
+        }
+        Ok(())
+    })
+    .await
 }
 
 /// Models the configured provider offers: Ollama's installed list for
@@ -353,39 +362,42 @@ pub async fn ai_report(
 
 /// A4: keep a confirmed A1 answer as a local (yellow) rule.
 #[tauri::command]
-pub fn ai_save_rule(
+pub async fn ai_save_rule(
     path: PathBuf,
     name_id: String,
     name_en: String,
     description_id: String,
     description_en: String,
 ) -> CmdResult<PathBuf> {
-    let dir = sapu_core::rules::user_rules_dir()
-        .ok_or_else(|| CommandError::new("io", "no config dir"))?;
-    let slug: String = path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_lowercase())
-        .unwrap_or_default()
-        .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
-        .collect::<String>()
-        .trim_matches('-')
-        .to_string();
-    let id = format!(
-        "ai-{}-{}",
-        if slug.is_empty() {
-            "rule".to_string()
-        } else {
-            slug
-        },
-        &blake3::hash(path.to_string_lossy().as_bytes()).to_hex()[..6]
-    );
-    sapu_core::rules::save_user_rule(
-        &dir,
-        &id,
-        (&name_id, &name_en),
-        (&description_id, &description_en),
-        &path,
-    )
-    .map_err(|e| CommandError::new("io", e.to_string()))
+    crate::off_main(move || {
+        let dir = sapu_core::rules::user_rules_dir()
+            .ok_or_else(|| CommandError::new("io", "no config dir"))?;
+        let slug: String = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_lowercase())
+            .unwrap_or_default()
+            .chars()
+            .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+            .collect::<String>()
+            .trim_matches('-')
+            .to_string();
+        let id = format!(
+            "ai-{}-{}",
+            if slug.is_empty() {
+                "rule".to_string()
+            } else {
+                slug
+            },
+            &blake3::hash(path.to_string_lossy().as_bytes()).to_hex()[..6]
+        );
+        sapu_core::rules::save_user_rule(
+            &dir,
+            &id,
+            (&name_id, &name_en),
+            (&description_id, &description_en),
+            &path,
+        )
+        .map_err(|e| CommandError::new("io", e.to_string()))
+    })
+    .await
 }

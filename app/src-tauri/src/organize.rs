@@ -359,8 +359,11 @@ pub async fn organize_undo(id: String) -> CmdResult<UndoReport> {
 
 /// Previous runs, newest first.
 #[tauri::command]
-pub fn organize_history(limit: usize) -> CmdResult<Vec<RunRecord>> {
-    let mut list = OrganizeStore::open_default()?.list()?;
-    list.truncate(limit.min(100));
-    Ok(list)
+pub async fn organize_history(limit: usize) -> CmdResult<Vec<RunRecord>> {
+    crate::off_main(move || {
+        let mut list = OrganizeStore::open_default()?.list()?;
+        list.truncate(limit.min(100));
+        Ok(list)
+    })
+    .await
 }

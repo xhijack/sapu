@@ -58,6 +58,16 @@ impl From<sapu_core::SapuError> for CommandError {
 
 pub(crate) type CmdResult<T> = Result<T, CommandError>;
 
+/// Runs blocking work (disk, keychain, large scan data) off the main thread,
+/// so the window never freezes. See `scripts/check-sync-commands.sh`.
+pub(crate) async fn off_main<T: Send + 'static>(
+    f: impl FnOnce() -> CmdResult<T> + Send + 'static,
+) -> CmdResult<T> {
+    tauri::async_runtime::spawn_blocking(f)
+        .await
+        .map_err(|e| CommandError::new("io", e.to_string()))?
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct AppInfo {
     version: &'static str,
@@ -67,29 +77,37 @@ pub struct AppInfo {
 }
 
 #[tauri::command]
-fn app_info() -> AppInfo {
-    AppInfo {
-        version: env!("CARGO_PKG_VERSION"),
-        os: std::env::consts::OS,
-        full_disk_access: full_disk_access(),
-        dev_tools: detect_dev_tools(),
-    }
+async fn app_info() -> CmdResult<AppInfo> {
+    crate::off_main(move || {
+        Ok({
+            AppInfo {
+                version: env!("CARGO_PKG_VERSION"),
+                os: std::env::consts::OS,
+                full_disk_access: full_disk_access(),
+                dev_tools: detect_dev_tools(),
+            }
+        })
+    })
+    .await
 }
 
 #[tauri::command]
-fn disk_access_status() -> DiskAccess {
-    full_disk_access()
+async fn disk_access_status() -> CmdResult<DiskAccess> {
+    crate::off_main(move || Ok(full_disk_access())).await
 }
 
 #[tauri::command]
-fn settings_get() -> CmdResult<Settings> {
-    Ok(Settings::load(&Settings::default_path()?)?)
+async fn settings_get() -> CmdResult<Settings> {
+    crate::off_main(move || Ok(Settings::load(&Settings::default_path()?)?)).await
 }
 
 #[tauri::command]
-fn settings_set(settings: Settings) -> CmdResult<()> {
-    settings.save(&Settings::default_path()?)?;
-    Ok(())
+async fn settings_set(settings: Settings) -> CmdResult<()> {
+    crate::off_main(move || {
+        settings.save(&Settings::default_path()?)?;
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -98,8 +116,8 @@ fn protected_paths() -> Vec<ProtectedEntry> {
 }
 
 #[tauri::command]
-fn history_list() -> CmdResult<Vec<CleanSession>> {
-    Ok(HistoryStore::open_default()?.list()?)
+async fn history_list() -> CmdResult<Vec<CleanSession>> {
+    crate::off_main(move || Ok(HistoryStore::open_default()?.list()?)).await
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -113,32 +131,39 @@ pub struct HistoryTotals {
 
 /// Lifetime totals of real (non dry-run) clean sessions.
 #[tauri::command]
-fn history_totals() -> CmdResult<HistoryTotals> {
-    let sessions = HistoryStore::open_default()?.list()?;
-    let real: Vec<_> = sessions.iter().filter(|s| !s.dry_run).collect();
-    Ok(HistoryTotals {
-        sessions: real.len(),
-        bytes_freed: real.iter().map(|s| s.bytes_freed).sum(),
-        items_disposed: real.iter().map(|s| s.disposed).sum(),
-        last_session_unix: real.iter().map(|s| s.finished_at_unix).max(),
-        first_session_unix: real.iter().map(|s| s.finished_at_unix).min(),
+async fn history_totals() -> CmdResult<HistoryTotals> {
+    crate::off_main(move || {
+        let sessions = HistoryStore::open_default()?.list()?;
+        let real: Vec<_> = sessions.iter().filter(|s| !s.dry_run).collect();
+        Ok(HistoryTotals {
+            sessions: real.len(),
+            bytes_freed: real.iter().map(|s| s.bytes_freed).sum(),
+            items_disposed: real.iter().map(|s| s.disposed).sum(),
+            last_session_unix: real.iter().map(|s| s.finished_at_unix).max(),
+            first_session_unix: real.iter().map(|s| s.finished_at_unix).min(),
+        })
     })
+    .await
 }
 
 #[tauri::command]
-fn history_restore(id: String) -> CmdResult<RestoreReport> {
-    Ok(HistoryStore::open_default()?.restore_session(&id)?)
+async fn history_restore(id: String) -> CmdResult<RestoreReport> {
+    crate::off_main(move || Ok(HistoryStore::open_default()?.restore_session(&id)?)).await
 }
 
 /// Live disks / CPU / memory for the home dashboard.
 #[tauri::command]
-fn system_snapshot(
-    monitor: tauri::State<'_, std::sync::Mutex<SystemMonitor>>,
+async fn system_snapshot(
+    monitor: tauri::State<'_, std::sync::Arc<std::sync::Mutex<SystemMonitor>>>,
 ) -> CmdResult<SystemSnapshot> {
-    let mut m = monitor
-        .lock()
-        .map_err(|_| CommandError::new("io", "system monitor poisoned"))?;
-    Ok(m.snapshot())
+    let monitor = monitor.inner().clone();
+    crate::off_main(move || {
+        let mut m = monitor
+            .lock()
+            .map_err(|_| CommandError::new("io", "system monitor poisoned"))?;
+        Ok(m.snapshot())
+    })
+    .await
 }
 
 /// Reveals the running binary in the file manager so the user can drag it
@@ -249,7 +274,9 @@ pub fn run() {
         .manage(std::sync::Arc::new(care::CareSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
         .manage(std::sync::Arc::new(organize::OrganizeState::default()))
-        .manage(std::sync::Mutex::new(SystemMonitor::new()))
+        .manage(std::sync::Arc::new(std::sync::Mutex::new(
+            SystemMonitor::new(),
+        )))
         .setup(|app| {
             // Native material behind the whole window: the sidebar reads as
             // part of macOS / Windows 11 instead of a web page.
