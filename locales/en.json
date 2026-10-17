@@ -415,7 +415,10 @@
     "run_command": "Running {{cmd}}",
     "run_counts": "{{done}} of {{total}} items",
     "run_note": "Runs in the background. You can close this dialog; the result appears here and in History when it finishes.",
-    "run_hide": "Hide"
+    "run_hide": "Hide",
+    "trash_note": "Everything moved still takes up space in the Trash. Free space grows only once the Trash is emptied, and after that the files cannot be restored.",
+    "trash_empty": "Empty the Trash…",
+    "trash_empty_sized": "Empty the Trash ({{size}})…"
   },
   "dedupe": {
     "title": "Duplicates",

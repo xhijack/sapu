@@ -1,0 +1,14 @@
+[rule]
+id = "docker-images-unused"
+name = { id = "Semua image Docker yang tidak dipakai", en = "All unused Docker images" }
+description = { id = "Image bertag yang tidak dipakai container mana pun saat ini, termasuk yang masih kamu butuhkan nanti. Docker mengunduh ulang saat dipakai, bisa lama.", en = "Tagged images no container is using right now, including ones you may want later. Docker pulls them again when used, which can take a while." }
+risk = "yellow"
+profile = "developer"
+group = "docker"
+
+[command]
+program = "docker"
+args = ["image", "prune", "-a", "-f"]
+requires = "docker"
+estimate = ["docker", "system", "df", "--format", "{{.Type}}	{{.Reclaimable}}"]
+estimate_filter = "Images"

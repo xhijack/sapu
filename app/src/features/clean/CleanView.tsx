@@ -23,6 +23,8 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [preview, setPreview] = useState(false);
+  /** Rows the open preview acts on: the selection, or only the Trash rule. */
+  const [previewRows, setPreviewRows] = useState<RuleRow[] | null>(null);
   const [result, setResult] = useState<CleanRunReport | null>(null);
   const [tab, setTab] = useState<"all" | "dev">("all");
   // "checking" while the background check runs; "ready" once a status
@@ -171,15 +173,38 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   }
   if (result) {
     return (
-      <CleanResult
-        result={result}
-        rows={rows}
-        onSeeHistory={onSeeHistory}
-        onBack={() => {
-          setResult(null);
-          void load();
-        }}
-      />
+      <>
+        <CleanResult
+          result={result}
+          rows={rows}
+          onSeeHistory={onSeeHistory}
+          onBack={() => {
+            setResult(null);
+            void load();
+          }}
+          trashRule={rows.find((r) => r.permanent && r.group === "trash") ?? null}
+          onEmptyTrash={() => {
+            const tr = rows.find((r) => r.permanent && r.group === "trash");
+            if (!tr) return;
+            setPreviewRows([tr]);
+            setPreview(true);
+          }}
+        />
+        {preview && previewRows && (
+          <CleanPreview
+            rows={previewRows}
+            onClose={() => {
+              setPreview(false);
+              setPreviewRows(null);
+            }}
+            onDone={(r) => {
+              setPreview(false);
+              setPreviewRows(null);
+              setResult(r);
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -294,7 +319,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
 
           <div className="sticky bottom-0 -mx-8 flex items-center justify-between gap-4 border-t border-border bg-bg/95 px-8 py-4 backdrop-blur">
             <span className="text-sm text-fg-muted">{t("clean.selected_summary", { count: selectedRows.length })}</span>
-            <Button size="lg" disabled={selectedRows.length === 0} onClick={() => setPreview(true)}>
+            <Button size="lg" disabled={selectedRows.length === 0} onClick={() => { setPreviewRows(selectedRows); setPreview(true); }}>
               <Sparkles aria-hidden className="h-4 w-4" />
               {selectedRows.length === 0 ? t("clean.primary_none") : t("clean.primary", { size: formatBytes(selectedBytes, i18n.language) })}
             </Button>
@@ -302,12 +327,16 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
         </>
       )}
 
-      {preview && (
+      {preview && previewRows && (
         <CleanPreview
-          rows={selectedRows}
-          onClose={() => setPreview(false)}
+          rows={previewRows}
+          onClose={() => {
+            setPreview(false);
+            setPreviewRows(null);
+          }}
           onDone={(r) => {
             setPreview(false);
+            setPreviewRows(null);
             setResult(r);
           }}
         />

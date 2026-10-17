@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/format";
 import type { CleanRunReport } from "@/lib/types";
@@ -10,9 +10,12 @@ interface Props {
   rows: RuleRow[];
   onSeeHistory: () => void;
   onBack: () => void;
+  /** The "empty the Trash" rule, when it exists and was not part of this run. */
+  trashRule?: RuleRow | null;
+  onEmptyTrash?: () => void;
 }
 
-export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
+export function CleanResult({ result, rows, onSeeHistory, onBack, trashRule = null, onEmptyTrash }: Props) {
   const { t, i18n } = useTranslation();
   const name = (id: string) => rows.find((r) => r.id === id)?.name ?? id;
   const label = (o: CleanRunReport["outcomes"][number]) =>
@@ -28,6 +31,17 @@ export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
           ? t("clean.done_dry")
           : t("clean.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
       </p>
+      {!result.dry_run && result.bytes_freed > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-risk-review-border bg-risk-review-bg p-4 text-sm text-risk-review-fg">
+          <span className="max-w-[70ch]">{t("clean.trash_note")}</span>
+          {trashRule && onEmptyTrash && (
+            <Button size="sm" variant="secondary" onClick={onEmptyTrash}>
+              <Trash2 aria-hidden className="h-4 w-4" />
+              {trashRule.bytes ? t("clean.trash_empty_sized", { size: formatBytes(trashRule.bytes, i18n.language) }) : t("clean.trash_empty")}
+            </Button>
+          )}
+        </div>
+      )}
       <ul className="divide-y divide-border card-solid">
         {result.outcomes.map((o, i) => (
           <li key={`${o.kind === "project" ? o.root : o.rule_id}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3">

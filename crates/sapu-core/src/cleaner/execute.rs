@@ -170,7 +170,7 @@ pub fn execute_with_steps(
         let mut plan = DeletePlan::new(&f.scope).with_disposal(disposal);
         for c in &f.items {
             if let Ok(snap) = FileSnapshot::capture(&c.path) {
-                plan.push(snap);
+                plan.push(snap.with_bytes(c.size));
             }
         }
         if apply {
@@ -214,7 +214,7 @@ pub fn execute_with_steps(
         let mut plan = DeletePlan::new(&p.root).with_disposal(Disposal::Trash);
         for a in &chosen {
             if let Ok(snap) = FileSnapshot::capture(&a.path) {
-                plan.push(snap);
+                plan.push(snap.with_bytes(a.bytes));
             }
         }
         if apply {
@@ -390,7 +390,9 @@ kind = "dir_contents"
             "dir_contents keeps the directory"
         );
         assert!(home.join(".Trash/t").exists(), "unselected rule untouched");
-        assert_eq!(run.bytes_freed, 30);
+        // Freed bytes are what the disk gives back (allocated blocks), so
+        // at least the 30 logical bytes of the two files.
+        assert!(run.bytes_freed >= 30, "{}", run.bytes_freed);
         assert_eq!(safety.history().list().expect("list").len(), 1);
     }
 

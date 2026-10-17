@@ -415,7 +415,10 @@
     "run_command": "Menjalankan {{cmd}}",
     "run_counts": "{{done}} dari {{total}} item",
     "run_note": "Berjalan di latar. Dialog ini boleh ditutup; hasilnya muncul di sini dan di Riwayat saat selesai.",
-    "run_hide": "Sembunyikan"
+    "run_hide": "Sembunyikan",
+    "trash_note": "Semua yang dipindahkan masih menempati ruang di Trash. Ruang kosong baru bertambah setelah Trash dikosongkan, dan setelah itu file tidak bisa dipulihkan lagi.",
+    "trash_empty": "Kosongkan Trash…",
+    "trash_empty_sized": "Kosongkan Trash ({{size}})…"
   },
   "dedupe": {
     "title": "Duplikat",

@@ -1,7 +1,7 @@
 [rule]
 id = "docker-images-dangling"
-name = { id = "Image Docker tak terpakai", en = "Unused Docker images" }
-description = { id = "Image tanpa tag yang tidak dipakai container mana pun. Docker mengunduh ulang bila diperlukan.", en = "Untagged images no container uses. Docker downloads them again when needed." }
+name = { id = "Image Docker tanpa tag", en = "Untagged Docker images" }
+description = { id = "Lapisan image yang tertinggal setelah build atau pull ulang (tanpa tag). Tidak dipakai container mana pun; Docker membuatnya lagi bila perlu.", en = "Image layers left behind by rebuilds and re-pulls (no tag). No container uses them; Docker recreates them when needed." }
 risk = "green"
 profile = "developer"
 group = "docker"
@@ -10,5 +10,4 @@ group = "docker"
 program = "docker"
 args = ["image", "prune", "-f"]
 requires = "docker"
-estimate = ["docker", "system", "df", "--format", "{{.Type}}	{{.Reclaimable}}"]
-estimate_filter = "Images"
+estimate = ["docker", "images", "--filter", "dangling=true", "--format", "dangling	{{.Size}}"]

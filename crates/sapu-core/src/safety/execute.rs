@@ -69,7 +69,7 @@ impl DeletePlan {
     }
 
     pub fn total_bytes(&self) -> u64 {
-        self.items.iter().map(|i| i.size).sum()
+        self.items.iter().map(|i| i.bytes).sum()
     }
 
     /// Deepest directory that contains every path (after lexical
@@ -149,7 +149,7 @@ impl Safety {
             match &outcome {
                 Outcome::Disposed => {
                     session.disposed += 1;
-                    session.bytes_freed += item.size;
+                    session.bytes_freed += item.bytes;
                 }
                 Outcome::WouldDispose => session.disposed += 1,
                 Outcome::Protected { .. } | Outcome::Skipped { .. } => session.skipped += 1,
@@ -157,11 +157,11 @@ impl Safety {
             }
             session.entries.push(SessionEntry {
                 path: item.path.clone(),
-                size: item.size,
+                size: item.bytes,
                 is_dir: item.is_dir,
                 outcome,
             });
-            bytes_done += item.size;
+            bytes_done += item.bytes;
             sink.report(&ProgressEvent {
                 items_done: i as u64 + 1,
                 items_total: Some(total),
