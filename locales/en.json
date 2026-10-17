@@ -847,6 +847,8 @@
     "history_title": "Previous runs",
     "history_empty": "No folder organized yet.",
     "was_undone": "undone",
-    "undo_run": "Undo the run of {{date}}"
+    "undo_run": "Undo the run of {{date}}",
+    "summary_label": "Where files went",
+    "col_from": "From"
   }
 }

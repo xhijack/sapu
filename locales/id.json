@@ -847,6 +847,8 @@
     "history_title": "Rapikan sebelumnya",
     "history_empty": "Belum pernah merapikan folder.",
     "was_undone": "diurungkan",
-    "undo_run": "Urungkan rapikan {{date}}"
+    "undo_run": "Urungkan rapikan {{date}}",
+    "summary_label": "Rincian pemindahan",
+    "col_from": "Asal"
   }
 }

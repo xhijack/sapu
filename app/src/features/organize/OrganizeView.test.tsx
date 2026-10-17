@@ -35,6 +35,20 @@ describe("OrganizeView", () => {
     await user.click(screen.getByRole("button", { name: /Rapikan \d+ kelompok/ }));
     expect(await screen.findByText(/item dipindahkan ke/, {}, { timeout: 3000 })).toBeInTheDocument();
 
+    // Where everything went: one row per destination folder, expandable to its files.
+    const moved = screen.getByRole("list", { name: "Rincian pemindahan" });
+    const tagihan = within(moved).getByRole("group", { name: /Tagihan/ });
+    expect(tagihan).toHaveTextContent("3 item");
+    // The largest destination starts open, with each file and where it came from.
+    expect(within(tagihan).getByText("Invoice-2024-01.pdf")).toBeVisible();
+    expect(within(tagihan).getAllByText("Documents").length).toBe(3);
+    // Others open on click.
+    const reportsDone = within(moved).getByRole("group", { name: /Laporan Keuangan/ });
+    expect(reportsDone).toHaveTextContent("2 item");
+    expect(within(reportsDone).getByText("Laporan Keuangan Q1.xlsx")).not.toBeVisible();
+    await user.click(within(reportsDone).getByText(/Documents\/Laporan Keuangan/));
+    expect(within(reportsDone).getByText("Laporan Keuangan Q1.xlsx")).toBeVisible();
+
     const sel = organizeMock.lastSelection!;
     expect(sel.group_ids).toContain("g3");
     expect(sel.renames).toContainEqual(["g3", "Tagihan"]);

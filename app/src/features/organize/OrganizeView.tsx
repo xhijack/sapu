@@ -14,6 +14,7 @@ import { scanApi } from "@/lib/scanApi";
 import type { OrganizeAnalyseProgress, OrganizeAnalysis, OrganizeGroup, OrganizeRun, OrganizeRunProgress, OrganizeRunResult, OrganizeTarget, OrganizeUndoReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { GroupFilesDialog } from "./GroupFilesDialog";
+import { MoveSummary } from "./MoveSummary";
 import { PlanGroupCard } from "./PlanGroupCard";
 import { ORGANIZE_OPEN_EVENT, takePendingOrganize } from "./organizeBus";
 
@@ -201,6 +202,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
         <h1 className="display text-2xl">{t("organize.done_title")}</h1>
         <p className="num text-lg">{t("organize.done_body", { count: result.session.moved, folders })}</p>
         {(result.session.skipped > 0 || result.session.failed > 0) && <p className="text-sm text-risk-review-fg">{t("organize.done_partial", { skipped: result.session.skipped, failed: result.session.failed })}</p>}
+        {result.session.moves.length > 0 && <MoveSummary run={result.session} />}
         {result.failures.length > 0 && (
           <ul className="card-solid max-h-48 overflow-y-auto p-3 text-xs">
             {result.failures.map(([p, why]) => (
