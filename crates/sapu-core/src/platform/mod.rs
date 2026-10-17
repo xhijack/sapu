@@ -1,6 +1,8 @@
 //! OS-specific facts, isolated behind `cfg(target_os)` (CLAUDE.md rule 5).
 
 mod detect;
+pub mod memory;
+pub mod memory_relief;
 mod permissions;
 mod size;
 mod system;

@@ -14,6 +14,8 @@ pub struct DiskInfo {
     pub file_system: String,
     /// Headroom this disk should keep (see `care::recommended_free_bytes`).
     pub recommended_free_bytes: u64,
+    /// Ok / Low / Critical from `care::space_level`, shared with the tray.
+    pub level: crate::care::SpaceLevel,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -70,6 +72,7 @@ impl SystemMonitor {
                 removable: d.is_removable(),
                 file_system: d.file_system().to_string_lossy().into_owned(),
                 recommended_free_bytes: crate::care::recommended_free_bytes(d.total_space()),
+                level: crate::care::space_level(d.available_space(), d.total_space()),
             })
             .collect();
         SystemSnapshot {
