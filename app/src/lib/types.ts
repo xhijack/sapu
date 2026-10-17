@@ -741,3 +741,85 @@ export interface Leftover {
   kind: LeftoverKind;
   bytes: number;
 }
+
+// ---- Organize (Rapikan) ----
+
+export type OrganizeUnit = "file" | "folder" | "project" | "bundle" | "link";
+export type GroupSource = "existing" | "prefix" | "kind" | "unit" | "ai";
+export type GroupConfidence = "sure" | "check";
+
+export interface OrganizeEntry {
+  path: string;
+  name: string;
+  unit: OrganizeUnit;
+  kind: FileKind;
+  bytes: number;
+  mtime: UnixTime | null;
+}
+
+export interface OrganizeGroup {
+  id: string;
+  name: string;
+  source: GroupSource;
+  confidence: GroupConfidence;
+  entries: OrganizeEntry[];
+  bytes: number;
+}
+
+export interface OrganizeAnalysis {
+  plan: { root: string; groups: OrganizeGroup[] };
+  unreadable: string[];
+  duplicate_groups: number;
+  duplicate_files: number;
+  duplicate_bytes: number;
+  ai_used: boolean;
+  ai_note: string | null;
+}
+
+export interface OrganizeSelection {
+  group_ids: string[];
+  excluded: string[];
+  renames: [string, string][];
+}
+
+export interface OrganizeRun {
+  id: string;
+  root: string;
+  started_at_unix: number;
+  finished_at_unix: number;
+  moves: { from: string; to: string; bytes: number; len: number }[];
+  created_dirs: string[];
+  moved: number;
+  skipped: number;
+  failed: number;
+  undone: boolean;
+}
+
+export interface OrganizeRunResult {
+  session: OrganizeRun;
+  failures: [string, string][];
+}
+
+export interface OrganizeUndoReport {
+  restored: number;
+  skipped: number;
+  failed: number;
+}
+
+export interface OrganizeTarget {
+  key: "documents" | "desktop" | "downloads";
+  path: string;
+}
+
+export interface OrganizeAnalyseProgress {
+  stage: "reading" | "grouping" | "ai" | "duplicates";
+  elapsed_secs: number;
+}
+
+export interface OrganizeRunProgress {
+  items_done: number;
+  items_total: number | null;
+  fraction: number | null;
+  elapsed_secs: number;
+  eta: Eta;
+}

@@ -3,6 +3,7 @@ import "../i18n";
 import i18n from "../i18n";
 import { mock } from "../lib/api";
 import { scanMock } from "../lib/scanApi";
+import { organizeMock } from "../lib/organizeApi";
 import { cleanMock } from "../lib/cleanApi";
 import { dedupeMock } from "../lib/dedupeApi";
 import { aiMock } from "../lib/aiApi";
@@ -21,6 +22,7 @@ beforeEach(async () => {
   aiMock.reset();
   careMock.reset();
   appsMock.reset();
+  organizeMock.reset();
   memoryMock.reset();
   await i18n.changeLanguage("id");
 });

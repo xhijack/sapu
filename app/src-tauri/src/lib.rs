@@ -16,6 +16,7 @@ mod care;
 mod clean;
 mod dedupe;
 mod memory;
+mod organize;
 mod scan;
 mod support;
 mod tray;
@@ -247,6 +248,7 @@ pub fn run() {
         .manage(std::sync::Arc::new(clean::CleanSession::default()))
         .manage(std::sync::Arc::new(care::CareSession::default()))
         .manage(std::sync::Arc::new(dedupe::DedupeSession::default()))
+        .manage(std::sync::Arc::new(organize::OrganizeState::default()))
         .manage(std::sync::Mutex::new(SystemMonitor::new()))
         .setup(|app| {
             // Native material behind the whole window: the sidebar reads as
@@ -313,6 +315,13 @@ pub fn run() {
             clean::clean_run_status,
             clean::clean_run_last,
             clean::trash_status,
+            organize::organize_targets,
+            organize::organize_analyze_start,
+            organize::organize_plan,
+            organize::organize_status,
+            organize::organize_apply_start,
+            organize::organize_undo,
+            organize::organize_history,
             clean::trash_empty_start,
             dedupe::dedupe_start,
             dedupe::dedupe_cancel,

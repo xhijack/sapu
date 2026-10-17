@@ -42,7 +42,7 @@ fn key_name(cfg: &AiConfig) -> &'static str {
     }
 }
 
-fn client() -> CmdResult<AiClient> {
+pub(crate) fn client() -> CmdResult<AiClient> {
     let cfg = AiConfig::load(&config_path()?);
     let key = if cfg.mode == AiMode::Cloud {
         sapu_ai::keys::get_api_key(key_name(&cfg))?
@@ -52,7 +52,7 @@ fn client() -> CmdResult<AiClient> {
     Ok(AiClient::new(&cfg, key)?)
 }
 
-fn language() -> String {
+pub(crate) fn language() -> String {
     Settings::default_path()
         .and_then(|p| Settings::load(&p))
         .ok()

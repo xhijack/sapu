@@ -6,6 +6,8 @@ import { useErrorMessage } from "@/lib/errors";
 import { Wizard } from "@/features/onboarding/Wizard";
 import { DisclaimerGate } from "@/features/onboarding/DisclaimerGate";
 import { AboutView } from "@/features/about/AboutView";
+import { OrganizeView } from "@/features/organize/OrganizeView";
+import { ORGANIZE_OPEN_EVENT } from "@/features/organize/organizeBus";
 import { RatePrompt } from "@/components/RatePrompt";
 import { RATE_THRESHOLD } from "@/lib/milestones";
 import { cleanApi } from "@/lib/cleanApi";
@@ -106,6 +108,13 @@ export default function App() {
     return () => unlisten?.();
   }, []);
 
+  // "Rapikan folder ini" from Browse: show the Organize screen.
+  useEffect(() => {
+    const go = () => navigate("organize");
+    window.addEventListener(ORGANIZE_OPEN_EVENT, go);
+    return () => window.removeEventListener(ORGANIZE_OPEN_EVENT, go);
+  }, []);
+
   // Tray shortcut: the "Memori" item opens the Memory dialog.
   useEffect(() => {
     if (!isTauri()) return;
@@ -175,6 +184,9 @@ export default function App() {
       </Pane>
       <Pane active={screen === "dedupe"} mounted={visited.has("dedupe")}>
         <DedupeView profile={settings.profile} onSeeHistory={() => navigate("history")} />
+      </Pane>
+      <Pane active={screen === "organize"} mounted={visited.has("organize")}>
+        <OrganizeView onNavigate={navigate} />
       </Pane>
       <Pane active={screen === "apps"} mounted={visited.has("apps")}>
         <AppsView onSeeHistory={() => navigate("history")} />

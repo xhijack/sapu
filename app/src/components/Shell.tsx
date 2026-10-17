@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { Home, HeartPulse, Search, Sparkles, Copy, AppWindow, History, Info, Settings as SettingsIcon } from "lucide-react";
+import { Home, HeartPulse, Search, Sparkles, Copy, FolderInput, AppWindow, History, Info, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBar } from "./StatusBar";
 
-export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "apps" | "history" | "settings" | "about";
+export type Screen = "home" | "care" | "scan" | "clean" | "dedupe" | "organize" | "apps" | "history" | "settings" | "about";
 
 const MAIN: { id: Screen; Icon: typeof Home }[] = [
   { id: "home", Icon: Home },
@@ -11,6 +11,7 @@ const MAIN: { id: Screen; Icon: typeof Home }[] = [
   { id: "scan", Icon: Search },
   { id: "clean", Icon: Sparkles },
   { id: "dedupe", Icon: Copy },
+  { id: "organize", Icon: FolderInput },
   { id: "apps", Icon: AppWindow },
 ];
 const SECONDARY: { id: Screen; Icon: typeof Home }[] = [

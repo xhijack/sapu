@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, CornerLeftUp } from "lucide-react";
+import { ChevronRight, CornerLeftUp, FolderInput } from "lucide-react";
+import { requestOrganize } from "@/features/organize/organizeBus";
 import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingState } from "@/components/States";
 import { formatBytes } from "@/lib/format";
@@ -67,6 +68,10 @@ export function FolderBrowser({ root, onTrash, removed, onWhatIs }: Props) {
           </span>
         ))}
         {folder && <span className="num ml-auto text-fg-muted">{t("browse.folder_total", { size: formatBytes(folder.bytes, i18n.language), count: folder.files })}</span>}
+        <Button variant="outline" size="sm" onClick={() => requestOrganize(path)}>
+          <FolderInput aria-hidden className="h-4 w-4" />
+          {t("browse.organize_here")}
+        </Button>
       </nav>
       {folder === undefined ? <LoadingState /> : folder === null || rows.length === 0 ? <EmptyState title={t("browse.folder_empty")} body="" /> : <FileTable rows={rows} onOpenDir={setPath} onTrash={onTrash} onWhatIs={onWhatIs} removed={removed} />}
       {folder && folder.more > 0 && <p className="text-sm text-fg-muted">{t("browse.folder_more", { count: folder.more })}</p>}

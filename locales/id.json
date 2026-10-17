@@ -13,7 +13,8 @@
     "scan": "Pindai",
     "care": "Rawat",
     "apps": "Aplikasi",
-    "about": "Tentang"
+    "about": "Tentang",
+    "organize": "Rapikan"
   },
   "common": {
     "next": "Lanjut",
@@ -655,7 +656,8 @@
     "crumbs": "Lokasi",
     "folder_total": "{{size}}, {{count}} file",
     "folder_empty": "Folder ini kosong atau tidak ada di hasil pindai.",
-    "folder_more": "{{count}} item lain yang lebih kecil tidak ditampilkan."
+    "folder_more": "{{count}} item lain yang lebih kecil tidak ditampilkan.",
+    "organize_here": "Rapikan folder ini"
   },
   "kind": {
     "video": "Video",
@@ -691,7 +693,8 @@
     "disk_low": "disarankan ≥ {{size}}",
     "disk_low_hint": "Sisakan 10% atau minimal 20 GB agar macOS, pembaruan, dan snapshot punya ruang.",
     "task_clean": "Memeriksa Bersih",
-    "task_clean_run": "Membersihkan"
+    "task_clean_run": "Membersihkan",
+    "task_organize": "Merapikan"
   },
   "tips": {
     "title": "Tips memakai Sapu",
@@ -785,5 +788,65 @@
     "empty": "Tidak ada proses yang bisa ditampilkan.",
     "free_button": "Bebaskan memori",
     "free_hint": "Lihat aplikasi yang memakai memori dan tutup yang tidak dipakai."
+  },
+  "organize": {
+    "title": "Rapikan",
+    "intro": "Sapu membaca nama, jenis, dan tanggal file di satu folder (tanpa membuka isinya), mengusulkan kelompok, lalu memindahkan yang kamu setujui ke subfolder. Semua bisa diurungkan.",
+    "target": {
+      "documents": "Dokumen",
+      "desktop": "Desktop",
+      "downloads": "Downloads"
+    },
+    "pick": "Pilih folder lain…",
+    "use_ai": "Minta AI menamai kelompok",
+    "use_ai_hint": "Hanya nama file contoh yang dikirim, bukan isinya. AI tidak bisa memindahkan apa pun.",
+    "start": "Analisis folder",
+    "analysing": "Menganalisis folder…",
+    "stage": {
+      "reading": "Membaca isi folder",
+      "grouping": "Menyusun kelompok",
+      "ai": "Meminta AI menamai kelompok",
+      "duplicates": "Mencari file ganda"
+    },
+    "background_note": "Berjalan di latar. Boleh pindah halaman; hasilnya menunggu di sini.",
+    "plan_title": "Usulan kelompok",
+    "plan_body": "Kelompok yang pasti sudah dicentang. Periksa yang berlabel kuning, ganti nama folder bila perlu, lalu rapikan.",
+    "plan_body_ai": "Nama kelompok dibantu AI. Kelompok yang pasti sudah dicentang; periksa yang berlabel kuning sebelum mencentangnya.",
+    "ai_unavailable": "AI tidak tersedia, nama memakai pola file.",
+    "reanalyse": "Analisis ulang",
+    "duplicates": "Ditemukan {{files}} file ganda ({{size}} terbuang).",
+    "open_duplicates": "Buka Duplikat",
+    "tick": "Pindahkan {{name}}",
+    "folder_name": "Nama folder",
+    "fixed_hint": "Folder yang sudah ada dan proyek tidak diganti namanya.",
+    "source": {
+      "existing": "Folder yang sudah ada",
+      "prefix": "Nama mirip",
+      "kind": "Jenis file",
+      "unit": "Proyek & aplikasi utuh",
+      "ai": "Dinamai AI"
+    },
+    "confidence": {
+      "sure": "Pasti",
+      "check": "Periksa dulu"
+    },
+    "items": "{{count}} item",
+    "nothing_to_move": "Sudah rapi, tidak ada yang dipindah.",
+    "show_files": "Lihat isi",
+    "files_hint": "Hapus centang untuk membiarkan file di tempatnya.",
+    "selected": "{{count}} item akan dipindahkan",
+    "apply": "Rapikan {{count}} kelompok",
+    "applying": "Merapikan…",
+    "done_title": "Selesai dirapikan",
+    "done_body": "{{count}} item dipindahkan ke {{folders}} folder.",
+    "done_partial": "{{skipped}} dilewati (berubah sejak dianalisis) dan {{failed}} gagal.",
+    "undo": "Urungkan",
+    "undone": "{{count}} item dikembalikan ke tempat semula.",
+    "undo_skipped": "{{count}} dilewati karena sudah dipindah lagi.",
+    "again": "Rapikan folder lain",
+    "history_title": "Rapikan sebelumnya",
+    "history_empty": "Belum pernah merapikan folder.",
+    "was_undone": "diurungkan",
+    "undo_run": "Urungkan rapikan {{date}}"
   }
 }

@@ -47,6 +47,18 @@ describe("BrowseView", () => {
     expect(await screen.findByRole("button", { name: "Movies" })).toBeInTheDocument();
   });
 
+  it("hands the current folder to Organize", async () => {
+    const user = userEvent.setup();
+    const seen: string[] = [];
+    const listener = (e: Event) => seen.push((e as CustomEvent<string>).detail);
+    window.addEventListener("sapu:organize-open", listener);
+    render(<BrowseView root="/Users/you" initialTab="folders" onTrash={noop} removed={new Set()} />);
+    await user.click(await screen.findByRole("button", { name: "Movies" }));
+    await user.click(await screen.findByRole("button", { name: "Rapikan folder ini" }));
+    window.removeEventListener("sapu:organize-open", listener);
+    expect(seen).toEqual(["/Users/you/Movies"]);
+  });
+
   it("flags apps built for another processor", async () => {
     render(<BrowseView root="/Users/you" initialTab="unsupported" onTrash={noop} removed={new Set()} />);
     expect(await screen.findByText("Zoom")).toBeInTheDocument();

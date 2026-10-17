@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { requestMemoryDialog } from "@/features/memory/memoryBus";
 import { careApi } from "@/lib/careApi";
 import { cleanApi } from "@/lib/cleanApi";
+import { organizeApi } from "@/lib/organizeApi";
 import { dedupeApi } from "@/lib/dedupeApi";
 import { formatBytes, formatEta } from "@/lib/format";
 import { scanApi } from "@/lib/scanApi";
@@ -59,6 +60,12 @@ export function StatusBar({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       cleanApi.onRunProgress((p) => setTask({ screen: "clean", label: "task_clean_run", fraction: p.fraction, eta: p.eta })),
       cleanApi.onRunDone(clear),
       cleanApi.onRunError(clear),
+      organizeApi.onProgress(() => setTask({ screen: "organize", label: "task_organize", fraction: null, eta: { kind: "indeterminate" } })),
+      organizeApi.onPlan(clear),
+      organizeApi.onError(clear),
+      organizeApi.onRunProgress((p) => setTask({ screen: "organize", label: "task_organize", fraction: p.fraction, eta: p.eta })),
+      organizeApi.onRunDone(clear),
+      organizeApi.onRunError(clear),
     ];
     return () => {
       void Promise.all(subs).then((fns) => fns.forEach((f) => f()));

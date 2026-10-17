@@ -1,6 +1,6 @@
 # Organize ("Rapikan"): tidy a folder into meaningful groups
 
-Date: 17 October 2026 · Status: Sprint 1 (core, AI task, CLI) implemented on feature/organize-core; Sprint 2 (Tauri + UI) pending · Owner decision: grouping by topic/project with AI help, file kind inside; proposal first, then tick per group, always undoable.
+Date: 17 October 2026 · Status: implemented (Sprint 1 core + AI + CLI; Sprint 2 Tauri + UI). The UI sends only the selection; the plan stays in the app session. · Owner decision: grouping by topic/project with AI help, file kind inside; proposal first, then tick per group, always undoable.
 
 ## 1. Purpose
 
