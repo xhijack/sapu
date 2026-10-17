@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppWindow, Trash2 } from "lucide-react";
@@ -148,7 +149,7 @@ export function AppsView({ onSeeHistory }: { onSeeHistory: () => void }) {
 
       {tab === "orphans" && (
         <div className="grid gap-3">
-          <p className="text-sm text-fg-muted">{t("apps.orphans_body")}</p>
+          <Callout tone="review">{t("apps.orphans_body")}</Callout>
           {orphans === null ? (
             <LoadingState />
           ) : orphans.length === 0 ? (

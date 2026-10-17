@@ -5,8 +5,9 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Args;
 use sapu_core::organize::{
-    FolderListing, ItemAdvice, OrganizePlan, OrganizeStore, Unit, apply, build_move_plan,
-    default_selection, plan_from_advice, propose, scan_folder, undo,
+    FolderListing, ItemAdvice, LeftoverReason, OrganizePlan, OrganizeStore, Unit, apply,
+    build_move_plan, default_selection, find_leftovers, plan_from_advice, propose, scan_folder,
+    undo,
 };
 use sapu_core::progress::NoProgress;
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -104,6 +105,24 @@ pub fn run(a: OrganizeArgs) -> anyhow::Result<()> {
             println!("  junk?   {} ({why})", e.name);
         }
     }
+    let dupes = sapu_core::organize::duplicates_in(
+        &root,
+        &sapu_core::scanner::ScanControl::new(),
+        &mut NoProgress,
+    )
+    .ok();
+    for l in find_leftovers(&listing, dupes.as_ref()) {
+        match &l.reason {
+            LeftoverReason::OfficeLock => {
+                println!("  junk?   {} (Office lock file)", l.path.display())
+            }
+            LeftoverReason::Duplicate { of } => println!(
+                "  junk?   {} (exact copy of {})",
+                l.path.display(),
+                of.display()
+            ),
+        }
+    }
     if !plan.unplaced.is_empty() {
         println!("  {} item(s) left where they are", plan.unplaced.len());
     }
@@ -171,8 +190,11 @@ fn advise_with_ai(listing: &FolderListing, plan: &mut OrganizePlan) {
             })
             .collect(),
     };
+    let sent: Vec<String> = input.items.iter().map(|i| i.name.clone()).collect();
     match client.run::<TidyItems>(&input) {
-        Ok(answer) => {
+        Ok(mut answer) => {
+            // Names went out anonymised; match the answer to the real files.
+            answer.restore_names(&sent, client.anonymizer());
             let advice: Vec<ItemAdvice> = answer
                 .items
                 .into_iter()

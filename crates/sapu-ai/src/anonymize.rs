@@ -44,6 +44,15 @@ impl Anonymizer {
         out
     }
 
+    /// Puts the user name back into text the provider wrote about
+    /// anonymised names (a suggested file name, a reason). Stays local.
+    pub fn restore(&self, s: &str) -> String {
+        match (&self.user, self.enabled) {
+            (Some(u), true) if u.len() >= 3 => s.replace("<user>", u),
+            _ => s.to_string(),
+        }
+    }
+
     pub fn path(&self, p: &Path) -> String {
         self.text(&p.to_string_lossy())
     }
@@ -63,5 +72,13 @@ mod tests {
         assert_eq!(a.text("backup-budi-2024"), "backup-<user>-2024");
         let off = Anonymizer::with(Some("/Users/budi".into()), Some("budi".into()), false);
         assert_eq!(off.path(Path::new("/Users/budi/x")), "/Users/budi/x");
+    }
+
+    #[test]
+    fn restores_the_user_name_in_answers() {
+        let a = Anonymizer::with(Some("/Users/budi".into()), Some("budi".into()), true);
+        assert_eq!(a.restore("Formulir <user>.pdf"), "Formulir budi.pdf");
+        let off = Anonymizer::with(None, Some("budi".into()), false);
+        assert_eq!(off.restore("Formulir <user>.pdf"), "Formulir <user>.pdf");
     }
 }

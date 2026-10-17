@@ -84,7 +84,7 @@ impl AiClient {
 
     pub fn run<T: Task>(&self, input: &T::Input) -> Result<T::Output> {
         let v = self.sanitized::<T>(input)?;
-        let key = AnswerCache::key(T::NAME, self.provider.model(), &v);
+        let key = AnswerCache::key(T::NAME, self.provider.model(), T::system_prompt(), &v);
         if let Ok(c) = self.cache.lock()
             && let Some(hit) = c.get(&key)
             && let Ok(out) = serde_json::from_value::<T::Output>(hit.clone())

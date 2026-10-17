@@ -222,8 +222,11 @@ fn advise_with_ai(listing: &FolderListing, plan: &mut OrganizePlan) -> (bool, Op
             })
             .collect(),
     };
+    let sent: Vec<String> = input.items.iter().map(|i| i.name.clone()).collect();
     match client.run::<TidyItems>(&input) {
-        Ok(answer) => {
+        Ok(mut answer) => {
+            // Names went out anonymised; match the answer to the real files.
+            answer.restore_names(&sent, client.anonymizer());
             let advice: Vec<ItemAdvice> = answer
                 .items
                 .into_iter()

@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function UninstallDialog({ app, leftovers, onClose }: Props) {
           </p>
         ) : preview ? (
           <>
-            <p className="text-fg-muted">{t("apps.confirm_body", { count: movable.length, size: formatBytes(size, i18n.language) })}</p>
+            <Callout>{t("apps.confirm_body", { count: movable.length, size: formatBytes(size, i18n.language) })}</Callout>
             <ul className="max-h-56 overflow-y-auto rounded-md border border-border text-sm">
               {preview.entries.map((e) => (
                 <li key={e.path} className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 last:border-0">

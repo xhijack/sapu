@@ -30,11 +30,15 @@ impl AnswerCache {
         )
     }
 
-    pub fn key(task: &str, model: &str, input: &serde_json::Value) -> String {
+    /// The prompt is part of the key, so improving a prompt never serves
+    /// answers given to the old one.
+    pub fn key(task: &str, model: &str, prompt: &str, input: &serde_json::Value) -> String {
         let mut h = blake3::Hasher::new();
         h.update(task.as_bytes());
         h.update(b"\0");
         h.update(model.as_bytes());
+        h.update(b"\0");
+        h.update(prompt.as_bytes());
         h.update(b"\0");
         h.update(input.to_string().as_bytes());
         h.finalize().to_hex().to_string()
@@ -59,10 +63,12 @@ mod tests {
     #[test]
     fn same_input_same_key_and_roundtrip() {
         let v = serde_json::json!({"a": 1});
-        let k1 = AnswerCache::key("whatis", "m", &v);
-        let k2 = AnswerCache::key("whatis", "m", &serde_json::json!({"a": 1}));
+        let k1 = AnswerCache::key("whatis", "m", "prompt", &v);
+        let k2 = AnswerCache::key("whatis", "m", "prompt", &serde_json::json!({"a": 1}));
         assert_eq!(k1, k2);
-        assert_ne!(k1, AnswerCache::key("whatis", "other", &v));
+        assert_ne!(k1, AnswerCache::key("whatis", "other", "prompt", &v));
+        // A changed prompt must not reuse answers given to the old one.
+        assert_ne!(k1, AnswerCache::key("whatis", "m", "prompt v2", &v));
         let tmp = tempfile::tempdir().expect("tempdir");
         let p = tmp.path().join("c.json");
         let mut c = AnswerCache::default();

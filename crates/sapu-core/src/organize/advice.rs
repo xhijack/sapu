@@ -5,7 +5,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::group::{Confidence, Group, GroupSource, OrganizePlan, sanitize_name};
+use super::group::{
+    Confidence, Group, GroupSource, OrganizePlan, lower_tokens, normalised, sanitize_name,
+};
 use super::plan::renamed_file;
 use super::scan::{FolderListing, OrganizeEntry, Unit};
 
@@ -68,6 +70,29 @@ pub fn plan_from_advice(listing: &FolderListing, advice: &[ItemAdvice]) -> Optio
             continue;
         }
         dest.insert(e.name.as_str(), cat);
+    }
+    // A file named after a folder (whole words) that the advice puts in the
+    // same category goes inside that folder: "My Saham.xlsx" joins "Saham".
+    let redirects: Vec<(&str, String)> = listing
+        .entries
+        .iter()
+        .filter(|e| e.unit == Unit::File)
+        .filter_map(|e| {
+            let cat = dest.get(e.name.as_str())?;
+            let words = lower_tokens(&e.name);
+            let folder = listing.entries.iter().find(|f| {
+                let fw = lower_tokens(&f.name);
+                f.unit == Unit::Folder
+                    && dest.get(f.name.as_str()) == Some(cat)
+                    && normalised(&f.name).chars().count() >= 4
+                    && !fw.is_empty()
+                    && words.windows(fw.len()).any(|w| w == fw.as_slice())
+            })?;
+            Some((e.name.as_str(), folder.name.clone()))
+        })
+        .collect();
+    for (file, folder) in redirects {
+        dest.insert(file, folder);
     }
     // A folder that receives items stays where it is.
     let receiving: HashSet<String> = dest.values().map(|c| c.to_lowercase()).collect();
@@ -338,5 +363,57 @@ mod tests {
         let listing = scan_folder(t.path()).expect("scan");
         assert!(plan_from_advice(&listing, &[adv("nope.pdf", Some("X"))]).is_none());
         assert!(plan_from_advice(&listing, &[]).is_none());
+    }
+
+    #[test]
+    fn a_file_named_after_a_folder_in_the_same_category_goes_inside_it() {
+        let t = pribadi();
+        let listing = scan_folder(t.path()).expect("scan");
+        let plan = plan_from_advice(
+            &listing,
+            &[
+                adv("Saham", Some("Keuangan")),
+                adv("My Saham.xlsx", Some("Keuangan")),
+                adv("sedelah.xlsx", Some("Keuangan")),
+            ],
+        )
+        .expect("plan");
+        let names = |g: &str| {
+            plan.groups
+                .iter()
+                .find(|g2| g2.name == g)
+                .map(|g2| {
+                    g2.entries
+                        .iter()
+                        .map(|e| e.name.clone())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+        };
+        assert!(
+            names("Saham").contains(&"My Saham.xlsx".to_string()),
+            "{:?}",
+            plan.groups
+        );
+        assert!(
+            !names("Keuangan").contains(&"Saham".to_string()),
+            "the folder that receives stays"
+        );
+        assert!(names("Keuangan").contains(&"sedelah.xlsx".to_string()));
+    }
+
+    #[test]
+    fn a_file_in_another_category_is_not_pulled_into_a_matching_folder() {
+        let t = pribadi();
+        let listing = scan_folder(t.path()).expect("scan");
+        let plan = plan_from_advice(
+            &listing,
+            &[
+                adv("Saham", Some("Keuangan")),
+                adv("My Saham.xlsx", Some("Belajar")),
+            ],
+        )
+        .expect("plan");
+        assert!(plan.groups.iter().any(|g| g.name == "Belajar" && g.entries.iter().any(|e| e.name == "My Saham.xlsx")));
     }
 }

@@ -22,6 +22,7 @@ describe("App", () => {
     mock.settings = { ...mock.settings, onboarding_done: true, disclaimer_accepted: false };
     render(<App />);
     await screen.findByText("Sebelum mulai");
+    expect(screen.getByRole("note")).toHaveTextContent(/Sapu menghapus file/);
     expect(screen.getByRole("button", { name: "Lanjut" })).toBeDisabled();
     await user.click(screen.getByRole("checkbox", { name: /Saya sudah membaca/ }));
     await user.click(screen.getByRole("button", { name: "Lanjut" }));

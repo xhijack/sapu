@@ -86,6 +86,26 @@ fn half() -> f64 {
     0.5
 }
 
+impl TidyItemsAnswer {
+    /// The provider answers about the names it was sent, which may be
+    /// anonymised ("form <user>.pdf"). Maps each answer back to the real
+    /// item whose anonymised name it is, and restores the user name in
+    /// suggested names, categories and reasons.
+    pub fn restore_names(&mut self, originals: &[String], a: &crate::anonymize::Anonymizer) {
+        for item in &mut self.items {
+            if !originals.contains(&item.name)
+                && let Some(o) = originals.iter().find(|o| a.text(o) == item.name)
+            {
+                item.name = o.clone();
+            }
+            item.rename = item.rename.as_deref().map(|r| a.restore(r));
+            item.category = item.category.as_deref().map(|c| a.restore(c));
+            item.reason = a.restore(&item.reason);
+        }
+        self.categories = self.categories.iter().map(|c| a.restore(c)).collect();
+    }
+}
+
 pub struct TidyItems;
 
 impl Task for TidyItems {
@@ -98,10 +118,10 @@ impl Task for TidyItems {
 Decide for EVERY item where it belongs:\n\
 1. Group by purpose or topic (for example finance, work, identity documents, business, worship, letters, study, photos of family), never by file type. A folder of mixed PDFs and spreadsheets about money is 'Finance', not 'Documents'.\n\
 2. Make between 4 and 8 categories in total. Reuse an existing folder name as the category when it already fits; an existing folder can also go into a broader category (for example folders 'Saham' and 'Rekening Koran' into 'Keuangan').\n\
-3. Do not create a category for a single item unless it clearly stands apart. Leave an item where it is (category null) only when nothing fits.\n\
-4. Category names are short, plain folder names in the person's language, with no slashes.\n\
-5. Suggest a rename only for files whose name is meaningless or broken (scan0001.pdf, IMG_2015..., 'Untitled', 'final final(2)'). Keep it short and descriptive, keep the extension. Never rename folders.\n\
-6. Mark junk=true only for files that are very likely useless: temporary exports, obvious duplicates by name such as 'copy' or '(1)', empty-looking or meaningless leftovers. Explain why in 'reason'. When unsure, junk=false. Never mark folders as junk.\n\
+3. Do not create a category for a single item unless it clearly stands apart. Every item should get a category; use null only when nothing fits at all.\n\
+4. Category names are short, plain folder names in the person's language, with no slashes. When a file's name contains the name of an existing folder (for example 'My Saham.xlsx' and folder 'Saham'), give the file and that folder the same category: the file then goes inside that folder.\n\
+5. People often save files with unclear names. Suggest a rename for every file whose name does not say what it is: camera or scanner names (scan0001.pdf, IMG_2015..., 'WhatsApp Image ...'), generic words ('form', 'foto', 'dokumen', 'Untitled', 'new'), typos, names that are only a person or an ID, 'final final(2)'. Use what the name, the year and the neighbouring items tell you. Keep it short and descriptive, keep the extension. Never rename folders. If you cannot guess a better name, give none.\n\
+6. Mark junk=true for files that are probably not needed, and say why in 'reason': copies by name ('copy', '(1)', '- Copy'), an older version next to a newer one of the same document (the oldest CVs when several years exist), a .zip next to a folder with the same name (already extracted), a saved web page (.htm) next to the same document as PDF, schedules or announcements for a date long past, installers. These are suggestions the person checks, so propose them when it looks likely. Never mark folders as junk, and never the newest or only version of a document.\n\
 7. confidence is 0.0 to 1.0 for the category choice. Answer with JSON only."
     }
 
@@ -210,5 +230,48 @@ mod tests {
                 && sys.contains("existing folder")
                 && sys.contains("never see file contents")
         );
+        // Bolder about names and junk: a real folder gave zero suggestions.
+        assert!(
+            sys.contains("inside that folder"),
+            "files named after a folder go into it"
+        );
+        assert!(
+            sys.contains("older version"),
+            "old versions next to a newer one are junk candidates"
+        );
+        assert!(
+            sys.contains("unclear"),
+            "unclear names get a suggestion, not only broken ones"
+        );
+        assert!(
+            !sys.contains("very likely useless"),
+            "the junk rule is no longer that strict"
+        );
+    }
+
+    #[test]
+    fn answers_about_anonymised_names_map_back_to_the_real_files() {
+        let a = crate::anonymize::Anonymizer::with(None, Some("ramdani".into()), true);
+        let mut answer = TidyItems::parse(
+            r#"{"categories":["Identitas"],"items":[
+                {"name":"form <user>.pdf","category":"Identitas","rename":"Formulir <user>.pdf","junk":false,"reason":"","confidence":0.8},
+                {"name":"<user>-bpjs.jpeg","category":"Identitas","rename":null,"junk":false,"reason":"","confidence":0.9},
+                {"name":"lain.pdf","category":null,"rename":null,"junk":false,"reason":"","confidence":0.5}
+            ]}"#,
+        )
+        .expect("parse");
+        let originals = vec![
+            "form ramdani.pdf".to_string(),
+            "ramdani-bpjs.jpeg".to_string(),
+            "lain.pdf".to_string(),
+        ];
+        answer.restore_names(&originals, &a);
+        assert_eq!(answer.items[0].name, "form ramdani.pdf");
+        assert_eq!(
+            answer.items[0].rename.as_deref(),
+            Some("Formulir ramdani.pdf")
+        );
+        assert_eq!(answer.items[1].name, "ramdani-bpjs.jpeg");
+        assert_eq!(answer.items[2].name, "lain.pdf");
     }
 }

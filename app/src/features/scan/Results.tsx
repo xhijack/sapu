@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,7 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
             </p>
             {summary.diff && <DiffLine diff={summary.diff} />}
             {summary.cancelled && <p className="text-sm text-risk-review-fg">{t("scan.cancelled_note")}</p>}
-            {summary.denied_count > 0 && <p className="text-sm text-fg-muted">{t("scan.denied_note", { count: summary.denied_count })}</p>}
+            {summary.denied_count > 0 && <Callout tone="review">{t("scan.denied_note", { count: summary.denied_count })}</Callout>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onRescan}>

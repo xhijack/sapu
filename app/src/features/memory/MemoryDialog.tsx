@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Info, MemoryStick, RefreshCw } from "lucide-react";
@@ -208,7 +209,7 @@ export function MemoryDialog({ os, onClose }: Props) {
         {os === "macos" && (
           <section className="grid gap-2 border-t border-border pt-4">
             <h3 className="text-sm font-semibold text-fg-muted">{t("memory.purge_title")}</h3>
-            <p className="text-xs text-fg-muted">{t("memory.purge_body")}</p>
+            <Callout>{t("memory.purge_body")}</Callout>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="num text-sm">
                 {purge.state === "running" && t("memory.purge_running")}

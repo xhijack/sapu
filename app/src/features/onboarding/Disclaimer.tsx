@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ export function DisclaimerContent({ accepted, onAccept }: { accepted: boolean; o
         <AlertTriangle aria-hidden className="h-6 w-6 text-risk-review-fg" />
         {t("disclaimer.title")}
       </CardTitle>
-      <p className="text-fg-muted">{t("disclaimer.body")}</p>
+      <Callout tone="review">{t("disclaimer.body")}</Callout>
       <ul className="grid gap-2 text-sm">
         <li className="flex items-start gap-2">
           <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-accent" />

@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
@@ -43,7 +44,7 @@ export function AiPanel({ confidence, reason, preview, children }: Props) {
           </button>
           {open && (
             <div className="mt-2 grid gap-1">
-              <p className="text-fg-muted">{t("ai.payload_note", { provider: preview.provider, model: preview.model })}</p>
+              <Callout>{t("ai.payload_note", { provider: preview.provider, model: preview.model })}</Callout>
               <pre className="path max-h-48 overflow-auto rounded-md bg-surface-muted p-2 whitespace-pre-wrap">{preview.user}</pre>
             </div>
           )}

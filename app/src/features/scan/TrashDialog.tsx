@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
@@ -73,7 +74,7 @@ export function TrashDialog({ paths, onClose }: Props) {
           </p>
         ) : preview ? (
           <>
-            <p className="text-fg-muted">{t("scan.trash_body", { count: movable.length, size: formatBytes(size, i18n.language) })}</p>
+            <Callout>{t("scan.trash_body", { count: movable.length, size: formatBytes(size, i18n.language) })}</Callout>
             <ul className="max-h-56 overflow-y-auto rounded-md border border-border">
               {preview.entries.map((e) => (
                 <li key={e.path} className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 last:border-0">

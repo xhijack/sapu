@@ -122,12 +122,12 @@ fn tokens(name: &str) -> Vec<String> {
 }
 
 /// Words of a name in lowercase, for whole-word comparison.
-fn lower_tokens(name: &str) -> Vec<String> {
+pub(super) fn lower_tokens(name: &str) -> Vec<String> {
     tokens(name).iter().map(|t| t.to_lowercase()).collect()
 }
 
 /// Lowercase letters and digits only: "accel bytes" and "AccelBytes" match.
-fn normalised(s: &str) -> String {
+pub(super) fn normalised(s: &str) -> String {
     s.rsplit_once('.')
         .map(|(stem, _)| stem)
         .unwrap_or(s)

@@ -37,7 +37,7 @@ describe("AI on", () => {
     expect(panel).toHaveTextContent("Saran AI");
     expect(panel).toHaveTextContent(/video rekaman/);
     await user.click(within(panel).getByRole("button", { name: "Lihat data yang dikirim" }));
-    expect(panel).toHaveTextContent(/Hanya ini yang dikirim ke ollama/);
+    expect(within(panel).getByRole("note")).toHaveTextContent(/Hanya ini yang dikirim ke ollama/);
 
     await user.click(screen.getByRole("tab", { name: "Jelajah" }));
     await user.type(await screen.findByRole("searchbox"), "video besar lama");

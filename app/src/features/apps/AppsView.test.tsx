@@ -11,7 +11,7 @@ describe("AppsView", () => {
     expect(items[0]).toHaveTextContent("Xcode");
 
     await user.click(screen.getByRole("button", { name: /Xcode/ }));
-    expect(await screen.findByText("Aplikasi bawaan macOS tidak bisa dihapus oleh Sapu.")).toBeInTheDocument();
+    expect((await screen.findByText("Aplikasi bawaan macOS tidak bisa dihapus oleh Sapu.")).closest('[role="note"]')).not.toBeNull();
 
     await user.click(screen.getByRole("button", { name: /Zoom/ }));
     expect((await screen.findAllByText("zoom.us")).length).toBeGreaterThan(0);

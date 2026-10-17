@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui/Callout";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
@@ -100,7 +101,7 @@ export function AppDetail({ app, onUninstall }: Props) {
       </div>
 
       {app.is_system ? (
-        <p className="text-sm text-fg-muted">{t("apps.system_note")}</p>
+        <Callout>{t("apps.system_note")}</Callout>
       ) : (
         <div className="grid gap-2">
           {running && <p className="text-sm text-risk-review-fg">{t("apps.running_note")}</p>}

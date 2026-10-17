@@ -17,7 +17,7 @@ describe("ScanView", () => {
 
     await screen.findByTestId("scan-total", {}, { timeout: 3000 });
     expect(screen.getByRole("img", { name: "Ruang per kategori" })).toBeInTheDocument();
-    expect(screen.getByText(/3 folder tidak bisa dibaca/)).toBeInTheDocument();
+    expect(screen.getByText(/3 folder tidak bisa dibaca/).closest('[role="note"]')).not.toBeNull();
   });
 
   it("can pause, resume and cancel", async () => {
@@ -49,7 +49,7 @@ describe("ScanView", () => {
     await user.click(rows[0]!);
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent("Pindahkan ke Trash?");
-    await within(dialog).findByText(/akan dipindahkan ke Trash/);
+    expect((await within(dialog).findByText(/akan dipindahkan ke Trash/)).closest('[role="note"]')).not.toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Pindahkan ke Trash" }));
     await screen.findByText(/1 item dipindahkan ke Trash/);
   });

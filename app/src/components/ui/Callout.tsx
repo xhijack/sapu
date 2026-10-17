@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  * first line, so it is never mistaken for small print. `review` is the
  * yellow "check first" tone, `info` the neutral one.
  */
-export function Callout({ tone = "info", title, children, action }: { tone?: "info" | "review"; title: ReactNode; children?: ReactNode; action?: ReactNode }) {
+export function Callout({ tone = "info", title, children, action }: { tone?: "info" | "review"; title?: ReactNode; children?: ReactNode; action?: ReactNode }) {
   const Icon = tone === "review" ? TriangleAlert : Info;
   return (
     <div
@@ -20,7 +20,7 @@ export function Callout({ tone = "info", title, children, action }: { tone?: "in
     >
       <Icon aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
       <div className="grid min-w-0 flex-1 gap-0.5">
-        <p className="font-semibold">{title}</p>
+        {title && <p className="font-semibold">{title}</p>}
         {children && <div className="text-sm text-fg">{children}</div>}
       </div>
       {action && <div className="shrink-0 self-center">{action}</div>}
