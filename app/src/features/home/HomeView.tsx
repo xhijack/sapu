@@ -24,7 +24,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const { t, i18n } = useTranslation();
   const [snap, setSnap] = useState<SystemSnapshot | null>(null);
   const [previous, setPrevious] = useState<PreviousScan | null>(null);
-  const [totals, setTotals] = useState<HistoryTotals | null>(null);
+  const [totals, setTotals] = useState<(HistoryTotals & { days_since_first: number | null }) | null>(null);
   const [recent, setRecent] = useState<ScanLogEntry[]>([]);
 
   useEffect(() => {
@@ -37,7 +37,10 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
       .then((tg) => (tg.home ? scanApi.previous(tg.home) : null))
       .then((p) => live && setPrevious(p))
       .catch(() => undefined);
-    api.historyTotals().then((x) => live && setTotals(x)).catch(() => undefined);
+    api
+      .historyTotals()
+      .then((x) => live && setTotals({ ...x, days_since_first: x.first_session_unix ? Math.max(1, Math.round((Date.now() / 1000 - x.first_session_unix) / 86_400)) : null }))
+      .catch(() => undefined);
     scanApi.history(4).then((x) => live && setRecent(x)).catch(() => undefined);
     return () => {
       live = false;
@@ -111,7 +114,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
             <div>
               <p className="display num text-2xl">{t("home.freed_total", { size: formatBytes(totals.bytes_freed, lang) })}</p>
               <p className="num text-xs text-fg-muted">
-                {totals.first_session_unix ? t("home.freed_since", { date: formatDate(totals.first_session_unix, lang), days: Math.max(1, Math.round((Date.now() / 1000 - totals.first_session_unix) / 86_400)) }) + ", " : ""}
+                {totals.first_session_unix && totals.days_since_first ? t("home.freed_since", { date: formatDate(totals.first_session_unix, lang), days: totals.days_since_first }) + ", " : ""}
                 {t("home.freed_sessions", { count: totals.sessions, items: totals.items_disposed.toLocaleString(lang) })}
               </p>
             </div>

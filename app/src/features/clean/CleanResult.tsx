@@ -18,7 +18,7 @@ export function CleanResult({ result, rows, onSeeHistory, onBack }: Props) {
   const label = (o: CleanRunReport["outcomes"][number]) =>
     o.kind === "project" ? t("clean.outcome_project", { name: o.root.split("/").pop() ?? o.root }) : name(o.rule_id);
   return (
-    <div className="grid max-w-3xl gap-6">
+    <div className="grid max-w-[1280px] gap-6">
       <h1 className="flex items-center gap-2 text-2xl font-semibold">
         <CheckCircle2 aria-hidden className="h-6 w-6 text-risk-safe-fg" />
         {t("clean.done_title")}

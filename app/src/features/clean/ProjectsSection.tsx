@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { RiskBadge } from "@/components/RiskBadge";
 import { formatBytes } from "@/lib/format";
 import type { Project } from "@/lib/types";
@@ -22,12 +24,19 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
     const time = p.idle_days >= 60 ? t("clean.months", { count: Math.round(p.idle_days / 30) }) : t("clean.days", { count: p.idle_days });
     return t("clean.project_idle", { time });
   };
+  const SHOW = 5;
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? projects : projects.slice(0, SHOW);
+  const totalBytes = projects.reduce((a, p) => a + p.bytes, 0);
   return (
     <section className="grid gap-2">
-      <h2 className="text-sm font-medium text-fg-muted">{t("clean.projects_title")}</h2>
-      <p className="text-sm text-fg-muted">{t("clean.projects_body")}</p>
-      <ul className="grid gap-3">
-        {projects.map((p) => (
+      <div className="flex flex-wrap items-baseline gap-x-3">
+        <h2 className="text-sm font-semibold">{t("clean.projects_title")}</h2>
+        <span className="num text-sm text-fg-muted">{t("clean.projects_summary", { count: projects.length, size: formatBytes(totalBytes, i18n.language) })}</span>
+        <span className="text-xs text-fg-muted">{t("clean.projects_body")}</span>
+      </div>
+      <ul className="grid gap-3 lg:grid-cols-2">
+        {shown.map((p) => (
           <li key={p.root} className="grid gap-2 card-solid p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="min-w-0">
@@ -49,9 +58,9 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
                   <li key={a.path}>
                     <label className="flex cursor-pointer items-center gap-3 px-3 py-2">
                       <input type="checkbox" checked={selected.has(id)} onChange={() => onToggle(id)} aria-label={`${p.name}/${a.kind}`} className="h-4 w-4 accent-[var(--accent)]" />
-                      <span className="path min-w-0 flex-1 truncate">{a.kind}</span>
+                      <span className="path min-w-[96px] shrink-0">{a.kind}</span>
                       <RiskBadge level={a.risk === "green" ? "safe" : "review"} />
-                      <span className="hidden text-xs text-fg-muted sm:inline">
+                      <span className="hidden min-w-0 flex-1 truncate text-xs text-fg-muted sm:inline">
                         {a.gitignored ? t("clean.artefact_ignored") : t("clean.artefact_not_ignored")}, {git}
                       </span>
                       <span className="num w-20 shrink-0 text-right text-sm">{formatBytes(a.bytes, i18n.language)}</span>
@@ -70,6 +79,11 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
           </li>
         ))}
       </ul>
+      {projects.length > SHOW && (
+        <Button variant="ghost" size="sm" className="w-fit" onClick={() => setExpanded((e) => !e)}>
+          {expanded ? t("clean.show_less") : t("clean.show_more", { count: projects.length - SHOW })}
+        </Button>
+      )}
     </section>
   );
 }

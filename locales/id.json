@@ -223,7 +223,7 @@
     "denied_note": "{{count}} folder tidak bisa dibaca karena izin. Hasil tetap bisa dipakai.",
     "rescan": "Pindai ulang",
     "new_scan": "Pindai yang lain",
-    "tab_summary": "Ringkasan",
+    "tab_summary": "Kategori",
     "tab_map": "Peta",
     "strip_label": "Pembagian ruang per kategori",
     "share": "{{pct}} dari total",
@@ -269,7 +269,6 @@
     "diff_new": "baru",
     "scanning_files": "file diperiksa",
     "scanning_bytes": "sudah diukur",
-    "map_treemap": "Kotak",
     "map_sunburst": "Cincin",
     "sun_hint": "Klik cincin untuk masuk, klik tengah untuk naik. Tambahkan ke keranjang lalu pindahkan sekaligus.",
     "sun_up": "Naik",
@@ -281,7 +280,6 @@
     "basket_total": "{{count}} item, {{size}}",
     "basket_trash": "Pindahkan keranjang ke Trash",
     "quicklook": "Pratinjau (Spasi)",
-    "categories_title": "Per kategori",
     "ring_label": "Ruang per kategori",
     "result_used_of": "dipakai dari {{total}}",
     "result_used": "dipakai",
@@ -295,8 +293,6 @@
     "next_clean_none": "Tidak ada yang perlu dibersihkan saat ini.",
     "next_dupes": "Cari file ganda",
     "next_dupes_body": "Periksa folder ini untuk file yang isinya sama persis.",
-    "next_largest": "Lihat yang terbesar",
-    "next_largest_body": "File dan folder paling besar, siap ditinjau satu per satu.",
     "tab_browse": "Jelajah",
     "live_top_files": "File terbesar sejauh ini"
   },
@@ -377,7 +373,11 @@
     "outcome_project": "Proyek {{name}}",
     "group_mail": "Mail",
     "group_screenshots": "Screenshot",
-    "group_backups": "Backup perangkat"
+    "group_backups": "Backup perangkat",
+    "group_summary": "{{count}} aturan, {{picked}} dipilih",
+    "projects_summary": "{{count}} proyek, {{size}}",
+    "show_more": "Tampilkan {{count}} lainnya",
+    "show_less": "Tampilkan lebih sedikit"
   },
   "dedupe": {
     "title": "Duplikat",

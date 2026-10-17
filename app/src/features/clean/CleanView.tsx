@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Sparkles } from "lucide-react";
+import { ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { RiskBadge } from "@/components/RiskBadge";
@@ -110,7 +110,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const groups = [...new Set(rows.map((r) => r.group))];
 
   return (
-    <div className="grid max-w-3xl gap-8">
+    <div className="grid max-w-[1280px] gap-6">
       <div>
         <h1 className="display text-2xl">{t("clean.title")}</h1>
         <p className="mt-1 text-fg-muted">{t("clean.intro")}</p>
@@ -122,10 +122,22 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
         <>
           <div className="grid gap-6">
             {evaluation.report.projects.length > 0 && <ProjectsSection projects={evaluation.report.projects} selected={selected} onToggle={toggle} />}
-            {groups.map((g) => (
-              <section key={g} className="grid gap-1">
-                <h2 className="text-sm font-medium text-fg-muted">{t(`clean.group_${g}`, { defaultValue: g })}</h2>
-                <ul className="divide-y divide-border card-solid">
+            {groups.map((g) => {
+              const inGroup = rows.filter((r) => r.group === g);
+              const groupBytes = inGroup.reduce((a, r) => a + (r.bytes ?? 0), 0);
+              const picked = inGroup.filter((r) => selected.has(r.id)).length;
+              // Open when something is preselected or there is real size to see;
+              // small, unselected groups fold away so the page fits one view.
+              const open = picked > 0 || groupBytes >= 100 * 1024 * 1024;
+              return (
+              <details key={g} open={open} className="group/acc card-solid">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
+                  <ChevronRight aria-hidden className="h-4 w-4 text-fg-faint transition-transform group-open/acc:rotate-90" />
+                  <span className="font-semibold">{t(`clean.group_${g}`, { defaultValue: g })}</span>
+                  <span className="num text-fg-muted">{t("clean.group_summary", { count: inGroup.length, picked })}</span>
+                  <span className="num ml-auto font-medium">{groupBytes > 0 ? formatBytes(groupBytes, i18n.language) : ""}</span>
+                </summary>
+                <ul className="divide-y divide-border border-t border-border">
                   {rows
                     .filter((r) => r.group === g)
                     .map((r) => {
@@ -163,8 +175,9 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
                       );
                     })}
                 </ul>
-              </section>
-            ))}
+              </details>
+              );
+            })}
           </div>
 
           <div className="sticky bottom-0 -mx-8 flex items-center justify-between gap-4 border-t border-border bg-bg/95 px-8 py-4 backdrop-blur">

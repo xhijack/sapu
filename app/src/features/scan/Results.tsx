@@ -7,10 +7,9 @@ import { formatBytes, formatDate } from "@/lib/format";
 import type { Category, CleanSession, Profile, ScanSummary } from "@/lib/types";
 import { useEffect } from "react";
 import { cleanApi } from "@/lib/cleanApi";
-import { Tile } from "@/components/ui/tile";
-import { Copy, Search, Sparkles } from "lucide-react";
+import { ChevronRight, Copy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CategoryTiles } from "./CategoryTiles";
+import { CategoryList } from "./CategoryList";
 import { BrowseView, type BrowseTab } from "./browse/BrowseView";
 import { Sunburst } from "./Sunburst";
 import { Treemap } from "./Treemap";
@@ -21,7 +20,6 @@ import { WhatIsDialog } from "@/features/ai/WhatIsDialog";
 import { useAiEnabled } from "@/features/ai/useAiEnabled";
 
 type Tab = "summary" | "map" | "browse";
-type MapMode = "sunburst" | "treemap";
 
 interface Props {
   summary: ScanSummary;
@@ -35,7 +33,6 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const [tab, setTab] = useState<Tab>("summary");
-  const [mapMode, setMapMode] = useState<MapMode>("sunburst");
   const [category, setCategory] = useState<Category | null>(null);
   const [browseTab, setBrowseTab] = useState<BrowseTab>("large");
   const [trashing, setTrashing] = useState<string[] | null>(null);
@@ -91,24 +88,25 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
   };
 
   return (
-    <div className="grid max-w-[1280px] gap-8">
-      <header className="rise grid items-center gap-8 md:grid-cols-[auto_1fr]">
-        <SpaceRing size={200} thickness={18} total={diskTotal} segments={ringSegments} label={t("scan.ring_label")}>
+    <div className="grid max-w-[1280px] gap-6">
+      <header className="rise grid items-center gap-8 md:grid-cols-[auto_1fr_minmax(300px,380px)]">
+        <SpaceRing size={170} thickness={16} total={diskTotal} segments={ringSegments} label={t("scan.ring_label")}>
           <div className="grid gap-0.5">
-            <span className="display num text-[30px] leading-none">{diskTotal > 0 ? Math.round((summary.total_bytes / diskTotal) * 100) : 100}%</span>
+            <span className="display num text-[26px] leading-none">{diskTotal > 0 ? Math.round((summary.total_bytes / diskTotal) * 100) : 100}%</span>
             <span className="text-[11px] text-fg-muted">{summary.root.split("/").filter(Boolean).pop() || summary.root}</span>
           </div>
         </SpaceRing>
         <div className="grid gap-3">
           <div className="grid gap-1">
-            <p data-testid="scan-total" className="display num text-[44px] leading-[1.05]">
+            <p data-testid="scan-total" className="display num text-[40px] leading-[1.05]">
               {formatBytes(total, lang)}
-              <span className="ml-3 text-xl font-semibold text-fg-muted">{summary.disk_total_bytes ? t("scan.result_used_of", { total: formatBytes(summary.disk_total_bytes, lang) }) : t("scan.result_used")}</span>
-            </p>
-            <p className="path truncate text-fg-muted" title={summary.root}>
-              {summary.root}
+              <span className="ml-3 text-lg font-semibold text-fg-muted">{summary.disk_total_bytes ? t("scan.result_used_of", { total: formatBytes(summary.disk_total_bytes, lang) }) : t("scan.result_used")}</span>
             </p>
             <p className="num text-sm text-fg-muted">
+              <span className="path" title={summary.root}>
+                {summary.root}
+              </span>
+              {" · "}
               {t("scan.result_counts", { files: summary.file_count.toLocaleString(lang), dirs: summary.dir_count.toLocaleString(lang) })}
             </p>
             {summary.diff && <DiffLine diff={summary.diff} />}
@@ -124,23 +122,18 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
             </Button>
           </div>
         </div>
-      </header>
-
-      <section className="grid gap-3">
-        <h2 className="text-sm font-semibold text-fg-muted">{t("scan.next_title")}</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Tile
-            className="rise rise-1"
+        <aside className="card-solid grid gap-1 p-2">
+          <span className="px-2 pt-1 text-xs font-semibold text-fg-muted">{t("scan.next_title")}</span>
+          <NextStep
             tone="var(--accent)"
-            icon={<Sparkles className="h-5 w-5" />}
+            icon={<Sparkles className="h-4 w-4" />}
             title={t("scan.next_clean")}
             body={safeBytes === undefined ? t("scan.next_clean_checking") : safeBytes ? t("scan.next_clean_body", { size: formatBytes(safeBytes, lang) }) : t("scan.next_clean_none")}
             onClick={() => onNavigate?.("clean")}
           />
-          <Tile className="rise rise-2" tone="var(--cat-application)" icon={<Copy className="h-5 w-5" />} title={t("scan.next_dupes")} body={t("scan.next_dupes_body")} onClick={() => onNavigate?.("dedupe")} />
-          <Tile className="rise rise-3" tone="var(--cat-video)" icon={<Search className="h-5 w-5" />} title={t("scan.next_largest")} body={t("scan.next_largest_body")} onClick={() => { setBrowseTab("large"); setTab("browse"); }} />
-        </div>
-      </section>
+          <NextStep tone="var(--cat-application)" icon={<Copy className="h-4 w-4" />} title={t("scan.next_dupes")} body={t("scan.next_dupes_body")} onClick={() => onNavigate?.("dedupe")} />
+        </aside>
+      </header>
 
       {notice && (
         <p role="status" className="card-solid px-4 py-2 text-sm">
@@ -163,34 +156,28 @@ export function Results({ summary, profile = "general", onRescan, onNewScan, onN
             </button>
           ))}
         </div>
-        {tab === "map" && (
-          <div role="radiogroup" aria-label={t("scan.tab_map")} className="inline-flex rounded-full bg-surface-muted p-1 text-sm">
-            {(["sunburst", "treemap"] as MapMode[]).map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={mapMode === m} onClick={() => setMapMode(m)} className={cn("rounded-full px-3 py-1 font-medium", mapMode === m ? "bg-surface-solid shadow-[var(--shadow-1)]" : "text-fg-muted")}>
-                {t(`scan.map_${m}`)}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div role="tabpanel">
         {tab === "summary" && (
-          <div className="grid gap-6">
+          <div className="grid gap-4">
             {aiEnabled && <AiReport />}
-            <h2 className="text-sm font-semibold text-fg-muted">{t("scan.categories_title")}</h2>
-            <CategoryTiles
-              categories={summary.categories}
-              total={summary.total_bytes}
-              onSelect={(c) => {
-                setCategory(c);
-                setBrowseTab("large");
-                setTab("browse");
-              }}
-            />
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+              <CategoryList
+                columns={1}
+                categories={summary.categories.filter((c) => c.bytes > 0)}
+                total={summary.total_bytes}
+                onSelect={(c) => {
+                  setCategory(c);
+                  setBrowseTab("large");
+                  setTab("browse");
+                }}
+              />
+              <Treemap root={summary.root} />
+            </div>
           </div>
         )}
-        {tab === "map" && (mapMode === "sunburst" ? <Sunburst root={summary.root} onTrash={setTrashing} /> : <Treemap root={summary.root} />)}
+        {tab === "map" && <Sunburst root={summary.root} onTrash={setTrashing} />}
         {tab === "browse" && <BrowseView key={`${browseTab}:${category ?? "all"}`} root={summary.root} initialTab={browseTab} initialCategory={category} onTrash={setTrashing} removed={removed} onWhatIs={aiEnabled ? setWhatIs : undefined} aiEnabled={aiEnabled} />}
       </div>
 
@@ -226,5 +213,20 @@ function DiffLine({ diff }: { diff: NonNullable<ScanSummary["diff"]> }) {
         </>
       )}
     </p>
+  );
+}
+
+function NextStep({ tone, icon, title, body, onClick }: { tone: string; icon: React.ReactNode; title: string; body: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-surface-muted">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white" style={{ background: tone }}>
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-xs text-fg-muted">{body}</span>
+      </span>
+      <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-fg-faint" />
+    </button>
   );
 }

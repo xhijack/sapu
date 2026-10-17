@@ -223,7 +223,7 @@
     "denied_note": "{{count}} folders could not be read due to permissions. The results are still usable.",
     "rescan": "Scan again",
     "new_scan": "Scan something else",
-    "tab_summary": "Summary",
+    "tab_summary": "Categories",
     "tab_map": "Map",
     "strip_label": "Space by category",
     "share": "{{pct}} of total",
@@ -269,7 +269,6 @@
     "diff_new": "new",
     "scanning_files": "files checked",
     "scanning_bytes": "measured so far",
-    "map_treemap": "Boxes",
     "map_sunburst": "Rings",
     "sun_hint": "Click a ring to go inside, click the centre to go up. Add to the basket, then move everything at once.",
     "sun_up": "Up",
@@ -281,7 +280,6 @@
     "basket_total": "{{count}} items, {{size}}",
     "basket_trash": "Move basket to Trash",
     "quicklook": "Preview (Space)",
-    "categories_title": "By category",
     "ring_label": "Space by category",
     "result_used_of": "used of {{total}}",
     "result_used": "used",
@@ -295,8 +293,6 @@
     "next_clean_none": "Nothing to clean right now.",
     "next_dupes": "Find duplicates",
     "next_dupes_body": "Check this folder for files with identical contents.",
-    "next_largest": "See the largest",
-    "next_largest_body": "The biggest files and folders, ready to review one by one.",
     "tab_browse": "Browse",
     "live_top_files": "Largest files so far"
   },
@@ -377,7 +373,11 @@
     "outcome_project": "Project {{name}}",
     "group_mail": "Mail",
     "group_screenshots": "Screenshots",
-    "group_backups": "Device backups"
+    "group_backups": "Device backups",
+    "group_summary": "{{count}} rules, {{picked}} selected",
+    "projects_summary": "{{count}} projects, {{size}}",
+    "show_more": "Show {{count}} more",
+    "show_less": "Show fewer"
   },
   "dedupe": {
     "title": "Duplicates",

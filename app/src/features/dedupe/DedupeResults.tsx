@@ -49,7 +49,7 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
 
   if (result) {
     return (
-      <div className="grid max-w-3xl gap-6">
+      <div className="grid max-w-[1280px] gap-6">
         <h1 className="text-2xl font-semibold">{t("dedupe.done_title")}</h1>
         <p className="num text-lg">
           {t("dedupe.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
@@ -81,7 +81,7 @@ export function DedupeResults({ summary, profile = "general", onSeeHistory, onNe
 
   if (summary.groups === 0) {
     return (
-      <div className="grid max-w-3xl gap-6">
+      <div className="grid max-w-[1280px] gap-6">
         <h1 className="text-2xl font-semibold">{t("dedupe.title")}</h1>
         <EmptyState title={t("dedupe.empty_title")} body={t("dedupe.empty_body")} action={<Button variant="outline" size="sm" onClick={onNewSearch}>{t("dedupe.new_search")}</Button>} />
       </div>
