@@ -39,7 +39,33 @@ describe("CleanView", () => {
 
     await screen.findByRole("heading", { name: "Selesai" });
     expect(cleanMock.lastExecute).toMatchObject({ ruleIds: expect.arrayContaining(["macos-browser-caches", "macos-old-logs", "macos-trash"]), apply: true, permanentOk: true });
-    expect(screen.getByText(/dibebaskan/)).toBeInTheDocument();
+    // Honest wording: moved to the Trash still takes space; only the Trash rule frees it.
+    expect(screen.getByText(/dipindahkan ke Trash/)).not.toHaveTextContent(/dibebaskan/);
+    expect(screen.getByText(/dihapus permanen/)).toHaveTextContent(/dibebaskan/);
+  });
+
+  it("names the folders it could not read instead of calling the run a plain success", async () => {
+    const user = userEvent.setup();
+    cleanMock.runUnreadable = [{ rule_id: "macos-trash", path: "/Users/you/.Trash", reason: "Operation not permitted" }];
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    await screen.findByRole("checkbox", { name: "Cache browser" });
+    await user.click(screen.getByRole("button", { name: /Bersihkan/ }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Bersihkan" }));
+    const heading = await screen.findByRole("heading", { name: /Selesai, tapi ada yang belum/ });
+    expect(heading).toBeInTheDocument();
+    const note = screen.getByText(/tidak bisa dibaca/).closest('[role="note"]') as HTMLElement;
+    expect(note).toHaveTextContent("/Users/you/.Trash");
+    expect(within(note).getByRole("button", { name: "Buka pengaturan Akses Disk Penuh" })).toBeInTheDocument();
+  });
+
+  it("says which places the check could not read, so an empty-looking list is not taken as clean", async () => {
+    cleanMock.evalUnreadable = [{ rule_id: "macos-trash", path: "/Users/you/.Trash", reason: "Operation not permitted" }];
+    render(<CleanView profile="general" onSeeHistory={vi.fn()} />);
+    const text = await screen.findByText(/tidak bisa dibaca/, {}, { timeout: 3000 });
+    const note = text.closest('[role="note"]') as HTMLElement;
+    expect(note).toHaveTextContent("/Users/you/.Trash");
+    expect(within(note).getByRole("button", { name: "Buka pengaturan Akses Disk Penuh" })).toBeInTheDocument();
   });
 
   it("nothing is executed when the preview is cancelled", async () => {

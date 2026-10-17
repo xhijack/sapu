@@ -286,6 +286,9 @@ fn trash_rules() -> CmdResult<RuleSet> {
 pub struct TrashStatus {
     bytes: u64,
     items: usize,
+    /// Trash folders that exist but cannot be read (no Full Disk Access).
+    /// When not empty, `bytes` and `items` are not the whole truth.
+    unreadable: Vec<std::path::PathBuf>,
 }
 
 /// How much the Trash holds right now (all volumes).
@@ -302,6 +305,7 @@ pub async fn trash_status() -> CmdResult<TrashStatus> {
         Ok(TrashStatus {
             bytes: report.findings.iter().map(|f| f.bytes).sum(),
             items: report.findings.iter().map(|f| f.items.len()).sum(),
+            unreadable: report.unreadable.iter().map(|u| u.path.clone()).collect(),
         })
     })
     .await
@@ -325,6 +329,14 @@ pub async fn trash_empty_start(
             &ProtectedPaths::os_defaults(),
             &Env::system(),
         );
+        // Emptying a Trash Sapu cannot read would "finish" having removed
+        // nothing while the Trash stays full. Refuse and say why instead.
+        if let Some(u) = report.unreadable.first() {
+            return Err(CommandError::new(
+                "trash_unreadable",
+                format!("{}: {}", u.path.display(), u.reason),
+            ));
+        }
         let ids: Vec<String> = report.findings.iter().map(|f| f.rule_id.clone()).collect();
         Ok((report, ids))
     })

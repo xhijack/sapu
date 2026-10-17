@@ -218,7 +218,8 @@
     "ai_bad_answer": "Jawaban AI tidak bisa dibaca. Coba lagi.",
     "ai_keychain": "Tidak bisa mengakses keychain sistem.",
     "app_running": "Aplikasi masih berjalan. Tutup dulu, lalu coba lagi.",
-    "unsupported": "Tidak tersedia di sistem ini."
+    "unsupported": "Tidak tersedia di sistem ini.",
+    "trash_unreadable": "Sapu belum diizinkan membaca Trash, jadi tidak mengosongkan apa pun. Aktifkan Sapu di Akses Disk Penuh."
   },
   "scan": {
     "title": "Pindai",
@@ -268,7 +269,7 @@
     "trash_title": "Pindahkan ke Trash?",
     "trash_body": "{{count}} item ({{size}}) akan dipindahkan ke Trash. Kamu bisa memulihkannya dari Trash atau dari Riwayat.",
     "trash_confirm": "Pindahkan ke Trash",
-    "trash_done": "{{count}} item dipindahkan ke Trash, {{size}} dibebaskan.",
+    "trash_done": "{{count}} item ({{size}}) dipindahkan ke Trash. Ruangnya baru kosong setelah Trash dikosongkan.",
     "trash_partial": "{{ok}} dipindahkan, {{skipped}} dilewati, {{failed}} gagal.",
     "trash_protected": "Lokasi ini dilindungi dan tidak bisa dipindahkan.",
     "trash_skipped": "Berubah sejak dipindai",
@@ -421,7 +422,12 @@
     "run_hide": "Sembunyikan",
     "trash_note": "Semua yang dipindahkan masih menempati ruang di Trash. Ruang kosong baru bertambah setelah Trash dikosongkan, dan setelah itu file tidak bisa dipulihkan lagi.",
     "trash_empty": "Kosongkan Trash…",
-    "trash_empty_sized": "Kosongkan Trash ({{size}})…"
+    "trash_empty_sized": "Kosongkan Trash ({{size}})…",
+    "done_title_partial": "Selesai, tapi ada yang belum beres",
+    "done_moved": "{{count}} item ({{size}}) dipindahkan ke Trash. Ruangnya baru kosong setelah Trash dikosongkan.",
+    "done_permanent": "{{count}} item dihapus permanen, {{size}} dibebaskan.",
+    "done_counts": "{{skipped}} dilewati, {{failed}} gagal.",
+    "unreadable_title": "{{count}} lokasi tidak bisa dibaca, jadi tidak dibersihkan"
   },
   "dedupe": {
     "title": "Duplikat",
@@ -730,7 +736,15 @@
     "confirm": "Kosongkan sekarang",
     "running": "Mengosongkan Trash…",
     "done": "{{size}} dibebaskan, {{count}} item dihapus permanen.",
-    "failed": "{{count}} item gagal dihapus; lihat Riwayat."
+    "failed": "{{count}} item gagal dihapus; lihat Riwayat.",
+    "verifying": "Memeriksa ulang isi Trash…",
+    "empty_now": "Trash sudah kosong",
+    "not_empty": "Trash belum kosong",
+    "left": "{{count}} item ({{size}}) masih ada di Trash.",
+    "left_hint": "Biasanya karena file sedang dipakai aplikasi lain, terkunci, atau butuh izin. Tutup aplikasinya lalu coba lagi; alasannya ada di daftar di bawah.",
+    "recheck_failed": "Sapu tidak bisa memeriksa ulang isi Trash, jadi belum pasti kosong.",
+    "unreadable_title": "Sapu belum bisa membuka Trash",
+    "unreadable_body": "macOS hanya mengizinkan aplikasi dengan Akses Disk Penuh membaca isi Trash. Tanpa izin itu Sapu tidak bisa melihat atau mengosongkannya. Aktifkan Sapu di Akses Disk Penuh, lalu buka ulang Sapu."
   },
   "achievement": {
     "title": "Pencapaian",
@@ -878,5 +892,8 @@
       "office_lock": "Sisa file kunci Office, aman dibuang kalau dokumennya tidak sedang dibuka.",
       "duplicate": "Salinan persis dari {{of}}. Satu salinan tetap disimpan."
     }
+  },
+  "access": {
+    "open_settings": "Buka pengaturan Akses Disk Penuh"
   }
 }

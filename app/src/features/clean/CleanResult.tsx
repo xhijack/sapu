@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UnreadablePlaces } from "./UnreadablePlaces";
 import { formatBytes } from "@/lib/format";
 import type { CleanRunReport } from "@/lib/types";
 import type { RuleRow } from "./rows";
@@ -20,18 +21,29 @@ export function CleanResult({ result, rows, onSeeHistory, onBack, trashRule = nu
   const name = (id: string) => rows.find((r) => r.id === id)?.name ?? id;
   const label = (o: CleanRunReport["outcomes"][number]) =>
     o.kind === "project" ? t("clean.outcome_project", { name: o.root.split("/").pop() ?? o.root }) : name(o.rule_id);
+  // Moving to the Trash does not free space yet; only permanent removal does.
+  const sessions = result.outcomes.flatMap((o) => (o.kind === "files" || o.kind === "project" ? [o.session] : []));
+  const sum = (kind: "trash" | "permanent", k: "bytes_freed" | "disposed") => sessions.filter((x) => x.disposal === kind).reduce((a, x) => a + x[k], 0);
+  const unreadable = result.unreadable ?? [];
+  const partial = !result.dry_run && (result.failed > 0 || unreadable.length > 0);
+  const lang = i18n.language;
   return (
     <div className="grid max-w-[1280px] gap-6">
       <h1 className="flex items-center gap-2 text-2xl font-semibold">
-        <CheckCircle2 aria-hidden className="h-6 w-6 text-risk-safe-fg" />
-        {t("clean.done_title")}
+        {partial ? <AlertTriangle aria-hidden className="h-6 w-6 text-risk-review-fg" /> : <CheckCircle2 aria-hidden className="h-6 w-6 text-risk-safe-fg" />}
+        {partial ? t("clean.done_title_partial") : t("clean.done_title")}
       </h1>
-      <p className="num text-lg">
-        {result.dry_run
-          ? t("clean.done_dry")
-          : t("clean.done_body", { size: formatBytes(result.bytes_freed, i18n.language), ok: result.disposed, skipped: result.skipped, failed: result.failed })}
-      </p>
-      {!result.dry_run && result.bytes_freed > 0 && (
+      {result.dry_run ? (
+        <p className="num text-lg">{t("clean.done_dry")}</p>
+      ) : (
+        <ul className="num grid gap-1 text-lg">
+          {sum("trash", "disposed") > 0 && <li>{t("clean.done_moved", { count: sum("trash", "disposed"), size: formatBytes(sum("trash", "bytes_freed"), lang) })}</li>}
+          {sum("permanent", "disposed") > 0 && <li>{t("clean.done_permanent", { count: sum("permanent", "disposed"), size: formatBytes(sum("permanent", "bytes_freed"), lang) })}</li>}
+          {(result.skipped > 0 || result.failed > 0) && <li className={result.failed > 0 ? "text-risk-danger-fg" : ""}>{t("clean.done_counts", { skipped: result.skipped, failed: result.failed })}</li>}
+        </ul>
+      )}
+      <UnreadablePlaces places={unreadable} />
+      {!result.dry_run && sum("trash", "bytes_freed") > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-risk-review-border bg-risk-review-bg p-4 text-sm text-risk-review-fg">
           <span className="max-w-[70ch]">{t("clean.trash_note")}</span>
           {onEmptyTrash && (

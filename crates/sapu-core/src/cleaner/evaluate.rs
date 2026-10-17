@@ -49,6 +49,17 @@ pub struct CleanReport {
     pub commands: Vec<CommandFinding>,
     /// Development projects with removable artefacts (developer profile).
     pub projects: Vec<super::projects::Project>,
+    /// Folders a rule points at that exist but could not be read (usually
+    /// missing Full Disk Access). Never treated as empty: the UI says so.
+    #[serde(default)]
+    pub unreadable: Vec<UnreadableDir>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct UnreadableDir {
+    pub rule_id: String,
+    pub path: PathBuf,
+    pub reason: String,
 }
 
 impl CleanReport {
@@ -140,7 +151,14 @@ pub fn evaluate_with_progress(
                 bytes: 0,
                 skipped_protected: 0,
             };
-            let (scope, raw) = candidates_for(m, env, now);
+            let (scope, raw, unreadable) = candidates_for(m, env, now);
+            report
+                .unreadable
+                .extend(unreadable.into_iter().map(|(path, reason)| UnreadableDir {
+                    rule_id: rule.id.clone(),
+                    path,
+                    reason,
+                }));
             finding.scope = scope;
             for c in raw {
                 if protected.is_protected(&c.path) {
@@ -182,8 +200,13 @@ fn command_finding(
     }
 }
 
-/// Returns (scope, candidates) for one match.
-fn candidates_for(m: &Match, env: &Env, now: SystemTime) -> (PathBuf, Vec<Candidate>) {
+/// Returns (scope, candidates, folders that exist but could not be read)
+/// for one match.
+fn candidates_for(
+    m: &Match,
+    env: &Env,
+    now: SystemTime,
+) -> (PathBuf, Vec<Candidate>, Vec<(PathBuf, String)>) {
     let min_age = Duration::from_secs(m.min_age_days * 86_400);
     let old_enough = |c: &Candidate| {
         m.min_age_days == 0
@@ -207,12 +230,15 @@ fn candidates_for(m: &Match, env: &Env, now: SystemTime) -> (PathBuf, Vec<Candid
                     }
                 })
                 .unwrap_or_default();
-            let items = dirs
-                .iter()
-                .flat_map(|d| children(d))
-                .filter(old_enough)
-                .collect();
-            (scope, items)
+            let mut unreadable = Vec::new();
+            let mut items = Vec::new();
+            for d in &dirs {
+                match children(d) {
+                    Ok(c) => items.extend(c.into_iter().filter(old_enough)),
+                    Err(e) => unreadable.push((d.clone(), e)),
+                }
+            }
+            (scope, items, unreadable)
         }
         MatchKind::Dir | MatchKind::Files => {
             let template = m.path.as_deref().unwrap_or("");
@@ -227,7 +253,7 @@ fn candidates_for(m: &Match, env: &Env, now: SystemTime) -> (PathBuf, Vec<Candid
                 .filter_map(|p| candidate(p))
                 .filter(old_enough)
                 .collect();
-            (scope, items)
+            (scope, items, Vec::new())
         }
         MatchKind::DirName => {
             let name = m.name.as_deref().unwrap_or("");
@@ -250,7 +276,7 @@ fn candidates_for(m: &Match, env: &Env, now: SystemTime) -> (PathBuf, Vec<Candid
                         || project_untouched_for(&c.path).is_some_and(|age| age >= unused)
                 })
                 .collect();
-            (scope, items)
+            (scope, items, Vec::new())
         }
     }
 }
@@ -270,13 +296,17 @@ fn candidate(p: &Path) -> Option<Candidate> {
     })
 }
 
-fn children(dir: &Path) -> Vec<Candidate> {
-    let Ok(rd) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    rd.filter_map(Result::ok)
-        .filter_map(|e| candidate(&e.path()))
-        .collect()
+/// Children of `dir`. A missing folder is simply empty; one that exists but
+/// cannot be listed is an error, never an empty list.
+fn children(dir: &Path) -> Result<Vec<Candidate>, String> {
+    match std::fs::read_dir(dir) {
+        Ok(rd) => Ok(rd
+            .filter_map(Result::ok)
+            .filter_map(|e| candidate(&e.path()))
+            .collect()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 /// Recursive size without following symlinks (public alias for other modules).
@@ -420,6 +450,47 @@ kind = "dir_contents"
         assert_eq!(f.bytes, expected);
         assert_eq!(f.skipped_protected, 1);
         assert_eq!(report.bytes_by_risk(Risk::Green), expected);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_that_cannot_be_read_is_reported_not_treated_as_empty() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let home = tmp.path().join("home");
+        let dir = home.join("Library/Caches/App");
+        write(&dir.join("a.bin"), 100);
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o000)).expect("chmod");
+        if std::fs::read_dir(&dir).is_ok() {
+            // Running as root: permissions do not apply, nothing to test.
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+            return;
+        }
+        let rules = parse_rules([("r.toml", RULES)]).expect("rules");
+        let report = evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &Env::with_home(&home),
+        );
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).expect("chmod back");
+        assert!(report.findings.is_empty());
+        assert_eq!(report.unreadable.len(), 1, "{:?}", report.unreadable);
+        assert_eq!(report.unreadable[0].rule_id, "cache");
+        assert_eq!(report.unreadable[0].path, dir);
+    }
+
+    #[test]
+    fn a_folder_that_does_not_exist_is_simply_empty() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let rules = parse_rules([("r.toml", RULES)]).expect("rules");
+        let report = evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &Env::with_home(tmp.path()),
+        );
+        assert!(report.findings.is_empty() && report.unreadable.is_empty());
     }
 
     #[test]

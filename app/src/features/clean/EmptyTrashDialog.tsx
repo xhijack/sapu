@@ -2,11 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ChevronDown, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Callout } from "@/components/ui/Callout";
+import { api } from "@/lib/api";
 import { DialogClose } from "@/components/ui/DialogClose";
 import { cleanApi } from "@/lib/cleanApi";
 import { useErrorMessage } from "@/lib/errors";
 import { formatBytes, formatElapsed, formatEta } from "@/lib/format";
 import type { CleanRunProgress, CleanRunReport, TrashStatus } from "@/lib/types";
+
+/** Items the run tried to remove and could not, with the system's reason. */
+function failures(r: CleanRunReport): [string, string][] {
+  return r.outcomes.flatMap((o) => (o.kind === "files" || o.kind === "project" ? o.session.entries : [])).flatMap((e) => (e.outcome.status === "failed" ? [[e.path, e.outcome.message] as [string, string]] : []));
+}
+
+/** Sapu may not read the Trash: say so, and how to allow it, instead of "emptying" nothing. */
+export function TrashUnreadable() {
+  const { t } = useTranslation();
+  return (
+    <Callout
+      tone="review"
+      title={t("trash.unreadable_title")}
+      action={
+        <Button variant="secondary" size="sm" onClick={() => void api.openDiskAccessSettings()}>
+          {t("access.open_settings")}
+        </Button>
+      }
+    >
+      {t("trash.unreadable_body")}
+    </Callout>
+  );
+}
 
 interface Props {
   status: TrashStatus | null;
@@ -23,7 +48,9 @@ export function EmptyTrashDialog({ status, onClose }: Props) {
   const errorMessage = useErrorMessage();
   const ref = useRef<HTMLDialogElement>(null);
   const [ack, setAck] = useState(false);
-  const [phase, setPhase] = useState<"confirm" | "running" | "done">("confirm");
+  const [phase, setPhase] = useState<"confirm" | "running" | "verifying" | "done">("confirm");
+  // The Trash as it is after the run, checked again: "done" is never assumed.
+  const [after, setAfter] = useState<TrashStatus | null>(null);
   const [progress, setProgress] = useState<CleanRunProgress | null>(null);
   const [result, setResult] = useState<CleanRunReport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +61,12 @@ export function EmptyTrashDialog({ status, onClose }: Props) {
       cleanApi.onRunProgress((p) => setProgress(p)),
       cleanApi.onRunDone((r) => {
         setResult(r);
-        setPhase("done");
+        setPhase("verifying");
+        cleanApi
+          .trashStatus()
+          .then((s) => setAfter(s))
+          .catch(() => setAfter(null))
+          .finally(() => setPhase("done"));
       }),
       cleanApi.onRunError((e) => {
         setError(errorMessage(e));
@@ -69,7 +101,8 @@ export function EmptyTrashDialog({ status, onClose }: Props) {
         </h2>
           <DialogClose onClick={() => ref.current?.close()} />
         </div>
-        {phase === "confirm" && (
+        {phase === "confirm" && status && status.unreadable.length > 0 && <TrashUnreadable />}
+        {phase === "confirm" && !(status && status.unreadable.length > 0) && (
           <>
             <p className="num text-fg-muted">{status && status.items > 0 ? t("trash.body", { size: formatBytes(status.bytes, i18n.language), count: status.items.toLocaleString(i18n.language) }) : t("trash.body_unknown")}</p>
             <label className="flex items-start gap-3 rounded-md border border-risk-review-border bg-risk-review-bg p-3 text-sm text-risk-review-fg">
@@ -116,12 +149,33 @@ export function EmptyTrashDialog({ status, onClose }: Props) {
             </div>
           </>
         )}
+        {phase === "verifying" && <p className="text-sm">{t("trash.verifying")}</p>}
         {phase === "done" && result && (
           <>
-            <p className="num text-lg">{t("trash.done", { size: formatBytes(result.bytes_freed, i18n.language), count: result.disposed })}</p>
-            {result.failed > 0 && <p className="text-sm text-risk-danger-fg">{t("trash.failed", { count: result.failed })}</p>}
+            {after && after.items === 0 && after.unreadable.length === 0 && result.failed === 0 ? (
+              <Callout title={t("trash.empty_now")}>{t("trash.done", { size: formatBytes(result.bytes_freed, i18n.language), count: result.disposed })}</Callout>
+            ) : (
+              <Callout tone="review" title={t("trash.not_empty")}>
+                {after && after.items > 0 && <p className="num">{t("trash.left", { count: after.items, size: formatBytes(after.bytes, i18n.language) })}</p>}
+                {after === null && <p>{t("trash.recheck_failed")}</p>}
+                <p className="num">{t("trash.done", { size: formatBytes(result.bytes_freed, i18n.language), count: result.disposed })}</p>
+                <p>{t("trash.left_hint")}</p>
+              </Callout>
+            )}
+            {failures(result).length > 0 && (
+              <ul className="max-h-40 overflow-y-auto rounded-md border border-border text-sm">
+                {failures(result).map(([path, why]) => (
+                  <li key={path} className="grid gap-0.5 border-b border-border px-3 py-2 last:border-0">
+                    <span className="path truncate" title={path}>
+                      {path.split("/").pop()}
+                    </span>
+                    <span className="text-risk-danger-fg">{why}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex justify-end">
-              <Button onClick={() => ref.current?.close()}>{t("common.done")}</Button>
+              <Button onClick={() => ref.current?.close()}>{t("common.close")}</Button>
             </div>
           </>
         )}

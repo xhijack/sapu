@@ -64,12 +64,21 @@ export const cleanMock = {
   tickMs: typeof location !== "undefined" && location.search.includes("slow") ? 700 : 15,
   running: false,
   runRunning: false,
-  trash: { bytes: 12.4 * GB, items: 1_204 } as TrashStatus,
+  trash: { bytes: 12.4 * GB, items: 1_204, unreadable: [] } as TrashStatus,
+  /** What the Trash holds after emptying (items that could not be removed). */
+  afterEmpty: { bytes: 0, items: 0, unreadable: [] } as TrashStatus,
+  /** Folders the check could not read. */
+  evalUnreadable: [] as import("./types").UnreadableDir[],
+  /** Folders a clean run could not read. */
+  runUnreadable: [] as import("./types").UnreadableDir[],
   lastRun: null as CleanRunReport | null,
   lastEvaluation: null as CleanEvaluation | null,
   reset() {
     this.runRunning = false;
-    this.trash = { bytes: 12.4 * GB, items: 1_204 };
+    this.trash = { bytes: 12.4 * GB, items: 1_204, unreadable: [] };
+    this.afterEmpty = { bytes: 0, items: 0, unreadable: [] };
+    this.runUnreadable = [];
+    this.evalUnreadable = [];
     this.lastRun = null;
     this.lastExecute = null;
     this.cached = true;
@@ -142,7 +151,7 @@ const mockEvaluation = (profile: Profile): CleanEvaluation => {
         ]
       : [];
   return {
-    report: { findings, commands, projects },
+    report: { findings, commands, projects, unreadable: cleanMock.evalUnreadable },
     rules,
     preselected: ["macos-browser-caches", "macos-old-logs", ...(profile === "developer" ? ["docker-images-dangling"] : [])],
     preselected_artefacts: projects.flatMap((p) => p.artefacts.filter((a) => a.risk === "green").map((a) => a.path)),
@@ -177,8 +186,10 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
     case "trash_status":
       return cleanMock.trash as T;
     case "trash_empty_start": {
-      const bytes = cleanMock.trash.bytes;
-      const report: CleanRunReport = { dry_run: false, outcomes: [{ kind: "files", rule_id: "macos-trash", session: { id: "t", started_at_unix: 0, finished_at_unix: 0, dry_run: false, disposal: "permanent", scope: "/Users/you/.Trash", entries: [], bytes_freed: bytes, disposed: cleanMock.trash.items, skipped: 0, failed: 0 } }], bytes_freed: bytes, disposed: cleanMock.trash.items, skipped: 0, failed: 0 };
+      if (cleanMock.trash.unreadable.length > 0) throw { code: "trash_unreadable", message: cleanMock.trash.unreadable[0] };
+      const left = cleanMock.afterEmpty;
+      const bytes = cleanMock.trash.bytes - left.bytes;
+      const report: CleanRunReport = { dry_run: false, outcomes: [{ kind: "files", rule_id: "macos-trash", session: { id: "t", started_at_unix: 0, finished_at_unix: 0, dry_run: false, disposal: "permanent", scope: "/Users/you/.Trash", entries: left.items > 0 ? [{ path: "/Users/you/.Trash/locked.app", size: left.bytes, is_dir: true, outcome: { status: "failed", message: "Operation not permitted" } }] : [], bytes_freed: bytes, disposed: cleanMock.trash.items - left.items, skipped: 0, failed: left.items } }], bytes_freed: bytes, disposed: cleanMock.trash.items - left.items, skipped: 0, failed: left.items, unreadable: [] };
       cleanMock.runRunning = true;
       let i = 0;
       const tick = () => {
@@ -186,7 +197,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         emit<CleanRunProgress>("clean://run_progress", { items_done: i, items_total: 3, bytes_done: (bytes * i) / 3, bytes_total: bytes, fraction: i / 3, step: { kind: "rule", rule_id: "macos-trash", items: cleanMock.trash.items }, elapsed_secs: i, eta: { kind: "about", secs: (3 - i) * 2, nanos: 0 } });
         if (i >= 3) {
           cleanMock.runRunning = false;
-          cleanMock.trash = { bytes: 0, items: 0 };
+          cleanMock.trash = { ...left };
           cleanMock.lastRun = report;
           emit("clean://run_done", report);
         } else setTimeout(tick, cleanMock.tickMs);
@@ -219,7 +230,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
           return {
             kind: "files" as const,
             rule_id: id,
-            session: { id: "s", started_at_unix: 0, finished_at_unix: 0, dry_run: !apply, disposal: "trash" as const, scope: f.scope, entries: [], bytes_freed: apply ? f.bytes : 0, disposed: f.items.length, skipped: 0, failed: 0 },
+            session: { id: "s", started_at_unix: 0, finished_at_unix: 0, dry_run: !apply, disposal: f.permanent ? ("permanent" as const) : ("trash" as const), scope: f.scope, entries: [], bytes_freed: apply ? f.bytes : 0, disposed: f.items.length, skipped: 0, failed: 0 },
           };
         }
         return { kind: "command" as const, rule_id: id, outcome: { command_line: "docker image prune -f", success: true, stdout: "", stderr: "" } };
@@ -228,7 +239,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         ruleIds.reduce((a, id) => a + ev.report.findings.filter((f) => f.rule_id === id && (!f.permanent || permanentOk)).reduce((b, f) => b + f.bytes, 0), 0) +
         projectOutcomes.reduce((a, o) => a + o.session.bytes_freed, 0);
       const all = [...outcomes, ...projectOutcomes];
-      const report: CleanRunReport = { dry_run: !apply, outcomes: all, bytes_freed: apply ? bytes : 0, disposed: all.length, skipped: 0, failed: 0 };
+      const report: CleanRunReport = { dry_run: !apply, outcomes: all, bytes_freed: apply ? bytes : 0, disposed: all.length, skipped: 0, failed: 0, unreadable: cleanMock.runUnreadable };
       // Simulate a run: one step per outcome, then done.
       cleanMock.runRunning = true;
       const steps: RunStep[] = all.map((o) => (o.kind === "command" ? { kind: "command", rule_id: o.rule_id, command_line: o.outcome.command_line } : { kind: "rule", rule_id: o.kind === "project" ? o.root : o.rule_id, items: 3 }));

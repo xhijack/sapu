@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Trash2, Usb, Wind } from "lucide-react";
 import { requestMemoryDialog } from "@/features/memory/memoryBus";
 import { cleanApi } from "@/lib/cleanApi";
-import { EmptyTrashDialog } from "@/features/clean/EmptyTrashDialog";
+import { EmptyTrashDialog, TrashUnreadable } from "@/features/clean/EmptyTrashDialog";
 import { api } from "@/lib/api";
 import { scanApi } from "@/lib/scanApi";
 import { formatBytes, formatDate } from "@/lib/format";
@@ -110,13 +110,15 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
             )}
             {!previous && <span className="num text-sm text-fg-muted">{t("home.hero_never")}</span>}
           </div>
+          {trash && trash.unreadable.length > 0 && <TrashUnreadable />}
           {emptying && (
             <EmptyTrashDialog
               status={trash}
               onClose={(r) => {
                 setEmptying(false);
+                // Show what is really in the Trash now, never an assumed zero.
+                cleanApi.trashStatus().then(setTrash).catch(() => undefined);
                 if (r) {
-                  setTrash({ bytes: 0, items: 0 });
                   api.historyTotals().then((x) => setTotals({ ...x, days_since_first: x.first_session_unix ? Math.max(1, Math.round((Date.now() / 1000 - x.first_session_unix) / 86_400)) : null })).catch(() => undefined);
                 }
               }}

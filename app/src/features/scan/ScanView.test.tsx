@@ -51,7 +51,7 @@ describe("ScanView", () => {
     expect(dialog).toHaveTextContent("Pindahkan ke Trash?");
     expect((await within(dialog).findByText(/akan dipindahkan ke Trash/)).closest('[role="note"]')).not.toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Pindahkan ke Trash" }));
-    await screen.findByText(/1 item dipindahkan ke Trash/);
+    await screen.findByText(/1 item \(.*\) dipindahkan ke Trash/);
   });
 });
 

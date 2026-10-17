@@ -81,6 +81,10 @@ pub struct CleanRunReport {
     pub disposed: usize,
     pub skipped: usize,
     pub failed: usize,
+    /// Folders of the selected rules that could not be read, so nothing in
+    /// them was cleaned. Shown to the person; never a silent "done".
+    #[serde(default)]
+    pub unreadable: Vec<super::UnreadableDir>,
 }
 
 /// Run `selection` from `report`. `permanent` is required for rules that
@@ -134,6 +138,12 @@ pub fn execute_with_steps(
 ) -> Result<CleanRunReport> {
     let mut run = CleanRunReport {
         dry_run: !apply,
+        unreadable: report
+            .unreadable
+            .iter()
+            .filter(|u| selection.contains(&u.rule_id))
+            .cloned()
+            .collect(),
         ..Default::default()
     };
     let total: u64 = report
@@ -394,6 +404,49 @@ kind = "dir_contents"
         // at least the 30 logical bytes of the two files.
         assert!(run.bytes_freed >= 30, "{}", run.bytes_freed);
         assert_eq!(safety.history().list().expect("list").len(), 1);
+    }
+
+    #[test]
+    fn folders_that_could_not_be_read_are_carried_into_the_run_report() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let home = tmp.path().join("home");
+        let rules = two_rules();
+        let mut report = evaluate(
+            &rules,
+            Profile::General,
+            &ProtectedPaths::os_defaults(),
+            &Env::with_home(&home),
+        );
+        report.unreadable.push(crate::cleaner::UnreadableDir {
+            rule_id: "trash".into(),
+            path: home.join(".Trash"),
+            reason: "Operation not permitted".into(),
+        });
+        report.unreadable.push(crate::cleaner::UnreadableDir {
+            rule_id: "cache".into(),
+            path: home.join(".cache/app"),
+            reason: "Operation not permitted".into(),
+        });
+        let safety = Safety::new(
+            ProtectedPaths::os_defaults(),
+            HistoryStore::with_dir(tmp.path().join("h")).expect("h"),
+        );
+        let sel = Selection {
+            rule_ids: ["trash".to_string()].into_iter().collect(),
+            ..Default::default()
+        };
+        let run = execute(
+            &report,
+            &rules,
+            &sel,
+            true,
+            Some(PermanentConfirmation::i_understand_this_cannot_be_undone()),
+            &safety,
+            &mut crate::progress::NoProgress,
+        )
+        .expect("run");
+        assert_eq!(run.unreadable.len(), 1, "only the selected rule's folder");
+        assert_eq!(run.unreadable[0].path, home.join(".Trash"));
     }
 
     #[test]

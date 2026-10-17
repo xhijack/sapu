@@ -378,6 +378,8 @@ export interface CleanReport {
   findings: Finding[];
   commands: CommandFinding[];
   projects: Project[];
+  /** Folders the check could not read (no Full Disk Access). */
+  unreadable?: UnreadableDir[];
 }
 
 export interface CleanCheckProgress {
@@ -405,6 +407,14 @@ export interface CleanRunProgress {
 export interface TrashStatus {
   bytes: number;
   items: number;
+  /** Trash folders Sapu may not read (no Full Disk Access). */
+  unreadable: string[];
+}
+
+export interface UnreadableDir {
+  rule_id: string;
+  path: string;
+  reason: string;
 }
 
 export interface CleanRunStatus {
@@ -440,6 +450,8 @@ export interface CleanRunReport {
   disposed: number;
   skipped: number;
   failed: number;
+  /** Folders of the selected rules that could not be read. */
+  unreadable?: UnreadableDir[];
 }
 
 // ---- Dedupe (Tahap 3) ----

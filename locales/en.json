@@ -218,7 +218,8 @@
     "ai_bad_answer": "The AI answer could not be read. Try again.",
     "ai_keychain": "Could not access the system keychain.",
     "app_running": "The app is still running. Quit it, then try again.",
-    "unsupported": "Not available on this system."
+    "unsupported": "Not available on this system.",
+    "trash_unreadable": "Sapu may not read the Trash yet, so nothing was emptied. Turn Sapu on under Full Disk Access."
   },
   "scan": {
     "title": "Scan",
@@ -268,7 +269,7 @@
     "trash_title": "Move to Trash?",
     "trash_body": "{{count}} items ({{size}}) will be moved to the Trash. You can restore them from the Trash or from History.",
     "trash_confirm": "Move to Trash",
-    "trash_done": "{{count}} items moved to Trash, {{size}} freed.",
+    "trash_done": "{{count}} items ({{size}}) moved to the Trash. The space is freed once the Trash is emptied.",
     "trash_partial": "{{ok}} moved, {{skipped}} skipped, {{failed}} failed.",
     "trash_protected": "This location is protected and cannot be moved.",
     "trash_skipped": "Changed since the scan",
@@ -421,7 +422,12 @@
     "run_hide": "Hide",
     "trash_note": "Everything moved still takes up space in the Trash. Free space grows only once the Trash is emptied, and after that the files cannot be restored.",
     "trash_empty": "Empty the Trash…",
-    "trash_empty_sized": "Empty the Trash ({{size}})…"
+    "trash_empty_sized": "Empty the Trash ({{size}})…",
+    "done_title_partial": "Done, but not everything",
+    "done_moved": "{{count}} items ({{size}}) moved to the Trash. The space is freed once the Trash is emptied.",
+    "done_permanent": "{{count}} items deleted permanently, {{size}} freed.",
+    "done_counts": "{{skipped}} skipped, {{failed}} failed.",
+    "unreadable_title": "{{count}} places could not be read, so they were not cleaned"
   },
   "dedupe": {
     "title": "Duplicates",
@@ -730,7 +736,15 @@
     "confirm": "Empty now",
     "running": "Emptying the Trash…",
     "done": "{{size}} freed, {{count}} items deleted permanently.",
-    "failed": "{{count}} items could not be deleted; see History."
+    "failed": "{{count}} items could not be deleted; see History.",
+    "verifying": "Checking the Trash again…",
+    "empty_now": "The Trash is empty",
+    "not_empty": "The Trash is not empty yet",
+    "left": "{{count}} items ({{size}}) are still in the Trash.",
+    "left_hint": "Usually because a file is in use by another app, locked, or needs permission. Close the app and try again; the reasons are listed below.",
+    "recheck_failed": "Sapu could not check the Trash again, so it may not be empty.",
+    "unreadable_title": "Sapu cannot open the Trash yet",
+    "unreadable_body": "macOS only lets apps with Full Disk Access read the Trash. Without it Sapu can neither see nor empty it. Turn Sapu on under Full Disk Access, then reopen Sapu."
   },
   "achievement": {
     "title": "Achievement",
@@ -878,5 +892,8 @@
       "office_lock": "Leftover Office lock file, safe to remove when the document is not open.",
       "duplicate": "Exact copy of {{of}}. One copy is always kept."
     }
+  },
+  "access": {
+    "open_settings": "Open Full Disk Access settings"
   }
 }

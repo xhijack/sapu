@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { CleanPreview } from "./CleanPreview";
 import { CleanResult } from "./CleanResult";
 import { EmptyTrashDialog } from "./EmptyTrashDialog";
+import { UnreadablePlaces } from "./UnreadablePlaces";
 
 export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHistory: () => void }) {
   const { t, i18n } = useTranslation();
@@ -195,7 +196,8 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
           <EmptyTrashDialog
             status={(() => {
               const tr = rows.find((r) => r.permanent && r.group === "trash");
-              return tr ? { bytes: tr.bytes ?? 0, items: tr.items } : null;
+              const unreadable = (evaluation?.report.unreadable ?? []).filter((u) => /trash|recycle/i.test(u.rule_id)).map((u) => u.path);
+              return tr || unreadable.length > 0 ? { bytes: tr?.bytes ?? 0, items: tr?.items ?? 0, unreadable } : null;
             })()}
             onClose={(r) => {
               setEmptyingTrash(false);
@@ -253,6 +255,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
         </div>
       )}
 
+      <UnreadablePlaces places={evaluation.report.unreadable ?? []} />
       {rows.length === 0 && artefactRows.length === 0 ? (
         <EmptyState title={t("clean.empty_title")} body={t("clean.empty_body")} action={<Button variant="outline" size="sm" onClick={() => void load()}>{t("clean.reevaluate")}</Button>} />
       ) : (
