@@ -59,6 +59,7 @@ pnpm tauri build                           # installers under app/src-tauri/targ
 sapu scan <path> [--json] [--top N]             # what takes up space (allocated size on disk)
 sapu clean [--profile dev] [--include-yellow]    # dry run; --apply to execute
 sapu dupes <path> [--keep original|oldest|newest] [--hardlink] [--apply]
+sapu organize <folder> [--apply] [--ai] [--undo <id>] [--list]   # dry run by default; moves stay inside the folder
 sapu ai status | whatis <path> | search "<sentence>" <root>   # optional, metadata only
 sapu protected                                   # what Sapu will never touch
 sapu trash <paths>... [--apply]

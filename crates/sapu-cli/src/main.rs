@@ -4,6 +4,7 @@
 mod ai;
 mod clean;
 mod dupes;
+mod organize;
 mod scan;
 
 use std::io::IsTerminal;
@@ -38,6 +39,8 @@ enum Command {
     Clean(clean::CleanArgs),
     /// Find identical files (dry-run unless --apply).
     Dupes(dupes::DupesArgs),
+    /// Propose and apply groups for the loose files of a folder.
+    Organize(organize::OrganizeArgs),
     /// Optional AI helpers (metadata only, never contents).
     Ai(ai::AiArgs),
 }
@@ -90,6 +93,7 @@ fn main() -> anyhow::Result<()> {
         Command::Scan(a) => scan::run(a),
         Command::Clean(a) => clean::run(a),
         Command::Dupes(a) => dupes::run(a),
+        Command::Organize(a) => organize::run(a),
         Command::Ai(a) => ai::run(a),
     }
 }

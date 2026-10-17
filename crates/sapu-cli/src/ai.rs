@@ -32,7 +32,7 @@ enum AiAction {
     Search { sentence: String, root: PathBuf },
 }
 
-fn client() -> anyhow::Result<AiClient> {
+pub(crate) fn client() -> anyhow::Result<AiClient> {
     let cfg = AiConfig::load(&AiConfig::default_path().context("config dir")?);
     let key = if cfg.mode == AiMode::Cloud {
         let name = match cfg.cloud_kind {
