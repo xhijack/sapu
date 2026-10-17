@@ -66,14 +66,16 @@ export function BeforeAfter({ run }: { run: OrganizeRun }) {
         <ul className="grid max-h-[52vh] gap-1 overflow-y-auto text-sm">
           {folders.map((f) => {
             const isOpen = open === f.dir;
+            // Files renamed where they were land in the folder itself.
+            const label = f.dir === run.root ? t("organize.renamed_in_place", { folder: rootName }) : nameOf(f.dir);
             return (
-              <li key={f.dir} role="group" aria-label={nameOf(f.dir)} className={cn("rounded-lg", isOpen && "bg-surface-muted/60")}>
+              <li key={f.dir} role="group" aria-label={label} className={cn("rounded-lg", isOpen && "bg-surface-muted/60")}>
                 <div className="flex items-center gap-2 px-2 py-1">
                   <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : f.dir)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                     <ChevronRight aria-hidden className={cn("h-4 w-4 shrink-0 text-fg-faint transition-transform", isOpen && "rotate-90")} />
                     <Folder aria-hidden className="h-4 w-4 shrink-0 text-accent" />
                     <span className="min-w-0 truncate font-medium" title={f.dir}>
-                      {nameOf(f.dir)}
+                      {label}
                     </span>
                     <span className="num shrink-0 text-xs text-fg-muted">{t("organize.items", { count: f.moves.length })}</span>
                   </button>

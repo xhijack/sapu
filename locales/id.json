@@ -855,6 +855,19 @@
     "new_folders": "{{count}} folder di {{folder}}",
     "restore_all": "Kembalikan semua",
     "plan_waiting": "Usulan kelompok untuk {{folder}} sudah siap.",
-    "see_plan": "Lihat usulan"
+    "see_plan": "Lihat usulan",
+    "renames_title": "Saran nama file",
+    "renames_hint": "Nama baru usulan AI untuk file yang namanya tidak jelas. Centang yang kamu setujui; ekstensi tetap sama dan bisa dikembalikan.",
+    "rename_tick": "Ganti nama {{name}}",
+    "rename_new": "Nama baru untuk {{name}}",
+    "junk_title": "Kemungkinan sampah",
+    "junk_hint": "Menurut AI file ini mungkin tidak penting. Periksa dulu; yang kamu centang dipindahkan ke Trash, bukan dihapus.",
+    "junk_tick": "Pilih {{name}}",
+    "junk_trash": "Pindahkan {{count}} ke Trash",
+    "junk_trashed": "{{count}} file dipindahkan ke Trash.",
+    "unplaced_title": "Tetap di tempat",
+    "unplaced_hint": "Item ini tidak masuk kelompok mana pun dan tidak dipindahkan.",
+    "apply_renames_only": "Ganti {{count}} nama file",
+    "renamed_in_place": "Ganti nama di {{folder}}"
   }
 }

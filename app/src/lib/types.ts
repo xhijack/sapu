@@ -755,6 +755,12 @@ export interface OrganizeEntry {
   kind: FileKind;
   bytes: number;
   mtime: UnixTime | null;
+  /** Up to 8 names inside a folder (never file contents). */
+  children?: string[];
+  /** AI suggestion for a clearer file name, extension kept. */
+  suggested_name?: string | null;
+  /** Why the AI thinks this file is junk; null when it is not. */
+  junk?: string | null;
 }
 
 export interface OrganizeGroup {
@@ -767,7 +773,8 @@ export interface OrganizeGroup {
 }
 
 export interface OrganizeAnalysis {
-  plan: { root: string; groups: OrganizeGroup[] };
+  /** `unplaced`: items that stay where they are. */
+  plan: { root: string; groups: OrganizeGroup[]; unplaced?: OrganizeEntry[] };
   unreadable: string[];
   duplicate_groups: number;
   duplicate_files: number;
@@ -780,6 +787,8 @@ export interface OrganizeSelection {
   group_ids: string[];
   excluded: string[];
   renames: [string, string][];
+  /** Accepted new names for single files: [path, new name]. */
+  file_renames: [string, string][];
 }
 
 export interface OrganizeRun {

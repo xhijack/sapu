@@ -38,6 +38,10 @@ pub struct Group {
 pub struct OrganizePlan {
     pub root: PathBuf,
     pub groups: Vec<Group>,
+    /// Entries that stay where they are; they may still carry a suggested
+    /// name or a junk reason.
+    #[serde(default)]
+    pub unplaced: Vec<OrganizeEntry>,
 }
 
 /// A name (and how sure the namer is) for one group, from the AI.
@@ -117,6 +121,17 @@ fn tokens(name: &str) -> Vec<String> {
         .collect()
 }
 
+/// Lowercase letters and digits only: "accel bytes" and "AccelBytes" match.
+fn normalised(s: &str) -> String {
+    s.rsplit_once('.')
+        .map(|(stem, _)| stem)
+        .unwrap_or(s)
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
 fn next_id(n: usize) -> String {
     format!("g{n}")
 }
@@ -176,6 +191,29 @@ pub fn propose(listing: &FolderListing) -> OrganizePlan {
             bundles,
             &mut groups,
         );
+    }
+
+    // 1b. A loose file named after an existing folder goes into it.
+    let mut into_existing: Vec<(usize, OrganizeEntry)> = Vec::new();
+    files.retain(|e| {
+        let name = normalised(&e.name);
+        let hit = groups.iter().position(|g| {
+            g.source == GroupSource::Existing && {
+                let folder = normalised(&g.name);
+                folder.chars().count() >= 4 && name.contains(&folder)
+            }
+        });
+        match hit {
+            Some(i) => {
+                into_existing.push((i, (*e).clone()));
+                false
+            }
+            None => true,
+        }
+    });
+    for (i, e) in into_existing {
+        groups[i].bytes += e.bytes;
+        groups[i].entries.push(e);
     }
 
     // 2. Shared first token (3+ files).
@@ -260,6 +298,7 @@ pub fn propose(listing: &FolderListing) -> OrganizePlan {
     let mut plan = OrganizePlan {
         root: listing.root.clone(),
         groups,
+        unplaced: Vec::new(),
     };
     fold_duplicate_names(&mut plan);
     plan
@@ -609,5 +648,27 @@ mod tests {
             "projects keep their unit group"
         );
         assert_eq!(group(&plan, "Invoice").entries.len(), 3);
+    }
+
+    #[test]
+    fn loose_files_named_after_an_existing_folder_go_into_it() {
+        let t = tempdir();
+        touch(&t.path().join("Saham/analis.xlsx"));
+        touch(&t.path().join("accel bytes/PRD.docx"));
+        touch(&t.path().join("Print/a.pdf"));
+        for n in ["My Saham.xlsx", "AccelBytes.docx", "notes.txt"] {
+            touch(&t.path().join(n));
+        }
+        let plan = propose(&scan_folder(t.path()).expect("scan"));
+        let names = |g: &str| {
+            group(&plan, g)
+                .entries
+                .iter()
+                .map(|e| e.name.clone())
+                .collect::<Vec<_>>()
+        };
+        assert!(names("Saham").contains(&"My Saham.xlsx".to_string()));
+        assert!(names("accel bytes").contains(&"AccelBytes.docx".to_string()));
+        assert!(!names("Print").contains(&"notes.txt".to_string()));
     }
 }

@@ -28,6 +28,40 @@ pub struct OrganizeEntry {
     /// Disk usage of a file; measured contents of a folder.
     pub bytes: u64,
     pub mtime: Option<SystemTime>,
+    /// Up to eight names inside a folder, project or bundle (never contents).
+    #[serde(default)]
+    pub children: Vec<String>,
+    /// A better file name proposed by the AI (files only, sanitised).
+    #[serde(default)]
+    pub suggested_name: Option<String>,
+    /// Why the AI thinks this file is junk (files only).
+    #[serde(default)]
+    pub junk: Option<String>,
+}
+
+const MAX_CHILDREN: usize = 8;
+
+/// Office lock files, editor temp files and OS thumbnails: never moved.
+fn is_temp_name(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    name.starts_with("~$")
+        || name.starts_with(".~lock")
+        || lower == "thumbs.db"
+        || lower == "desktop.ini"
+}
+
+fn child_names(dir: &Path) -> Vec<String> {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut names: Vec<String> = rd
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !n.starts_with('.') && !is_temp_name(n))
+        .collect();
+    names.sort_by_key(|n| n.to_lowercase());
+    names.truncate(MAX_CHILDREN);
+    names
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -78,7 +112,7 @@ pub fn scan_folder(root: &Path) -> Result<FolderListing> {
         let Ok(dir_entry) = dir_entry else { continue };
         let path = dir_entry.path();
         let name = dir_entry.file_name().to_string_lossy().into_owned();
-        if name.starts_with('.') {
+        if name.starts_with('.') || is_temp_name(&name) {
             continue;
         }
         let Ok(meta) = std::fs::symlink_metadata(&path) else {
@@ -107,6 +141,10 @@ pub fn scan_folder(root: &Path) -> Result<FolderListing> {
             Unit::Folder | Unit::Project | Unit::Bundle => crate::cleaner::dir_size_pub(&path),
             Unit::File | Unit::Link => crate::platform::disk_usage_of(&meta),
         };
+        let children = match unit {
+            Unit::Folder | Unit::Project | Unit::Bundle => child_names(&path),
+            Unit::File | Unit::Link => Vec::new(),
+        };
         entries.push(OrganizeEntry {
             path,
             name,
@@ -114,6 +152,9 @@ pub fn scan_folder(root: &Path) -> Result<FolderListing> {
             kind,
             bytes,
             mtime: meta.modified().ok(),
+            children,
+            suggested_name: None,
+            junk: None,
         });
     }
     entries.sort_by_key(|e| e.name.to_lowercase());
@@ -195,5 +236,33 @@ mod tests {
     fn missing_root_is_an_error() {
         let t = tempdir();
         assert!(scan_folder(&t.path().join("nope")).is_err());
+    }
+
+    #[test]
+    fn ignores_lock_and_temp_files_and_lists_folder_children() {
+        let t = tempdir();
+        let r = t.path();
+        touch(&r.join("~$ RAMDANI BARU.docx"));
+        touch(&r.join(".~lock.report.odt#"));
+        touch(&r.join("Thumbs.db"));
+        touch(&r.join("desktop.ini"));
+        touch(&r.join("keep.pdf"));
+        for i in 0..12 {
+            touch(&r.join(format!("Saham/file{i:02}.xlsx")));
+        }
+        let listing = scan_folder(r).expect("scan");
+        let names: Vec<_> = listing.entries.iter().map(|e| e.name.as_str()).collect();
+        assert_eq!(names, vec!["keep.pdf", "Saham"]);
+        let saham = listing
+            .entries
+            .iter()
+            .find(|e| e.name == "Saham")
+            .expect("saham");
+        assert_eq!(saham.children.len(), 8, "at most eight names");
+        assert_eq!(saham.children[0], "file00.xlsx");
+        assert!(
+            listing.entries[0].children.is_empty(),
+            "files have no children"
+        );
     }
 }

@@ -12,11 +12,12 @@ import { useErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDate, formatElapsed, formatEta } from "@/lib/format";
 import { organizeApi } from "@/lib/organizeApi";
 import { scanApi } from "@/lib/scanApi";
-import type { OrganizeAnalyseProgress, OrganizeAnalysis, OrganizeGroup, OrganizeRun, OrganizeRunProgress, OrganizeRunResult, OrganizeTarget, OrganizeUndoReport } from "@/lib/types";
+import type { OrganizeAnalyseProgress, OrganizeAnalysis, OrganizeEntry, OrganizeGroup, OrganizeRun, OrganizeRunProgress, OrganizeRunResult, OrganizeTarget, OrganizeUndoReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { GroupFilesDialog } from "./GroupFilesDialog";
 import { BeforeAfter } from "./BeforeAfter";
 import { PlanGroupCard } from "./PlanGroupCard";
+import { JunkSuggestions, RenameSuggestions, Unplaced } from "./ItemSuggestions";
 import { ORGANIZE_OPEN_EVENT, takePendingOrganize } from "./organizeBus";
 
 type Phase = "idle" | "analysing" | "plan" | "applying" | "done";
@@ -42,6 +43,10 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const [ticked, setTicked] = useState<Set<string>>(new Set());
   const [names, setNames] = useState<Record<string, string>>({});
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  // Per-file suggestions: accepted renames (path → name), edits, trashed junk.
+  const [accepted, setAccepted] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [trashed, setTrashed] = useState<Set<string>>(new Set());
   const [openGroup, setOpenGroup] = useState<OrganizeGroup | null>(null);
   const [run, setRun] = useState<OrganizeRunProgress | null>(null);
   const [result, setResult] = useState<OrganizeRunResult | null>(null);
@@ -62,7 +67,20 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     setAnalysis(a);
     setNames(Object.fromEntries(a.plan.groups.map((g) => [g.id, g.name])));
     setExcluded(new Set());
-    setTicked(new Set(a.plan.groups.filter((g) => g.confidence === "sure" && movingOf(a.plan.root, g, new Set()).length > 0).map((g) => g.id)));
+    setAccepted({});
+    setDrafts({});
+    setTrashed(new Set());
+    // Sure groups are ticked, except ones that would move a whole folder.
+    setTicked(
+      new Set(
+        a.plan.groups
+          .filter((g) => {
+            const m = movingOf(a.plan.root, g, new Set());
+            return g.confidence === "sure" && m.length > 0 && !m.some((e) => e.unit === "folder");
+          })
+          .map((g) => g.id),
+      ),
+    );
   };
 
   const refreshHistory = () =>
@@ -144,6 +162,37 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
   const groups = useMemo(() => analysis?.plan.groups ?? [], [analysis]);
   const moving = (g: OrganizeGroup) => movingOf(analysis?.plan.root ?? "", g, excluded);
   const chosen = groups.filter((g) => ticked.has(g.id) && moving(g).length > 0);
+  const unplaced = (analysis?.plan.unplaced ?? []).filter((e) => !trashed.has(e.path));
+  const everything = [...groups.flatMap((g) => g.entries), ...unplaced].filter((e) => !trashed.has(e.path));
+  const renameable = everything.filter((e) => e.unit === "file" && e.suggested_name);
+  const junk = everything.filter((e) => e.unit === "file" && e.junk);
+  const fileRenames = Object.entries(accepted)
+    .filter(([p, n]) => !trashed.has(p) && n.trim())
+    .map(([p, n]) => [p, n.trim()] as [string, string]);
+
+  const tickRename = (e: OrganizeEntry, v: boolean) =>
+    setAccepted((m) => {
+      const n = { ...m };
+      if (v) n[e.path] = drafts[e.path] ?? e.suggested_name ?? "";
+      else delete n[e.path];
+      return n;
+    });
+  const editRename = (e: OrganizeEntry, name: string) => {
+    setDrafts((m) => ({ ...m, [e.path]: name }));
+    setAccepted((m) => (e.path in m ? { ...m, [e.path]: name } : m));
+  };
+  /** Ticked junk goes to the Trash through safety; returns how many went. */
+  const trashJunk = async (paths: string[]) => {
+    try {
+      const s = await scanApi.trash(paths, true);
+      const gone = s.entries.filter((x) => x.outcome.status === "disposed").map((x) => x.path);
+      setTrashed((t0) => new Set([...t0, ...gone]));
+      return gone.length;
+    } catch (e) {
+      setError(errorMessage(e));
+      return 0;
+    }
+  };
 
   const apply = async () => {
     if (!analysis) return;
@@ -152,7 +201,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     setPhase("applying");
     const renames = chosen.filter((g) => g.source !== "existing" && g.source !== "unit" && names[g.id] && names[g.id] !== g.name).map((g) => [g.id, names[g.id]!.trim()] as [string, string]);
     try {
-      await organizeApi.apply({ group_ids: chosen.map((g) => g.id), excluded: [...excluded], renames });
+      await organizeApi.apply({ group_ids: chosen.map((g) => g.id), excluded: [...excluded, ...trashed], renames, file_renames: fileRenames });
     } catch (e) {
       setError(errorMessage(e));
       setPhase("plan");
@@ -303,11 +352,16 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
             />
           ))}
         </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <RenameSuggestions entries={renameable} accepted={accepted} drafts={drafts} onTick={tickRename} onEdit={editRename} />
+          <JunkSuggestions entries={junk} onTrash={trashJunk} />
+          <Unplaced entries={unplaced.filter((e) => !e.junk && !e.suggested_name)} />
+        </div>
         <div className="sticky bottom-0 -mx-8 flex items-center justify-between gap-4 border-t border-border bg-bg/95 px-8 py-4 backdrop-blur">
           <span className="text-sm text-fg-muted">{t("organize.selected", { count: chosen.reduce((a, g) => a + moving(g).length, 0) })}</span>
-          <Button size="lg" disabled={chosen.length === 0 || chosen.some((g) => !(names[g.id] ?? g.name).trim())} onClick={() => void apply()}>
+          <Button size="lg" disabled={(chosen.length === 0 && fileRenames.length === 0) || chosen.some((g) => !(names[g.id] ?? g.name).trim())} onClick={() => void apply()}>
             <FolderInput aria-hidden className="h-4 w-4" />
-            {t("organize.apply", { count: chosen.length })}
+            {chosen.length === 0 ? t("organize.apply_renames_only", { count: fileRenames.length }) : t("organize.apply", { count: chosen.length })}
           </Button>
         </div>
         {error && <ErrorState message={error} />}

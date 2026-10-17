@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { organizeMock } from "@/lib/organizeApi";
+import { scanApi } from "@/lib/scanApi";
 import { OrganizeView } from "./OrganizeView";
 
 describe("OrganizeView", () => {
@@ -55,5 +56,50 @@ describe("OrganizeView", () => {
 
     await user.click(screen.getByRole("button", { name: "Kembalikan semua" }));
     expect(await screen.findByText(/dikembalikan/)).toBeInTheDocument();
+  });
+
+  it("offers file renames and likely junk unticked, trashes only ticked junk, and sends only accepted renames", async () => {
+    const user = userEvent.setup();
+    const trash = vi.spyOn(scanApi, "trash");
+    render(<OrganizeView onNavigate={vi.fn()} />);
+    await user.click(await screen.findByRole("button", { name: "Analisis folder" }));
+    await screen.findByText(/5 file ganda/, {}, { timeout: 3000 });
+
+    // A group that moves a whole folder is never ticked by default.
+    expect(within(screen.getByRole("group", { name: "Arsip Lama" })).getByRole("checkbox", { name: /Pindahkan/ })).not.toBeChecked();
+
+    // Rename suggestions: unticked, editable, extension shown.
+    const renames = screen.getByRole("region", { name: "Saran nama file" });
+    const tick = within(renames).getByRole("checkbox", { name: /scan0001\.pdf/ });
+    expect(tick).not.toBeChecked();
+    const newName = within(renames).getByRole("textbox", { name: /scan0001\.pdf/ });
+    expect(newName).toHaveValue("KTP Ramdani.pdf");
+    await user.click(tick);
+    await user.clear(newName);
+    await user.type(newName, "KTP.pdf");
+
+    // Likely junk: yellow list with the reason, nothing ticked, trash only what is ticked.
+    const junk = screen.getByRole("region", { name: "Kemungkinan sampah" });
+    expect(within(junk).getByText(/Salinan tanpa judul/)).toBeVisible();
+    const junkTick = within(junk).getByRole("checkbox", { name: /Untitled \(copy 3\)\.docx/ });
+    expect(junkTick).not.toBeChecked();
+    expect(within(junk).getByRole("button", { name: /Trash/ })).toBeDisabled();
+    await user.click(junkTick);
+    await user.click(within(junk).getByRole("button", { name: /Trash/ }));
+    expect(trash).toHaveBeenCalledWith(["/Users/you/Documents/Untitled (copy 3).docx"], true);
+    expect(await within(junk).findByRole("status")).toHaveTextContent(/1 file dipindahkan ke Trash/);
+    expect(within(junk).queryByRole("checkbox", { name: /Untitled/ })).toBeNull();
+
+    // Items with no destination are listed as staying put.
+    expect(screen.getByRole("region", { name: "Tetap di tempat" })).toHaveTextContent("catatan.txt");
+
+    await user.click(screen.getByRole("button", { name: /Rapikan \d+ kelompok/ }));
+    await screen.findByText(/item dipindahkan ke/, {}, { timeout: 3000 });
+    const renamedHere = within(screen.getByRole("region", { name: "Sesudah" })).getByRole("group", { name: "Ganti nama di Documents" });
+    expect(renamedHere).toBeInTheDocument();
+    const sel = organizeMock.lastSelection!;
+    expect(sel.file_renames).toEqual([["/Users/you/Documents/scan0001.pdf", "KTP.pdf"]]);
+    expect(sel.group_ids).not.toContain("g6");
+    trash.mockRestore();
   });
 });

@@ -82,7 +82,10 @@ fn check_plan(plan: &MovePlan, root: &Path) -> Result<()> {
         let Some(dest_dir) = to.parent() else {
             return Err(invalid("destination has no folder"));
         };
-        if dest_dir.parent() != Some(root) || dest_dir == root {
+        // root/<group>/<name>, or root/<name> for a file renamed in place.
+        let in_group = dest_dir.parent() == Some(root);
+        let renamed_in_place = dest_dir == root && from.parent() == Some(root);
+        if !(in_group || renamed_in_place) {
             return Err(invalid("destination is not root/<group>/<name>"));
         }
         if to.file_name().is_none()
@@ -92,7 +95,7 @@ fn check_plan(plan: &MovePlan, root: &Path) -> Result<()> {
         {
             return Err(invalid("destination name is not plain"));
         }
-        if !plain_folder_or_absent(dest_dir) {
+        if !renamed_in_place && !plain_folder_or_absent(dest_dir) {
             return Err(invalid("destination is not a plain folder"));
         }
         if !same_volume(&from, &to) {
@@ -312,6 +315,7 @@ mod tests {
             group_ids: plan.groups.iter().map(|g| g.id.clone()).collect(),
             excluded: vec![],
             renames: vec![],
+            file_renames: vec![],
         };
         build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan")
     }
@@ -476,5 +480,29 @@ mod tests {
         plan.moves[0].to = t.path().join("escape.pdf");
         let store = OrganizeStore::with_dir(t.path().join("store")).expect("store");
         assert!(apply(&plan, false, &store, &mut NoProgress).is_err());
+    }
+
+    #[test]
+    fn rename_in_place_applies_and_undoes() {
+        let t = tempdir();
+        let root = t.path().join("docs");
+        touch(&root.join("scan0001.pdf"), b"ktp");
+        let mut plan = propose(&scan_folder(&root).expect("scan"));
+        let moved: Vec<_> = plan.groups.drain(..).flat_map(|g| g.entries).collect();
+        plan.unplaced = moved;
+        let sel = Selection {
+            group_ids: vec![],
+            excluded: vec![],
+            renames: vec![],
+            file_renames: vec![(root.join("scan0001.pdf"), "KTP Ramdani".into())],
+        };
+        let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
+        let store = OrganizeStore::with_dir(t.path().join("store")).expect("store");
+        let report = apply(&mp, false, &store, &mut NoProgress).expect("apply");
+        assert_eq!(report.session.moved, 1);
+        assert!(root.join("KTP Ramdani.pdf").is_file());
+        undo(&report.session, &store, &safety(t.path()), &mut NoProgress).expect("undo");
+        assert!(root.join("scan0001.pdf").is_file());
+        assert!(!root.join("KTP Ramdani.pdf").exists());
     }
 }

@@ -86,6 +86,12 @@ const mockAnalysis = (useAi: boolean): OrganizeAnalysis => ({
       group("g3", useAi ? "Tagihan" : "Invoice", useAi ? "ai" : "prefix", "check", [entry("Invoice-2024-01.pdf", 120 * KB, "file", "pdf"), entry("Invoice-2024-02.pdf", 118 * KB, "file", "pdf"), entry("invoice March.pdf", 99 * KB, "file", "pdf")]),
       group("g4", "Laporan Keuangan", "prefix", "sure", [entry("Laporan Keuangan Q1.xlsx", 2 * MB, "file", "spreadsheet"), entry("Laporan Keuangan Q2.xlsx", 2 * MB, "file", "spreadsheet"), entry("Laporan Keuangan Q3.xlsx", 2 * MB, "file", "spreadsheet")]),
       group("g5", "Gambar", "kind", "sure", [entry("IMG_4021.HEIC", 3 * MB, "file", "image"), entry("screenshot.png", 900 * KB, "file", "image")]),
+      group("g6", "Arsip Lama", "ai", "sure", [{ ...entry("Foto 2019", 800 * MB, "folder", "folder"), children: ["IMG_0001.JPG", "IMG_0002.JPG"] }]),
+    ],
+    unplaced: [
+      { ...entry("scan0001.pdf", 400 * KB, "file", "pdf"), suggested_name: "KTP Ramdani.pdf" },
+      { ...entry("Untitled (copy 3).docx", 12 * KB), junk: "Salinan tanpa judul, kemungkinan tidak terpakai" },
+      entry("catatan.txt", 2 * KB),
     ],
   },
   unreadable: [],
@@ -148,6 +154,11 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
         const name = selection.renames.find(([id]) => id === g.id)?.[1] ?? g.name;
         return g.entries.filter((e) => e.path !== `${ROOT}/${g.name}` && !selection.excluded.includes(e.path)).map((e) => ({ from: e.path, to: `${ROOT}/${name}/${e.name}`, bytes: e.bytes, len: e.bytes }));
       });
+      for (const [from, name] of selection.file_renames ?? []) {
+        const at = moves.findIndex((m) => m.from === from);
+        if (at >= 0) moves[at] = { ...moves[at]!, to: `${moves[at]!.to.slice(0, moves[at]!.to.lastIndexOf("/"))}/${name}` };
+        else moves.push({ from, to: `${ROOT}/${name}`, bytes: 0, len: 0 });
+      }
       let i = 0;
       const total = Math.max(1, moves.length);
       const tick = () => {

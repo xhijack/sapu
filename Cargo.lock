@@ -3332,6 +3332,7 @@ dependencies = [
  "clap",
  "sapu-ai",
  "sapu-core",
+ "serde",
  "serde_json",
 ]
 

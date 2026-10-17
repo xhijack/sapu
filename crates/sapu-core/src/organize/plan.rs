@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use super::group::{GroupSource, OrganizePlan, sanitize_name};
-use super::scan::{Unit, plain_folder_or_absent};
+use super::scan::{OrganizeEntry, Unit, plain_folder_or_absent};
 use crate::error::{Result, SapuError};
 use crate::safety::{FileSnapshot, ProtectedPaths};
 
@@ -31,7 +31,31 @@ pub struct MovePlan {
 pub struct Selection {
     pub group_ids: Vec<String>,
     pub excluded: Vec<PathBuf>,
+    /// New names for groups (destination folders).
     pub renames: Vec<(String, String)>,
+    /// New names for single files, accepted by the person. Files only; the
+    /// original extension is always kept.
+    pub file_renames: Vec<(PathBuf, String)>,
+}
+
+/// A safe new file name that keeps the original extension.
+pub fn renamed_file(original: &str, proposed: &str) -> Option<String> {
+    let name = sanitize_name(proposed)?;
+    let ext = original
+        .rsplit_once('.')
+        .map(|(_, e)| e)
+        .filter(|e| !e.is_empty());
+    let named = match ext {
+        Some(ext)
+            if !name
+                .to_lowercase()
+                .ends_with(&format!(".{}", ext.to_lowercase())) =>
+        {
+            format!("{name}.{ext}")
+        }
+        _ => name,
+    };
+    (named != original).then_some(named)
 }
 
 fn invalid(msg: &str) -> SapuError {
@@ -49,6 +73,45 @@ fn numbered(name: &str, n: usize, is_dir: bool) -> String {
     }
 }
 
+/// One move of `e` to `dir/name`, or a skip with its reason.
+fn plan_one(
+    e: &OrganizeEntry,
+    dir: &Path,
+    name: &str,
+    protected: &ProtectedPaths,
+    taken: &mut HashSet<PathBuf>,
+    skipped: &mut Vec<(PathBuf, String)>,
+) -> Option<Move> {
+    if e.name.contains('/') || e.name.contains('\\') || e.name == ".." || e.name.is_empty() {
+        skipped.push((e.path.clone(), "unsafe entry name".into()));
+        return None;
+    }
+    if protected.is_protected(&e.path) {
+        skipped.push((e.path.clone(), "protected".into()));
+        return None;
+    }
+    let snapshot = match FileSnapshot::capture(&e.path) {
+        Ok(s) => s,
+        Err(err) => {
+            skipped.push((e.path.clone(), err.to_string()));
+            return None;
+        }
+    };
+    let mut to = dir.join(name);
+    let mut n = 2;
+    while to.exists() || taken.contains(&to) {
+        to = dir.join(numbered(name, n, e.unit != Unit::File));
+        n += 1;
+    }
+    taken.insert(to.clone());
+    Some(Move {
+        from: e.path.clone(),
+        to,
+        snapshot,
+        bytes: e.bytes,
+    })
+}
+
 /// Builds the moves for the ticked groups. Destinations are always
 /// `root/<group>/<name>`; clashes get ` (2)`, ` (3)`, …
 pub fn build_move_plan(
@@ -61,6 +124,25 @@ pub fn build_move_plan(
     let mut moves = Vec::new();
     let mut skipped = Vec::new();
     let mut taken: HashSet<PathBuf> = HashSet::new();
+    let mut handled: HashSet<PathBuf> = HashSet::new();
+
+    // Accepted file renames, keyed by path, files only.
+    let all_entries: Vec<&OrganizeEntry> = plan
+        .groups
+        .iter()
+        .flat_map(|g| g.entries.iter())
+        .chain(plan.unplaced.iter())
+        .collect();
+    let new_name = |e: &OrganizeEntry| -> Option<String> {
+        if e.unit != Unit::File {
+            return None;
+        }
+        selection
+            .file_renames
+            .iter()
+            .find(|(p, _)| *p == e.path)
+            .and_then(|(_, n)| renamed_file(&e.name, n))
+    };
 
     for g in plan
         .groups
@@ -95,42 +177,39 @@ pub fn build_move_plan(
                 ));
                 continue;
             }
-            if e.name.contains('/') || e.name.contains('\\') || e.name == ".." || e.name.is_empty()
-            {
-                skipped.push((e.path.clone(), "unsafe entry name".into()));
-                continue;
-            }
             if excluded.contains(e.path.as_path()) || e.unit == Unit::Link {
                 continue;
             }
+            let rename = new_name(e);
             // Already where it belongs (existing folder's own entry, or file already inside).
-            if e.path == dest_dir || e.path.parent() == Some(dest_dir.as_path()) {
+            if e.path == dest_dir
+                || (e.path.parent() == Some(dest_dir.as_path()) && rename.is_none())
+            {
                 continue;
             }
-            if protected.is_protected(&e.path) {
-                skipped.push((e.path.clone(), "protected".into()));
-                continue;
+            let target = rename.unwrap_or_else(|| e.name.clone());
+            if let Some(m) = plan_one(e, &dest_dir, &target, protected, &mut taken, &mut skipped) {
+                handled.insert(e.path.clone());
+                moves.push(m);
             }
-            let snapshot = match FileSnapshot::capture(&e.path) {
-                Ok(s) => s,
-                Err(err) => {
-                    skipped.push((e.path.clone(), err.to_string()));
-                    continue;
-                }
-            };
-            let mut to = dest_dir.join(&e.name);
-            let mut n = 2;
-            while to.exists() || taken.contains(&to) {
-                to = dest_dir.join(numbered(&e.name, n, e.unit != Unit::File));
-                n += 1;
-            }
-            taken.insert(to.clone());
-            moves.push(Move {
-                from: e.path.clone(),
-                to,
-                snapshot,
-                bytes: e.bytes,
-            });
+        }
+    }
+
+    // Renames of entries that no ticked group moves: rename where they are.
+    for e in all_entries {
+        if handled.contains(&e.path) || excluded.contains(e.path.as_path()) {
+            continue;
+        }
+        let Some(target) = new_name(e) else { continue };
+        let Some(here) = e.path.parent() else {
+            continue;
+        };
+        if !here.starts_with(&root) {
+            continue;
+        }
+        if let Some(m) = plan_one(e, here, &target, protected, &mut taken, &mut skipped) {
+            handled.insert(e.path.clone());
+            moves.push(m);
         }
     }
     Ok(MovePlan {
@@ -174,6 +253,7 @@ mod tests {
             group_ids: all_ids(&plan),
             excluded: vec![],
             renames: vec![],
+            file_renames: vec![],
         };
         let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
         let targets: Vec<_> = mp
@@ -203,6 +283,7 @@ mod tests {
             group_ids: all_ids(&plan),
             excluded: vec![],
             renames: vec![],
+            file_renames: vec![],
         };
         let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
         let m = mp
@@ -231,6 +312,7 @@ mod tests {
             group_ids: vec![docs.clone()],
             excluded: vec![t.path().join("b.pdf")],
             renames: vec![(docs, "Berkas".into())],
+            file_renames: vec![],
         };
         let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
         assert_eq!(mp.moves.len(), 1);
@@ -249,6 +331,7 @@ mod tests {
             group_ids: vec![docs.clone()],
             excluded: vec![],
             renames: vec![(docs.clone(), "../out".into())],
+            file_renames: vec![],
         };
         assert!(build_move_plan(&plan, &bad, &ProtectedPaths::os_defaults()).is_err());
         let mut protected = ProtectedPaths::os_defaults();
@@ -257,6 +340,7 @@ mod tests {
             group_ids: vec![docs],
             excluded: vec![],
             renames: vec![],
+            file_renames: vec![],
         };
         let mp = build_move_plan(&plan, &sel, &protected).expect("plan");
         assert_eq!(mp.moves.len(), 1, "protected file is skipped, not planned");
@@ -281,6 +365,7 @@ mod tests {
             group_ids: all_ids(&plan),
             excluded: vec![],
             renames: vec![],
+            file_renames: vec![],
         };
         let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
         for name in ["a.pdf", "x.zip", "main.rs"] {
@@ -301,5 +386,78 @@ mod tests {
                 .iter()
                 .all(|m| !m.to.starts_with(t.path().join("outside")))
         );
+    }
+
+    fn sel_with_renames(ids: Vec<String>, renames: Vec<(PathBuf, String)>) -> Selection {
+        Selection {
+            group_ids: ids,
+            excluded: vec![],
+            renames: vec![],
+            file_renames: renames,
+        }
+    }
+
+    #[test]
+    fn file_renames_apply_in_place_and_while_moving_and_keep_the_extension() {
+        let t = tempdir();
+        touch(&t.path().join("a.pdf"));
+        touch(&t.path().join("clip.mp4"));
+        let mut plan = plan_for(t.path());
+        // One file stays where it is (not in any ticked group).
+        let stay = plan
+            .groups
+            .iter()
+            .position(|g| g.name == "Video")
+            .expect("video");
+        let video = plan.groups.remove(stay);
+        plan.unplaced.extend(video.entries);
+        let docs = plan
+            .groups
+            .iter()
+            .find(|g| g.name == "Dokumen")
+            .expect("docs")
+            .id
+            .clone();
+        let sel = sel_with_renames(
+            vec![docs],
+            vec![
+                (t.path().join("a.pdf"), "Surat Kuasa".into()),
+                (t.path().join("clip.mp4"), "Rekaman Rapat.mov".into()),
+            ],
+        );
+        let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
+        let to = |from: &str| {
+            mp.moves
+                .iter()
+                .find(|m| m.from == t.path().join(from))
+                .map(|m| m.to.clone())
+        };
+        assert_eq!(
+            to("a.pdf"),
+            Some(t.path().join("Dokumen/Surat Kuasa.pdf")),
+            "extension kept"
+        );
+        assert_eq!(
+            to("clip.mp4"),
+            Some(t.path().join("Rekaman Rapat.mov.mp4")),
+            "renamed in place, own extension kept"
+        );
+    }
+
+    #[test]
+    fn renames_of_folders_and_unsafe_names_are_ignored() {
+        let t = tempdir();
+        touch(&t.path().join("Arsip Lama/x.txt"));
+        touch(&t.path().join("b.pdf"));
+        let plan = plan_for(t.path());
+        let sel = sel_with_renames(
+            vec![],
+            vec![
+                (t.path().join("Arsip Lama"), "Arsip".into()),
+                (t.path().join("b.pdf"), "../escape".into()),
+            ],
+        );
+        let mp = build_move_plan(&plan, &sel, &ProtectedPaths::os_defaults()).expect("plan");
+        assert!(mp.moves.is_empty(), "{:?}", mp.moves);
     }
 }

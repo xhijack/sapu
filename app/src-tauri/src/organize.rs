@@ -9,8 +9,9 @@ use std::time::Instant;
 
 use sapu_core::eta::{Estimator, Eta};
 use sapu_core::organize::{
-    Naming, OrganizePlan, OrganizeSession as RunRecord, OrganizeStore, Selection, UndoReport,
-    apply, apply_naming, build_move_plan, duplicates_in, propose, scan_folder, undo,
+    FolderListing, ItemAdvice, OrganizePlan, OrganizeSession as RunRecord, OrganizeStore,
+    Selection, UndoReport, Unit, apply, build_move_plan, duplicates_in, plan_from_advice, propose,
+    scan_folder, undo,
 };
 use sapu_core::progress::{FnSink, NoProgress, ProgressEvent};
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -132,7 +133,7 @@ pub fn organize_analyze_start(
             let mut plan = propose(&listing);
             let (ai_used, ai_note) = if use_ai {
                 stage("ai");
-                name_with_ai(&mut plan)
+                advise_with_ai(&listing, &mut plan)
             } else {
                 (false, None)
             };
@@ -170,49 +171,73 @@ pub fn organize_analyze_start(
     Ok(())
 }
 
-/// Asks the configured AI to name and merge groups. Never fails the run:
-/// an error leaves the heuristic plan as it is and is reported as a note.
-fn name_with_ai(plan: &mut OrganizePlan) -> (bool, Option<String>) {
-    use sapu_ai::tasks::tidy::{Tidy, TidyCandidate, TidyInput};
+/// The serde name of a unit or kind ("file", "document", ...).
+fn label<T: serde::Serialize>(v: &T) -> String {
+    serde_json::to_value(v)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_string))
+        .unwrap_or_default()
+}
+
+/// Most items sent to the AI in one request; the rest keep heuristic groups.
+const AI_MAX_ITEMS: usize = 250;
+
+/// Asks the configured AI where each item belongs, plus renames and junk.
+/// Never fails the run: an error or an unusable answer keeps the heuristic
+/// plan and is reported as a note.
+fn advise_with_ai(listing: &FolderListing, plan: &mut OrganizePlan) -> (bool, Option<String>) {
+    use sapu_ai::tasks::tidy_items::{TidyItem, TidyItems, TidyItemsInput};
     let client = match crate::ai::client() {
         Ok(c) => c,
         Err(e) => return (false, Some(e.code.to_string())),
     };
-    let input = TidyInput {
+    let year = |t: Option<std::time::SystemTime>| {
+        t.and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| 1970 + (d.as_secs() / 31_557_600) as i32)
+    };
+    let input = TidyItemsInput {
         language: crate::ai::language(),
-        folder_name: plan
+        folder_name: listing
             .root
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default(),
-        candidates: plan
-            .groups
+        items: listing
+            .entries
             .iter()
-            .map(|g| TidyCandidate {
-                id: g.id.clone(),
-                name: g.name.clone(),
-                source: serde_json::to_value(g.source)
-                    .ok()
-                    .and_then(|v| v.as_str().map(str::to_string))
-                    .unwrap_or_default(),
-                count: g.entries.len(),
-                examples: g.entries.iter().take(12).map(|e| e.name.clone()).collect(),
+            .filter(|e| e.unit != Unit::Link)
+            .take(AI_MAX_ITEMS)
+            .map(|e| TidyItem {
+                name: e.name.clone(),
+                unit: label(&e.unit),
+                kind: label(&e.kind),
+                year: year(e.mtime),
+                size_kb: e.bytes / 1024,
+                children: e.children.clone(),
             })
             .collect(),
     };
-    match client.run::<Tidy>(&input) {
+    match client.run::<TidyItems>(&input) {
         Ok(answer) => {
-            let names: Vec<Naming> = answer
-                .groups
+            let advice: Vec<ItemAdvice> = answer
+                .items
                 .into_iter()
-                .map(|n| Naming {
-                    id: n.id,
-                    name: n.name,
-                    confidence: n.confidence,
+                .map(|a| ItemAdvice {
+                    name: a.name,
+                    category: a.category,
+                    rename: a.rename,
+                    junk: a.junk,
+                    reason: a.reason,
+                    confidence: a.confidence,
                 })
                 .collect();
-            apply_naming(plan, &names, &answer.merge);
-            (true, None)
+            match plan_from_advice(listing, &advice) {
+                Some(p) => {
+                    *plan = p;
+                    (true, None)
+                }
+                None => (false, Some("ai_bad_answer".into())),
+            }
         }
         Err(e) => (false, Some(e.to_string())),
     }

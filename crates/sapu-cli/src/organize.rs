@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Args;
 use sapu_core::organize::{
-    Naming, OrganizeStore, Selection, apply, apply_naming, build_move_plan, propose, scan_folder,
-    undo,
+    Confidence, FolderListing, ItemAdvice, OrganizePlan, OrganizeStore, Selection, Unit, apply,
+    build_move_plan, plan_from_advice, propose, scan_folder, undo,
 };
 use sapu_core::progress::NoProgress;
 use sapu_core::safety::{HistoryStore, ProtectedPaths, Safety};
@@ -67,47 +67,17 @@ pub fn run(a: OrganizeArgs) -> anyhow::Result<()> {
     let listing = scan_folder(&root)?;
     let mut plan = propose(&listing);
     if a.ai {
-        match crate::ai::client() {
-            Ok(client) => {
-                let input = sapu_ai::tasks::tidy::TidyInput {
-                    language: "en".into(),
-                    folder_name: root
-                        .file_name()
-                        .map(|n| n.to_string_lossy().into_owned())
-                        .unwrap_or_default(),
-                    candidates: plan
-                        .groups
-                        .iter()
-                        .map(|g| sapu_ai::tasks::tidy::TidyCandidate {
-                            id: g.id.clone(),
-                            name: g.name.clone(),
-                            source: format!("{:?}", g.source).to_lowercase(),
-                            count: g.entries.len(),
-                            examples: g.entries.iter().take(12).map(|e| e.name.clone()).collect(),
-                        })
-                        .collect(),
-                };
-                match client.run::<sapu_ai::tasks::tidy::Tidy>(&input) {
-                    Ok(answer) => {
-                        let names: Vec<Naming> = answer
-                            .groups
-                            .into_iter()
-                            .map(|n| Naming {
-                                id: n.id,
-                                name: n.name,
-                                confidence: n.confidence,
-                            })
-                            .collect();
-                        apply_naming(&mut plan, &names, &answer.merge);
-                    }
-                    Err(e) => eprintln!("AI unavailable, using heuristic names: {e}"),
-                }
-            }
-            Err(e) => eprintln!("AI not configured, using heuristic names: {e}"),
-        }
+        advise_with_ai(&listing, &mut plan);
     }
+    // Only groups marked sure are moved; groups that move whole folders are
+    // never sure, so `--apply` leaves them alone. Renames are only printed.
     let selection = Selection {
-        group_ids: plan.groups.iter().map(|g| g.id.clone()).collect(),
+        group_ids: plan
+            .groups
+            .iter()
+            .filter(|g| g.confidence == Confidence::Sure)
+            .map(|g| g.id.clone())
+            .collect(),
         ..Default::default()
     };
     let moves = build_move_plan(&plan, &selection, &ProtectedPaths::os_defaults())?;
@@ -128,6 +98,22 @@ pub fn run(a: OrganizeArgs) -> anyhow::Result<()> {
             g.source,
             g.confidence
         );
+    }
+    let suggestions = plan
+        .groups
+        .iter()
+        .flat_map(|g| g.entries.iter())
+        .chain(plan.unplaced.iter());
+    for e in suggestions {
+        if let Some(n) = &e.suggested_name {
+            println!("  rename? {} -> {}", e.name, n);
+        }
+        if let Some(why) = &e.junk {
+            println!("  junk?   {} ({why})", e.name);
+        }
+    }
+    if !plan.unplaced.is_empty() {
+        println!("  {} item(s) left where they are", plan.unplaced.len());
     }
     println!(
         "{} move(s), {} skipped",
@@ -150,4 +136,76 @@ pub fn run(a: OrganizeArgs) -> anyhow::Result<()> {
         );
     }
     Ok(())
+}
+
+/// Asks the configured AI where each item belongs. Any failure keeps the
+/// heuristic plan; the AI only ever sees names, sizes and folder listings.
+fn advise_with_ai(listing: &FolderListing, plan: &mut OrganizePlan) {
+    use sapu_ai::tasks::tidy_items::{TidyItem, TidyItems, TidyItemsInput};
+    let client = match crate::ai::client() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("AI not configured, using heuristic groups: {e}");
+            return;
+        }
+    };
+    let language = sapu_core::settings::Settings::default_path()
+        .and_then(|p| sapu_core::settings::Settings::load(&p))
+        .ok()
+        .and_then(|s| s.locale)
+        .unwrap_or_else(|| "id".into());
+    let input = TidyItemsInput {
+        language,
+        folder_name: listing
+            .root
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        items: listing
+            .entries
+            .iter()
+            .filter(|e| e.unit != Unit::Link)
+            .take(250)
+            .map(|e| TidyItem {
+                name: e.name.clone(),
+                unit: label(&e.unit),
+                kind: label(&e.kind),
+                year: e
+                    .mtime
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| 1970 + (d.as_secs() / 31_557_600) as i32),
+                size_kb: e.bytes / 1024,
+                children: e.children.clone(),
+            })
+            .collect(),
+    };
+    match client.run::<TidyItems>(&input) {
+        Ok(answer) => {
+            let advice: Vec<ItemAdvice> = answer
+                .items
+                .into_iter()
+                .map(|a| ItemAdvice {
+                    name: a.name,
+                    category: a.category,
+                    rename: a.rename,
+                    junk: a.junk,
+                    reason: a.reason,
+                    confidence: a.confidence,
+                })
+                .collect();
+            match plan_from_advice(listing, &advice) {
+                Some(p) => *plan = p,
+                None => eprintln!("AI answer matched no item, using heuristic groups"),
+            }
+        }
+        Err(e) => eprintln!("AI unavailable, using heuristic groups: {e}"),
+    }
+}
+
+/// The serde name of a unit or kind ("file", "document", ...).
+fn label<T: serde::Serialize>(v: &T) -> String {
+    serde_json::to_value(v)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_string))
+        .unwrap_or_default()
 }

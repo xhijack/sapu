@@ -855,6 +855,19 @@
     "new_folders": "{{count}} folders in {{folder}}",
     "restore_all": "Put everything back",
     "plan_waiting": "The proposed groups for {{folder}} are ready.",
-    "see_plan": "See the proposal"
+    "see_plan": "See the proposal",
+    "renames_title": "Suggested file names",
+    "renames_hint": "Clearer names the AI suggests for files with unclear names. Tick the ones you agree with; the extension stays and it can be undone.",
+    "rename_tick": "Rename {{name}}",
+    "rename_new": "New name for {{name}}",
+    "junk_title": "Possibly junk",
+    "junk_hint": "The AI thinks these files may not matter. Check first; the ones you tick go to the Trash, not deleted.",
+    "junk_tick": "Select {{name}}",
+    "junk_trash": "Move {{count}} to Trash",
+    "junk_trashed": "{{count}} files moved to the Trash.",
+    "unplaced_title": "Staying in place",
+    "unplaced_hint": "These items fit no group and are not moved.",
+    "apply_renames_only": "Rename {{count}} files",
+    "renamed_in_place": "Renamed in {{folder}}"
   }
 }
