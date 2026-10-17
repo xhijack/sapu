@@ -5,6 +5,7 @@ import { Card, CardText, CardTitle } from "@/components/ui/card";
 import { aiApi } from "@/lib/aiApi";
 import { useErrorMessage } from "@/lib/errors";
 import type { AiConfig, AiModeKind, CloudKind } from "@/lib/types";
+import { CUSTOM, PRESETS, presetFor } from "./providers";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -23,6 +24,7 @@ export function AiSettings() {
   const errorMessage = useErrorMessage();
   const [cfg, setCfg] = useState<AiConfig | null>(null);
   const [hasKey, setHasKey] = useState(false);
+  const [keyHint, setKeyHint] = useState<string | null>(null);
   const [key, setKey] = useState("");
   const [models, setModels] = useState<string[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -36,6 +38,7 @@ export function AiSettings() {
         if (!live) return;
         setCfg(s.config);
         setHasKey(s.has_key);
+        setKeyHint(s.key_hint);
       })
       .catch((e) => live && setError(errorMessage(e)));
     return () => {
@@ -71,9 +74,11 @@ export function AiSettings() {
     setError(null);
     try {
       await aiApi.setApiKey(key);
-      setHasKey(key.trim().length > 0);
+      const has = key.trim().length > 0;
+      setHasKey(has);
+      setKeyHint(has ? `…${key.trim().slice(-4)}` : null);
       setKey("");
-      setNotice(t("ai.saved"));
+      setNotice(has ? t("ai.key_saved") : t("ai.saved"));
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -125,33 +130,67 @@ export function AiSettings() {
       )}
       {cfg.mode === "cloud" && (
         <>
-          <Field label={t("ai.cloud_kind")}>
+          <Field label={t("ai.provider")}>
             <select
-              value={cfg.cloud_kind}
+              value={presetFor(cfg.cloud_kind, cfg.cloud_url)}
               onChange={(e) => {
-                const cloud_kind = e.target.value as CloudKind;
-                void save({ ...cfg, cloud_kind, cloud_url: cloud_kind === "anthropic" ? "https://api.anthropic.com" : "https://api.openai.com" });
+                const preset = PRESETS.find((p) => p.id === e.target.value);
+                setModels(null);
+                if (preset) void save({ ...cfg, cloud_kind: preset.kind, cloud_url: preset.url, cloud_model: "" });
+                else void save({ ...cfg, cloud_kind: "openai_compatible" });
               }}
               className={input}
             >
-              <option value="openai_compatible">{t("ai.cloud_openai")}</option>
-              <option value="anthropic">{t("ai.cloud_anthropic")}</option>
+              {PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+              <option value={CUSTOM}>{t("ai.provider_custom")}</option>
             </select>
+            {PRESETS.find((p) => p.id === presetFor(cfg.cloud_kind, cfg.cloud_url))?.keysUrl && (
+              <span className="text-xs text-fg-muted">{t("ai.provider_keys_hint", { url: PRESETS.find((p) => p.id === presetFor(cfg.cloud_kind, cfg.cloud_url))?.keysUrl })}</span>
+            )}
           </Field>
+          {presetFor(cfg.cloud_kind, cfg.cloud_url) === CUSTOM && (
+            <Field label={t("ai.cloud_kind")}>
+              <select value={cfg.cloud_kind} onChange={(e) => void save({ ...cfg, cloud_kind: e.target.value as CloudKind })} className={input}>
+                <option value="openai_compatible">{t("ai.cloud_openai")}</option>
+                <option value="anthropic">{t("ai.cloud_anthropic")}</option>
+              </select>
+            </Field>
+          )}
           <Field label={t("ai.cloud_url")}>
             <input value={cfg.cloud_url} onChange={(e) => setCfg({ ...cfg, cloud_url: e.target.value })} onBlur={() => void save(cfg)} className={input} />
           </Field>
-          <Field label={t("ai.cloud_model")}>
-            <input value={cfg.cloud_model} onChange={(e) => setCfg({ ...cfg, cloud_model: e.target.value })} onBlur={() => void save(cfg)} className={input} placeholder="gpt-4o-mini / claude-…" />
-          </Field>
-          <Field label={`${t("ai.api_key")} (${hasKey ? t("ai.api_key_set") : t("ai.api_key_missing")})`}>
+          <Field label={`${t("ai.api_key")} (${hasKey ? t("ai.api_key_set_hint", { tail: keyHint ?? "" }) : t("ai.api_key_missing")})`}>
             <div className="flex gap-2">
-              <input type="password" value={key} onChange={(e) => setKey(e.target.value)} className={`${input} flex-1`} autoComplete="off" />
+              <input type="password" value={key} onChange={(e) => setKey(e.target.value)} className={`${input} flex-1`} autoComplete="off" placeholder={hasKey ? t("ai.api_key_replace") : ""} />
               <Button variant="outline" onClick={() => void saveKey()}>
                 {t("ai.save_key")}
               </Button>
             </div>
             <span className="text-xs text-fg-muted">{t("ai.api_key_hint")}</span>
+          </Field>
+          <Field label={t("ai.cloud_model")}>
+            <div className="flex gap-2">
+              <input list="ai-cloud-models" value={cfg.cloud_model} onChange={(e) => setCfg({ ...cfg, cloud_model: e.target.value })} onBlur={() => void save(cfg)} className={`${input} flex-1`} placeholder={t("ai.model_placeholder")} />
+              <datalist id="ai-cloud-models">{(models ?? []).map((m) => <option key={m} value={m} />)}</datalist>
+              <Button variant="outline" onClick={() => void loadModels()}>
+                {t("ai.load_models")}
+              </Button>
+            </div>
+            {models && models.length > 0 && (
+              <select aria-label={t("ai.cloud_model")} value={models.includes(cfg.cloud_model) ? cfg.cloud_model : ""} onChange={(e) => void save({ ...cfg, cloud_model: e.target.value })} className={input}>
+                <option value="">{t("ai.model_pick")}</option>
+                {models.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            )}
+            <span className="text-xs text-fg-muted">{t("ai.model_hint")}</span>
           </Field>
         </>
       )}

@@ -489,7 +489,17 @@
     "test_ok": "Terhubung, model {{model}} menjawab.",
     "saved": "Pengaturan AI tersimpan",
     "copy_rule": "Salin aturan TOML",
-    "copied_rule": "Aturan disalin. Lihat CONTRIBUTING.md untuk mengajukannya ke komunitas."
+    "copied_rule": "Aturan disalin. Lihat CONTRIBUTING.md untuk mengajukannya ke komunitas.",
+    "provider": "Penyedia",
+    "provider_custom": "Lainnya (alamat sendiri)",
+    "provider_keys_hint": "Buat API key di {{url}}",
+    "api_key_set_hint": "tersimpan di Keychain, berakhiran {{tail}}",
+    "api_key_replace": "Tempel key baru untuk mengganti",
+    "key_saved": "Key disimpan di Keychain. Sapu tidak pernah menampilkannya lagi; kolom dikosongkan dengan sengaja.",
+    "load_models": "Muat daftar model",
+    "model_pick": "Pilih dari daftar…",
+    "model_placeholder": "ketik atau muat daftar",
+    "model_hint": "Tekan “Muat daftar model” setelah key tersimpan, lalu pilih. Bisa juga diketik langsung."
   },
   "care": {
     "title": "Rawat",

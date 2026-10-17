@@ -85,9 +85,12 @@ describe("AI on", () => {
     expect(await screen.findByText(/Terhubung, model/)).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Mode"), "cloud");
-    await user.type(screen.getByLabelText(/API key/), "sk-abc");
+    await user.type(screen.getByLabelText(/^API key \(/), "sk-abc");
     await user.click(screen.getByRole("button", { name: "Simpan key" }));
     expect(aiMock.hasKey).toBe(true);
-    expect(await screen.findByLabelText(/API key \(Tersimpan\)/)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^API key \(tersimpan di Keychain, berakhiran …-abc\)/)).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText(/^Penyedia/), "anthropic");
+    expect(aiMock.config.cloud_kind).toBe("anthropic");
+    expect(aiMock.config.cloud_url).toBe("https://api.anthropic.com");
   });
 });

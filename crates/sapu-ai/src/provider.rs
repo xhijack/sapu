@@ -28,8 +28,36 @@ fn agent(timeout: Duration) -> ureq::Agent {
     ureq::Agent::new_with_config(
         ureq::Agent::config_builder()
             .timeout_global(Some(timeout))
+            // 4xx/5xx come back as responses so the body's error text can
+            // be shown ("invalid x-api-key", "model not found").
+            .http_status_as_error(false)
             .build(),
     )
+}
+
+/// Turns a response into JSON, or into a `Status` error carrying the
+/// provider's own explanation.
+fn into_json(
+    mut resp: ureq::http::Response<ureq::Body>,
+) -> Result<serde_json::Value, ProviderError> {
+    let status = resp.status().as_u16();
+    if status >= 400 {
+        let text = resp.body_mut().read_to_string().unwrap_or_default();
+        let message = serde_json::from_str::<serde_json::Value>(&text)
+            .ok()
+            .and_then(|v| {
+                v["error"]["message"]
+                    .as_str()
+                    .or_else(|| v["error"].as_str())
+                    .or_else(|| v["message"].as_str())
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| text.chars().take(200).collect());
+        return Err(ProviderError::Status { status, message });
+    }
+    resp.body_mut()
+        .read_json::<serde_json::Value>()
+        .map_err(|e| ProviderError::Malformed(e.to_string()))
 }
 
 fn post_json(
@@ -43,14 +71,7 @@ fn post_json(
         req = req.header(*k, *v);
     }
     match req.send_json(body) {
-        Ok(mut resp) => resp
-            .body_mut()
-            .read_json::<serde_json::Value>()
-            .map_err(|e| ProviderError::Malformed(e.to_string())),
-        Err(ureq::Error::StatusCode(code)) => Err(ProviderError::Status {
-            status: code,
-            message: String::new(),
-        }),
+        Ok(resp) => into_json(resp),
         Err(e) => Err(ProviderError::Unreachable {
             url: url.to_string(),
             message: e.to_string(),
@@ -58,16 +79,17 @@ fn post_json(
     }
 }
 
-fn get_json(agent: &ureq::Agent, url: &str) -> Result<serde_json::Value, ProviderError> {
-    match agent.get(url).call() {
-        Ok(mut resp) => resp
-            .body_mut()
-            .read_json::<serde_json::Value>()
-            .map_err(|e| ProviderError::Malformed(e.to_string())),
-        Err(ureq::Error::StatusCode(code)) => Err(ProviderError::Status {
-            status: code,
-            message: String::new(),
-        }),
+fn get_json(
+    agent: &ureq::Agent,
+    url: &str,
+    headers: &[(&str, &str)],
+) -> Result<serde_json::Value, ProviderError> {
+    let mut req = agent.get(url);
+    for (k, v) in headers {
+        req = req.header(*k, *v);
+    }
+    match req.call() {
+        Ok(resp) => into_json(resp),
         Err(e) => Err(ProviderError::Unreachable {
             url: url.to_string(),
             message: e.to_string(),
@@ -96,6 +118,7 @@ impl Ollama {
         let v = get_json(
             &agent(timeout),
             &format!("{}/api/tags", base.trim_end_matches('/')),
+            &[],
         )?;
         Ok(v["models"]
             .as_array()
@@ -136,6 +159,32 @@ impl Provider for Ollama {
     }
 }
 
+/// Joins a provider base with an OpenAI-style path. Bases that already end
+/// in a version segment (`…/v1`, Gemini's `…/v1beta/openai`) are used as
+/// is; bare hosts get `/v1`.
+fn openai_url(base: &str, path: &str) -> String {
+    let base = base.trim_end_matches('/');
+    let versioned = base.ends_with("/v1") || base.contains("/openai") || base.ends_with("/v1beta");
+    if versioned {
+        format!("{base}{path}")
+    } else {
+        format!("{base}/v1{path}")
+    }
+}
+
+fn ids_of(v: &serde_json::Value) -> Vec<String> {
+    let mut ids: Vec<String> = v["data"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|m| m["id"].as_str().map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default();
+    ids.sort();
+    ids
+}
+
 /// Any `/v1/chat/completions` server (OpenAI, Groq, OpenRouter, LM Studio, ...).
 pub struct OpenAiCompatible {
     base: String,
@@ -152,6 +201,21 @@ impl OpenAiCompatible {
             api_key,
             agent: agent(timeout),
         }
+    }
+
+    /// Model ids the server offers (`GET /v1/models`), sorted.
+    pub fn list_models(
+        base: &str,
+        api_key: Option<&str>,
+        timeout: Duration,
+    ) -> Result<Vec<String>, ProviderError> {
+        let auth = api_key.map(|k| format!("Bearer {k}"));
+        let headers: Vec<(&str, &str)> = auth
+            .as_deref()
+            .map(|a| vec![("Authorization", a)])
+            .unwrap_or_default();
+        let v = get_json(&agent(timeout), &openai_url(base, "/models"), &headers)?;
+        Ok(ids_of(&v))
     }
 }
 
@@ -181,7 +245,7 @@ impl Provider for OpenAiCompatible {
             .unwrap_or_default();
         let v = post_json(
             &self.agent,
-            &format!("{}/v1/chat/completions", self.base),
+            &openai_url(&self.base, "/chat/completions"),
             &headers,
             &body,
         )?;
@@ -208,6 +272,20 @@ impl Anthropic {
             api_key,
             agent: agent(timeout),
         }
+    }
+
+    /// Model ids the account can use (`GET /v1/models`), sorted.
+    pub fn list_models(
+        base: &str,
+        api_key: &str,
+        timeout: Duration,
+    ) -> Result<Vec<String>, ProviderError> {
+        let v = get_json(
+            &agent(timeout),
+            &format!("{}/v1/models?limit=100", base.trim_end_matches('/')),
+            &[("x-api-key", api_key), ("anthropic-version", "2023-06-01")],
+        )?;
+        Ok(ids_of(&v))
     }
 }
 
@@ -386,6 +464,25 @@ mod tests {
         assert!(
             req.to_ascii_lowercase()
                 .contains("authorization: bearer sk-test")
+        );
+    }
+
+    #[test]
+    fn openai_url_respects_versioned_bases() {
+        assert_eq!(
+            openai_url("https://api.openai.com", "/models"),
+            "https://api.openai.com/v1/models"
+        );
+        assert_eq!(
+            openai_url("https://api.groq.com/openai/v1/", "/models"),
+            "https://api.groq.com/openai/v1/models"
+        );
+        assert_eq!(
+            openai_url(
+                "https://generativelanguage.googleapis.com/v1beta/openai",
+                "/chat/completions"
+            ),
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
         );
     }
 

@@ -495,6 +495,8 @@ export interface AiStatus {
   enabled: boolean;
   config: AiConfig;
   has_key: boolean;
+  /** "…abcd": the stored key's last characters, never the whole key. */
+  key_hint: string | null;
 }
 
 export interface AiPreview {

@@ -136,6 +136,7 @@ pub fn scan_with_live(
     // aggregates. This is the difference between ~4 and ~1 minute on a
     // multi-million-file home directory.
     let walker = jwalk::WalkDirGeneric::<((), Option<Stat>)>::new(&root)
+        .parallelism(crate::platform::walk_parallelism())
         .follow_links(false)
         .skip_hidden(false)
         .sort(false)

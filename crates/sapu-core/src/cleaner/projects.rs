@@ -153,6 +153,7 @@ fn project_dirs(root: &Path, opts: &ProjectScanOptions) -> Vec<PathBuf> {
     let skip = opts.skip.clone();
     let walker = jwalk::WalkDir::new(root)
         .follow_links(false)
+        .parallelism(crate::platform::walk_parallelism())
         .skip_hidden(false)
         .max_depth(opts.max_depth)
         .process_read_dir(move |_d, _p, _s, children| {
@@ -426,6 +427,7 @@ fn last_activity(dir: &Path, in_git: bool) -> Option<SystemTime> {
     }
     let walker = jwalk::WalkDir::new(dir)
         .follow_links(false)
+        .parallelism(crate::platform::walk_parallelism())
         .skip_hidden(true)
         .max_depth(3)
         .process_read_dir(|_d, _p, _s, children| {

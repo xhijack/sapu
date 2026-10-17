@@ -44,7 +44,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
   }
   switch (cmd) {
     case "ai_status":
-      return { enabled: aiMock.config.mode !== "off", config: aiMock.config, has_key: aiMock.hasKey } as T;
+      return { enabled: aiMock.config.mode !== "off", config: aiMock.config, has_key: aiMock.hasKey, key_hint: aiMock.hasKey ? "…k3y1" : null } as T;
     case "ai_config_set":
       aiMock.config = { ...(args?.config as AiConfig) };
       return undefined as T;
@@ -52,6 +52,7 @@ const mockInvoke = async <T,>(cmd: string, args?: Record<string, unknown>): Prom
       aiMock.hasKey = String(args?.key).trim().length > 0;
       return undefined as T;
     case "ai_models":
+      if (aiMock.config.mode === "cloud") return (aiMock.config.cloud_kind === "anthropic" ? ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001"] : ["gpt-5", "gpt-5-mini", "deepseek-chat"]) as T;
       return ["qwen2.5:3b", "llama3.2"] as T;
     case "ai_test":
       return (aiMock.config.local_model || "qwen2.5:3b") as T;

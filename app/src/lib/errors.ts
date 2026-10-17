@@ -8,7 +8,11 @@ export function useErrorMessage() {
       const code = String((e as { code: unknown }).code);
       const key = `errors.${code}`;
       const msg = t(key);
-      return msg === key ? t("common.unknown_error") : msg;
+      const base = msg === key ? t("common.unknown_error") : msg;
+      // The provider's own explanation ("invalid x-api-key", "model not
+      // found") is what lets someone fix an AI setup; show it.
+      const detail = code === "ai_provider" && "message" in e ? String((e as { message: unknown }).message) : "";
+      return detail ? `${base} (${detail.replace(/^provider error: /, "")})` : base;
     }
     return t("common.unknown_error");
   };

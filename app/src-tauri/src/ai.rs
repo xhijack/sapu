@@ -65,18 +65,31 @@ pub struct AiStatus {
     enabled: bool,
     config: AiConfig,
     has_key: bool,
+    /// Last four characters of the stored key, so the user can tell which
+    /// key is in the keychain without ever seeing it whole.
+    key_hint: Option<String>,
 }
 
 #[tauri::command]
 pub fn ai_status() -> CmdResult<AiStatus> {
     let config = AiConfig::load(&config_path()?);
-    let has_key = sapu_ai::keys::get_api_key(key_name(&config))
-        .unwrap_or(None)
-        .is_some();
+    let key = sapu_ai::keys::get_api_key(key_name(&config)).unwrap_or(None);
+    let key_hint = key.as_deref().map(|k| {
+        let tail: String = k
+            .chars()
+            .rev()
+            .take(4)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect();
+        format!("…{tail}")
+    });
     Ok(AiStatus {
         enabled: config.is_enabled(),
         config,
-        has_key,
+        has_key: key.is_some(),
+        key_hint,
     })
 }
 
@@ -110,13 +123,30 @@ pub fn ai_set_api_key(key: String) -> CmdResult<()> {
     Ok(())
 }
 
-/// Models Ollama reports as installed at the configured local URL.
+/// Models the configured provider offers: Ollama's installed list for
+/// local mode, the provider's `/models` endpoint for cloud mode.
 #[tauri::command]
 pub async fn ai_models() -> CmdResult<Vec<String>> {
     let cfg = AiConfig::load(&config_path()?);
+    let key = if cfg.mode == AiMode::Cloud {
+        sapu_ai::keys::get_api_key(key_name(&cfg))?
+    } else {
+        None
+    };
     tauri::async_runtime::spawn_blocking(move || {
-        sapu_ai::provider::Ollama::list_models(&cfg.local_url, std::time::Duration::from_secs(5))
-            .map_err(|e| CommandError::new("ai_provider", e.to_string()))
+        use sapu_ai::provider::{Anthropic, Ollama, OpenAiCompatible};
+        let t = std::time::Duration::from_secs(10);
+        let r = match (cfg.mode, cfg.cloud_kind) {
+            (AiMode::Cloud, CloudKind::Anthropic) => {
+                let key = key.ok_or_else(|| CommandError::new("ai_provider", "API key missing"))?;
+                Anthropic::list_models(&cfg.cloud_url, &key, t)
+            }
+            (AiMode::Cloud, CloudKind::OpenAiCompatible) => {
+                OpenAiCompatible::list_models(&cfg.cloud_url, key.as_deref(), t)
+            }
+            _ => Ollama::list_models(&cfg.local_url, t),
+        };
+        r.map_err(|e| CommandError::new("ai_provider", e.to_string()))
     })
     .await
     .map_err(|e| CommandError::new("io", e.to_string()))?

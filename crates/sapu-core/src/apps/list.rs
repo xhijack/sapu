@@ -93,7 +93,10 @@ mod platform {
             name,
             version: get("CFBundleShortVersionString").or_else(|| get("CFBundleVersion")),
             bytes: crate::cleaner::dir_size_pub(path),
-            last_used: meta.and_then(|m| m.accessed().ok()),
+            // Some bundles carry a 1980 epoch access time; treat it as unknown.
+            last_used: meta.and_then(|m| m.accessed().ok()).filter(|t| {
+                *t > std::time::UNIX_EPOCH + std::time::Duration::from_secs(946_684_800)
+            }),
             path: path.to_path_buf(),
             bundle_id,
             is_system,

@@ -260,6 +260,7 @@ pub fn dir_size_pub(dir: &Path) -> u64 {
 pub(crate) fn dir_size(dir: &Path) -> u64 {
     jwalk::WalkDir::new(dir)
         .follow_links(false)
+        .parallelism(crate::platform::walk_parallelism())
         .skip_hidden(false)
         .into_iter()
         .filter_map(Result::ok)
@@ -282,6 +283,7 @@ fn find_dirs_named(
     let skip_owned: Vec<String> = skip.to_vec();
     let walker = jwalk::WalkDir::new(root)
         .follow_links(false)
+        .parallelism(crate::platform::walk_parallelism())
         .skip_hidden(false)
         .max_depth(max_depth)
         .process_read_dir(move |_depth, _path, _state, children| {

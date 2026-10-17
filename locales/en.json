@@ -489,7 +489,17 @@
     "test_ok": "Connected, model {{model}} answered.",
     "saved": "AI settings saved",
     "copy_rule": "Copy TOML rule",
-    "copied_rule": "Rule copied. See CONTRIBUTING.md to propose it to the community."
+    "copied_rule": "Rule copied. See CONTRIBUTING.md to propose it to the community.",
+    "provider": "Provider",
+    "provider_custom": "Other (own address)",
+    "provider_keys_hint": "Create an API key at {{url}}",
+    "api_key_set_hint": "stored in the keychain, ending in {{tail}}",
+    "api_key_replace": "Paste a new key to replace it",
+    "key_saved": "Key stored in the keychain. Sapu never shows it again; the field is cleared on purpose.",
+    "load_models": "Load model list",
+    "model_pick": "Pick from the list…",
+    "model_placeholder": "type or load the list",
+    "model_hint": "Press “Load model list” once the key is stored, then pick one. Typing a name also works."
   },
   "care": {
     "title": "Care",

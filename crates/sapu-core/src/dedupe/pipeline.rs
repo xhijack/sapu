@@ -101,6 +101,7 @@ pub fn find_duplicates(
     let mut cancelled = false;
     for item in jwalk::WalkDir::new(&root)
         .follow_links(false)
+        .parallelism(crate::platform::walk_parallelism())
         .skip_hidden(false)
         .sort(false)
     {
