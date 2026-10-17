@@ -38,7 +38,7 @@ export function Achievement({ freed, sessions, firstUnix, days, className }: { f
           </div>
           <p className="num text-xs text-fg-muted">
             {firstUnix && days ? t("home.freed_since", { date: formatDate(firstUnix, lang), days }) + ", " : ""}
-            {t("home.freed_sessions", { count: sessions, items: "" }).replace(/,\s*$/, "")}
+            {t("achievement.sessions", { count: sessions })}
           </p>
         </>
       ) : (

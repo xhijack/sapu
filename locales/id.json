@@ -740,7 +740,8 @@
     "level_3": "Pembersih 100 GB",
     "level_4": "Pembebas 250 GB",
     "level_5": "Penakluk 500 GB",
-    "level_6": "Legenda 1 TB"
+    "level_6": "Legenda 1 TB",
+    "sessions": "{{count}} pembersihan"
   },
   "rate": {
     "title": "{{size}} sudah dibebaskan. Terima kasih!",

@@ -740,7 +740,8 @@
     "level_3": "Cleaner, 100 GB",
     "level_4": "Liberator, 250 GB",
     "level_5": "Conqueror, 500 GB",
-    "level_6": "Legend, 1 TB"
+    "level_6": "Legend, 1 TB",
+    "sessions": "{{count}} clean-ups"
   },
   "rate": {
     "title": "{{size}} freed so far. Thank you!",
