@@ -4,6 +4,7 @@
 pub mod artefact;
 pub mod report;
 pub mod search;
+pub mod tidy;
 pub mod whatis;
 
 use crate::AiError;
