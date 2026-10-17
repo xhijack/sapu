@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { RiskBadge } from "@/components/RiskBadge";
@@ -22,6 +22,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [preview, setPreview] = useState(false);
   const [result, setResult] = useState<CleanRunReport | null>(null);
+  const [tab, setTab] = useState<"all" | "dev">("all");
 
   const load = useCallback(
     () =>
@@ -58,6 +59,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
           available: true,
           confirmSeparately: false,
           artefactPath: a.path,
+          profile: "developer" as const,
         })),
       ),
     [evaluation],
@@ -107,14 +109,50 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
     );
   }
 
-  const groups = [...new Set(rows.map((r) => r.group))];
+  const devRows = rows.filter((r) => r.profile === "developer");
+  const visibleRows = tab === "dev" ? devRows : rows;
+  const groups = [...new Set(visibleRows.map((r) => r.group))];
+  const projectBytes = evaluation.report.projects.reduce((a, p) => a + p.bytes, 0);
+  const devSources = [...new Set(devRows.map((r) => r.group))].map((g) => ({ group: g, bytes: devRows.filter((r) => r.group === g).reduce((a, r) => a + (r.bytes ?? 0), 0) }));
+  if (projectBytes > 0) devSources.push({ group: "projects", bytes: projectBytes });
+  devSources.sort((a, b) => b.bytes - a.bytes);
+  const devBytes = devSources.reduce((a, s) => a + s.bytes, 0);
 
   return (
     <div className="grid max-w-[1280px] gap-6">
-      <div>
-        <h1 className="display text-2xl">{t("clean.title")}</h1>
-        <p className="mt-1 text-fg-muted">{t("clean.intro")}</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="display text-2xl">{t("clean.title")}</h1>
+          <p className="mt-1 text-fg-muted">{tab === "dev" ? t("clean.dev_intro") : t("clean.intro")}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {profile === "developer" && (
+            <div role="tablist" aria-label={t("clean.title")} className="inline-flex rounded-full bg-surface-muted p-1">
+              {(["all", "dev"] as const).map((id) => (
+                <button key={id} role="tab" type="button" aria-selected={tab === id} onClick={() => setTab(id)} className={cn("rounded-full px-4 py-1.5 text-sm font-medium transition-colors", tab === id ? "bg-surface-solid text-fg shadow-[var(--shadow-1)]" : "text-fg-muted hover:text-fg")}>
+                  {t(`clean.tab_${id}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            <RefreshCw aria-hidden className="h-4 w-4" />
+            {t("clean.reevaluate")}
+          </Button>
+        </div>
       </div>
+
+      {tab === "dev" && devSources.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="num mr-2 text-sm font-semibold">{t("clean.dev_total", { size: formatBytes(devBytes, i18n.language), count: devSources.length })}</span>
+          {devSources.map((src) => (
+            <span key={src.group} className="num inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-solid px-3 py-1 text-sm">
+              <span className="font-medium">{src.group === "projects" ? t("clean.dev_projects") : t(`clean.group_${src.group}`, { defaultValue: src.group })}</span>
+              <span className="text-fg-muted">{formatBytes(src.bytes, i18n.language)}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {rows.length === 0 && artefactRows.length === 0 ? (
         <EmptyState title={t("clean.empty_title")} body={t("clean.empty_body")} action={<Button variant="outline" size="sm" onClick={() => void load()}>{t("clean.reevaluate")}</Button>} />
@@ -123,7 +161,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
           <div className="grid gap-6">
             {evaluation.report.projects.length > 0 && <ProjectsSection projects={evaluation.report.projects} selected={selected} onToggle={toggle} />}
             {groups.map((g) => {
-              const inGroup = rows.filter((r) => r.group === g);
+              const inGroup = visibleRows.filter((r) => r.group === g);
               const groupBytes = inGroup.reduce((a, r) => a + (r.bytes ?? 0), 0);
               const picked = inGroup.filter((r) => selected.has(r.id)).length;
               // Open when something is preselected or there is real size to see;
@@ -138,8 +176,7 @@ export function CleanView({ profile, onSeeHistory }: { profile: Profile; onSeeHi
                   <span className="num ml-auto font-medium">{groupBytes > 0 ? formatBytes(groupBytes, i18n.language) : ""}</span>
                 </summary>
                 <ul className="divide-y divide-border border-t border-border">
-                  {rows
-                    .filter((r) => r.group === g)
+                  {inGroup
                     .map((r) => {
                       const disabled = !r.available;
                       const checked = selected.has(r.id);

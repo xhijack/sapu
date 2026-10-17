@@ -1,0 +1,24 @@
+[rule]
+id = "windows-vscode-caches"
+name = { id = "Cache VS Code", en = "VS Code caches" }
+description = { id = "Cache, data ekstensi, dan log VS Code. Dibuat ulang saat VS Code dibuka; ekstensi dan pengaturan tidak disentuh.", en = "VS Code caches, extension data and logs. Recreated when VS Code opens; extensions and settings are untouched." }
+risk = "green"
+profile = "developer"
+group = "editors"
+
+[[match]]
+path = "${APPDATA}/Code/Cache"
+kind = "dir_contents"
+
+[[match]]
+path = "${APPDATA}/Code/CachedData"
+kind = "dir_contents"
+
+[[match]]
+path = "${APPDATA}/Code/CachedExtensionVSIXs"
+kind = "dir_contents"
+
+[[match]]
+path = "${APPDATA}/Code/logs"
+kind = "dir_contents"
+min_age_days = 7

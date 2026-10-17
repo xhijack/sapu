@@ -1,0 +1,11 @@
+[rule]
+id = "macos-android-emulator-snapshots"
+name = { id = "Snapshot emulator Android", en = "Android emulator snapshots" }
+description = { id = "Snapshot quick-boot emulator Android (~/.android/avd). Emulator menyala dari awal sekali saja setelah dihapus.", en = "Android emulator quick-boot snapshots (~/.android/avd). The emulator cold-boots once after removal." }
+risk = "yellow"
+profile = "developer"
+group = "android"
+
+[[match]]
+path = "~/.android/avd/*.avd/snapshots"
+kind = "dir_contents"

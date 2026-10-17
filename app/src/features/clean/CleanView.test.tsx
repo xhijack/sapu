@@ -73,3 +73,19 @@ describe("CleanView projects", () => {
     expect(screen.getByText("Proyek landing-page-2024")).toBeInTheDocument();
   });
 });
+
+describe("CleanView developer tab", () => {
+  it("filters to developer sources with a per-tool strip and keeps the selection", async () => {
+    const user = userEvent.setup();
+    render(<CleanView profile="developer" onSeeHistory={vi.fn()} />);
+    await screen.findByRole("checkbox", { name: "Cache browser" });
+    await user.click(screen.getByRole("tab", { name: "Developer" }));
+    expect(screen.queryByRole("checkbox", { name: "Cache browser" })).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "Image Docker tak terpakai" })).toBeChecked();
+    expect(screen.getByText(/dari \d+ sumber/)).toBeInTheDocument();
+    expect(screen.getByText("Proyek")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bersihkan .* yang dipilih/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Semua" }));
+    expect(await screen.findByRole("checkbox", { name: "Cache browser" })).toBeInTheDocument();
+  });
+});

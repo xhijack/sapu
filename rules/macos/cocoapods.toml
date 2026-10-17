@@ -1,0 +1,11 @@
+[rule]
+id = "macos-cocoapods-cache"
+name = { id = "Cache CocoaPods", en = "CocoaPods cache" }
+description = { id = "Pod yang diunduh CocoaPods untuk proyek iOS/macOS. `pod install` berikutnya mengunduh ulang.", en = "Pods downloaded by CocoaPods for iOS/macOS projects. The next `pod install` downloads them again." }
+risk = "yellow"
+profile = "developer"
+group = "package_cache"
+
+[[match]]
+path = "~/Library/Caches/CocoaPods"
+kind = "dir_contents"

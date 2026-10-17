@@ -37,7 +37,7 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
       </div>
       <ul className="grid gap-3 lg:grid-cols-2">
         {shown.map((p) => (
-          <li key={p.root} className="grid gap-2 card-solid p-4">
+          <li key={p.root} className="grid min-w-0 gap-2 card-solid p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="min-w-0">
                 <span className="font-medium">{p.name}</span>
@@ -50,7 +50,7 @@ export function ProjectsSection({ projects, selected, onToggle }: Props) {
               </div>
               <span className="num text-lg font-semibold">{formatBytes(p.bytes, i18n.language)}</span>
             </div>
-            <ul className="divide-y divide-border rounded-lg border border-border">
+            <ul className="min-w-0 divide-y divide-border rounded-lg border border-border">
               {p.artefacts.map((a) => {
                 const id = ARTEFACT_PREFIX + a.path;
                 const git = a.tracked === null ? t("clean.artefact_unknown_git") : t("clean.artefact_untracked");

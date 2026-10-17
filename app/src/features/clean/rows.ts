@@ -1,4 +1,4 @@
-import type { CleanEvaluation, Risk } from "@/lib/types";
+import type { CleanEvaluation, Profile, Risk } from "@/lib/types";
 
 /** One row per rule: core reports one finding per match. */
 export interface RuleRow {
@@ -6,6 +6,7 @@ export interface RuleRow {
   name: string;
   description: string;
   risk: Risk;
+  profile: Profile;
   group: string;
   permanent: boolean;
   bytes: number | null;
@@ -30,6 +31,7 @@ export function buildRows(ev: CleanEvaluation, lang: string): RuleRow[] {
       name: rule ? l(rule.name) : f.rule_id,
       description: rule ? l(rule.description) : "",
       risk: f.risk,
+      profile: f.profile,
       group: f.group,
       permanent: f.permanent,
       bytes: 0,
@@ -51,6 +53,7 @@ export function buildRows(ev: CleanEvaluation, lang: string): RuleRow[] {
       name: rule ? l(rule.name) : c.rule_id,
       description: rule ? l(rule.description) : "",
       risk: c.risk,
+      profile: c.profile,
       group: c.group,
       permanent: false,
       bytes: c.estimate_bytes,

@@ -1,0 +1,15 @@
+[rule]
+id = "linux-jetbrains-caches"
+name = { id = "Cache JetBrains & Android Studio", en = "JetBrains & Android Studio caches" }
+description = { id = "Cache dan log IntelliJ, PyCharm, WebStorm, Android Studio, dan IDE JetBrains lain. Indeks dibangun ulang saat proyek dibuka, bisa beberapa menit.", en = "Caches and logs of IntelliJ, PyCharm, WebStorm, Android Studio and other JetBrains IDEs. Indexes rebuild when a project opens, which can take minutes." }
+risk = "green"
+profile = "developer"
+group = "editors"
+
+[[match]]
+path = "~/.cache/JetBrains"
+kind = "dir_contents"
+
+[[match]]
+path = "~/.cache/Google/AndroidStudio*"
+kind = "dir_contents"

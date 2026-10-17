@@ -377,7 +377,14 @@
     "group_summary": "{{count}} rules, {{picked}} selected",
     "projects_summary": "{{count}} projects, {{size}}",
     "show_more": "Show {{count}} more",
-    "show_less": "Show fewer"
+    "show_less": "Show fewer",
+    "group_editors": "Editors & IDEs",
+    "group_android": "Android",
+    "tab_all": "All",
+    "tab_dev": "Developer",
+    "dev_intro": "What development tools leave on the disk: editor caches, package managers, Docker, Xcode and project build output. All of it can be recreated.",
+    "dev_total": "{{size}} across {{count}} sources",
+    "dev_projects": "Projects"
   },
   "dedupe": {
     "title": "Duplicates",

@@ -377,7 +377,14 @@
     "group_summary": "{{count}} aturan, {{picked}} dipilih",
     "projects_summary": "{{count}} proyek, {{size}}",
     "show_more": "Tampilkan {{count}} lainnya",
-    "show_less": "Tampilkan lebih sedikit"
+    "show_less": "Tampilkan lebih sedikit",
+    "group_editors": "Editor & IDE",
+    "group_android": "Android",
+    "tab_all": "Semua",
+    "tab_dev": "Developer",
+    "dev_intro": "Yang memberatkan disk dari tool development: cache editor, package manager, Docker, Xcode, dan hasil build proyek. Semua bisa dibuat ulang.",
+    "dev_total": "{{size}} dari {{count}} sumber",
+    "dev_projects": "Proyek"
   },
   "dedupe": {
     "title": "Duplikat",
