@@ -57,6 +57,7 @@ pub struct PurgeOutcome {
 
 const QUIT_TIMEOUT: Duration = Duration::from_secs(10);
 /// The admin prompt waits for a person.
+#[cfg(target_os = "macos")]
 const PURGE_TIMEOUT: Duration = Duration::from_secs(180);
 
 /// Asks each pid to quit gracefully after re-checking that it is still

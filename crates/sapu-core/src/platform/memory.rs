@@ -324,101 +324,72 @@ mod tests {
         assert_eq!(pressure(10, 50, 0, 0).used_pct, 100);
     }
 
+    const CHROME: &str = "/Applications/Google Chrome.app";
+    const HELPERS: &str =
+        "Contents/Frameworks/Google Chrome Framework.framework/Versions/1/Helpers";
+    const SLACK: &str = "/Applications/Slack.app/Contents/MacOS/Slack";
+    const SAPU: &str = "/Applications/Sapu.app/Contents/MacOS/sapu";
+    const OWN: u32 = 4242;
+
+    fn q(pid: u32, uid: u32, exe: &str) -> bool {
+        quittable(&raw(pid, uid, exe, 1), OWN)
+    }
+
     #[test]
     fn system_processes_are_never_quittable() {
-        let own = 4242;
-        assert!(!quittable(
-            &raw(50, 501, "/Applications/X.app/Contents/MacOS/X", 1),
-            own
+        assert!(!q(50, 501, SLACK)); // pid below 100
+        assert!(!q(500, 0, SLACK)); // root
+        assert!(!q(
+            500,
+            501,
+            "/System/Library/CoreServices/Dock.app/Contents/MacOS/Dock"
         ));
-        assert!(!quittable(
-            &raw(500, 0, "/Applications/X.app/Contents/MacOS/X", 1),
-            own
-        ));
-        assert!(!quittable(
-            &raw(
-                500,
-                501,
-                "/System/Library/CoreServices/Dock.app/Contents/MacOS/Dock",
-                1
-            ),
-            own
-        ));
-        assert!(!quittable(&raw(500, 501, "/usr/libexec/trustd", 1), own));
-        assert!(!quittable(&raw(500, 501, "/sbin/launchd", 1), own));
-        assert!(!quittable(
-            &raw(500, 501, "C:\\Windows\\System32\\svchost.exe", 1),
-            own
-        ));
-        assert!(!quittable(
-            &raw(own, 501, "/Applications/Sapu.app/Contents/MacOS/sapu", 1),
-            own
-        ));
-        assert!(quittable(
-            &raw(500, 501, "/Applications/Slack.app/Contents/MacOS/Slack", 1),
-            own
-        ));
-        assert!(quittable(&raw(500, 501, "/opt/homebrew/bin/node", 1), own));
-        let unknown = RawProcess {
-            pid: 900,
-            uid: None,
-            name: "x".into(),
-            memory_bytes: 1,
-            exe: None,
-        };
-        assert!(quittable(&unknown, own));
+        assert!(!q(500, 501, "/usr/libexec/trustd"));
+        assert!(!q(500, 501, "/sbin/launchd"));
+        assert!(!q(500, 501, "C:\\Windows\\System32\\svchost.exe"));
+        assert!(!q(OWN, 501, SAPU));
+        assert!(q(500, 501, SLACK));
+        assert!(q(500, 501, "/opt/homebrew/bin/node"));
+        let mut unknown = raw(900, 501, "x", 1);
+        unknown.uid = None;
+        unknown.exe = None;
+        assert!(quittable(&unknown, OWN));
     }
 
     #[test]
     fn bundle_root_is_the_outermost_app() {
-        let helper = Path::new(
-            "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/1/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)",
+        let helper = format!(
+            "{CHROME}/{HELPERS}/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)"
         );
         assert_eq!(
-            app_bundle_root(helper),
-            Some(PathBuf::from("/Applications/Google Chrome.app"))
+            app_bundle_root(Path::new(&helper)),
+            Some(PathBuf::from(CHROME))
         );
         assert_eq!(app_bundle_root(Path::new("/usr/bin/zsh")), None);
     }
 
     #[test]
     fn ranks_apps_by_total_memory_and_groups_helpers() {
-        let own = 99;
-        let chrome = "/Applications/Google Chrome.app";
+        let helper = |n: &str| {
+            format!(
+                "{CHROME}/{HELPERS}/Google Chrome Helper ({n}).app/Contents/MacOS/Google Chrome Helper ({n})"
+            )
+        };
         let input = vec![
             raw(
                 300,
                 501,
-                &format!("{chrome}/Contents/MacOS/Google Chrome"),
+                &format!("{CHROME}/Contents/MacOS/Google Chrome"),
                 GB,
             ),
-            raw(
-                310,
-                501,
-                &format!(
-                    "{chrome}/Contents/Frameworks/Google Chrome Framework.framework/Versions/1/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)"
-                ),
-                2 * GB,
-            ),
-            raw(
-                320,
-                501,
-                &format!(
-                    "{chrome}/Contents/Frameworks/Google Chrome Framework.framework/Versions/1/Helpers/Google Chrome Helper (GPU).app/Contents/MacOS/Google Chrome Helper (GPU)"
-                ),
-                GB,
-            ),
-            raw(
-                400,
-                501,
-                "/Applications/Slack.app/Contents/MacOS/Slack",
-                3 * GB,
-            ),
+            raw(310, 501, &helper("Renderer"), 2 * GB),
+            raw(320, 501, &helper("GPU"), GB),
+            raw(400, 501, SLACK, 3 * GB),
             raw(150, 0, "/usr/libexec/kernelmanagerd", 5 * GB),
             raw(600, 501, "/opt/homebrew/bin/node", 512 * 1024 * 1024),
-            raw(own, 501, "/Applications/Sapu.app/Contents/MacOS/sapu", 100),
+            raw(OWN, 501, SAPU, 100),
         ];
-        let rows = rank_processes(input, own, 3, |root| {
+        let rows = rank_processes(input, OWN, 3, |root| {
             root.ends_with("Slack.app")
                 .then(|| "com.tinyspeck.slackmacgap".to_string())
         });
@@ -444,27 +415,13 @@ mod tests {
 
     #[test]
     fn sapu_itself_and_root_helpers_block_the_group() {
-        let own = 77;
-        let rows = rank_processes(
-            vec![
-                raw(own, 501, "/Applications/Sapu.app/Contents/MacOS/sapu", 10),
-                raw(
-                    200,
-                    501,
-                    "/Applications/Docker.app/Contents/MacOS/Docker",
-                    10,
-                ),
-                raw(
-                    201,
-                    0,
-                    "/Applications/Docker.app/Contents/MacOS/com.docker.backend",
-                    10,
-                ),
-            ],
-            own,
-            10,
-            |_| None,
-        );
+        let docker = "/Applications/Docker.app/Contents/MacOS";
+        let input = vec![
+            raw(OWN, 501, SAPU, 10),
+            raw(200, 501, &format!("{docker}/Docker"), 10),
+            raw(201, 0, &format!("{docker}/com.docker.backend"), 10),
+        ];
+        let rows = rank_processes(input, OWN, 10, |_| None);
         let sapu = rows.iter().find(|r| r.name == "Sapu").expect("sapu row");
         assert!(!sapu.quittable);
         let docker = rows
