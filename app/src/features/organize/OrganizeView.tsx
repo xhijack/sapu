@@ -14,7 +14,7 @@ import { scanApi } from "@/lib/scanApi";
 import type { OrganizeAnalyseProgress, OrganizeAnalysis, OrganizeGroup, OrganizeRun, OrganizeRunProgress, OrganizeRunResult, OrganizeTarget, OrganizeUndoReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { GroupFilesDialog } from "./GroupFilesDialog";
-import { MoveSummary } from "./MoveSummary";
+import { BeforeAfter } from "./BeforeAfter";
 import { PlanGroupCard } from "./PlanGroupCard";
 import { ORGANIZE_OPEN_EVENT, takePendingOrganize } from "./organizeBus";
 
@@ -200,9 +200,19 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
     return (
       <div className="grid max-w-[1280px] gap-6">
         <h1 className="display text-2xl">{t("organize.done_title")}</h1>
-        <p className="num text-lg">{t("organize.done_body", { count: result.session.moved, folders })}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="num text-lg">{t("organize.done_body", { count: result.session.moved, folders })}</p>
+          <div className="flex flex-wrap gap-2">
+            {!undone && (
+              <Button variant="outline" onClick={() => void undo(result.session.id)}>
+                <Undo2 aria-hidden className="h-4 w-4" />
+                {t("organize.restore_all")}
+              </Button>
+            )}
+            <Button onClick={() => setPhase("idle")}>{t("organize.again")}</Button>
+          </div>
+        </div>
         {(result.session.skipped > 0 || result.session.failed > 0) && <p className="text-sm text-risk-review-fg">{t("organize.done_partial", { skipped: result.session.skipped, failed: result.session.failed })}</p>}
-        {result.session.moves.length > 0 && <MoveSummary run={result.session} />}
         {result.failures.length > 0 && (
           <ul className="card-solid max-h-48 overflow-y-auto p-3 text-xs">
             {result.failures.map(([p, why]) => (
@@ -218,15 +228,7 @@ export function OrganizeView({ onNavigate }: { onNavigate: (s: Screen) => void }
             {undone.skipped > 0 && ` ${t("organize.undo_skipped", { count: undone.skipped })}`}
           </p>
         ) : null}
-        <div className="flex flex-wrap gap-2">
-          {!undone && (
-            <Button variant="outline" onClick={() => void undo(result.session.id)}>
-              <Undo2 aria-hidden className="h-4 w-4" />
-              {t("organize.undo")}
-            </Button>
-          )}
-          <Button onClick={() => setPhase("idle")}>{t("organize.again")}</Button>
-        </div>
+        {result.session.moves.length > 0 && !undone && <BeforeAfter run={result.session} />}
         {error && <ErrorState message={error} />}
       </div>
     );

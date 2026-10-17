@@ -849,6 +849,10 @@
     "was_undone": "undone",
     "undo_run": "Undo the run of {{date}}",
     "summary_label": "Where files went",
-    "col_from": "From"
+    "before": "Before",
+    "after": "After",
+    "loose_items": "{{count}} loose items in {{folder}}",
+    "new_folders": "{{count}} folders in {{folder}}",
+    "restore_all": "Put everything back"
   }
 }

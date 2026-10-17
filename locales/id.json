@@ -849,6 +849,10 @@
     "was_undone": "diurungkan",
     "undo_run": "Urungkan rapikan {{date}}",
     "summary_label": "Rincian pemindahan",
-    "col_from": "Asal"
+    "before": "Sebelum",
+    "after": "Sesudah",
+    "loose_items": "{{count}} item lepas di {{folder}}",
+    "new_folders": "{{count}} folder di {{folder}}",
+    "restore_all": "Kembalikan semua"
   }
 }
