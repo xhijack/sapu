@@ -216,7 +216,8 @@
     "ai_provider": "Could not reach the AI provider. Check the address, model or API key.",
     "ai_bad_answer": "The AI answer could not be read. Try again.",
     "ai_keychain": "Could not access the system keychain.",
-    "app_running": "The app is still running. Quit it, then try again."
+    "app_running": "The app is still running. Quit it, then try again.",
+    "unsupported": "Not available on this system."
   },
   "scan": {
     "title": "Scan",
@@ -749,5 +750,40 @@
     "body_soon": "If Sapu helped, tell a friend. The link to rate it in the app store appears once Sapu is published there.",
     "later": "Maybe later",
     "go": "Rate Sapu"
+  },
+  "memory": {
+    "title": "Memory",
+    "intro": "Which apps use memory, and two safe ways to ease it.",
+    "used": "{{used}} used of {{total}} ({{pct}}%)",
+    "swap": "Swap used {{size}}",
+    "level_normal": "Memory is fine",
+    "level_elevated": "Memory is getting full",
+    "level_high": "Memory is nearly full",
+    "honest": "macOS, Windows and Linux use idle memory as cache on purpose. A high figure alone is not a problem; what you feel is apps slowing down while swap grows.",
+    "processes": "Biggest memory users",
+    "helpers": "{{count}} processes",
+    "not_quittable": "System-owned or Sapu itself; cannot be ticked",
+    "select_hint": "Tick the apps you want to close. Only your own apps can be picked.",
+    "quit_button": "Close selected apps ({{count}})",
+    "confirm_title": "Close {{count}} apps?",
+    "confirm_body": "Sapu asks these apps to quit the normal way, as if you chose Quit. Unsaved work in them may be lost; apps usually ask first.",
+    "confirm_button": "Yes, close them",
+    "quitting": "Asking the apps to quit…",
+    "outcome_requested": "{{name}}: asked to quit",
+    "outcome_refused": "{{name}}: cannot be closed from here",
+    "outcome_failed": "{{name}}: failed ({{message}})",
+    "outcome_note": "If an app asks about saving, answer in that app. The list above refreshes in a few seconds.",
+    "purge_title": "Drop the disk cache (optional)",
+    "purge_body": "Runs Apple's own purge command with administrator permission. It only drops the file cache; macOS refills it within minutes, so the effect is mostly on the number, not on speed.",
+    "purge_button": "Drop disk cache (purge)…",
+    "purge_running": "Waiting for administrator permission…",
+    "purge_done": "Cache dropped: memory used {{before}} → {{after}}.",
+    "purge_cancelled": "Cancelled; nothing changed.",
+    "purge_failed": "purge failed: {{message}}",
+    "not_done": "What Sapu deliberately does not do: the memory \"balloon\" trick that forces other apps into swap. The figure drops for a moment and the computer gets slower.",
+    "refresh": "Refresh",
+    "empty": "No processes to show.",
+    "free_button": "Free memory",
+    "free_hint": "See which apps use memory and close the ones you are not using."
   }
 }

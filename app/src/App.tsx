@@ -17,6 +17,8 @@ import { CleanView } from "@/features/clean/CleanView";
 import { DedupeView } from "@/features/dedupe/DedupeView";
 import { HistoryView } from "@/features/history/HistoryView";
 import { SettingsView } from "@/features/settings/SettingsView";
+import { MemoryHost } from "@/features/memory/MemoryHost";
+import { requestMemoryDialog } from "@/features/memory/memoryBus";
 import { api, isTauri } from "@/lib/api";
 import { resolveLocale } from "@/i18n";
 import type { Settings } from "@/lib/types";
@@ -104,6 +106,18 @@ export default function App() {
     return () => unlisten?.();
   }, []);
 
+  // Tray shortcut: the "Memori" item opens the Memory dialog.
+  useEffect(() => {
+    if (!isTauri()) return;
+    let unlisten: (() => void) | null = null;
+    void import("@tauri-apps/api/event").then(({ listen }) =>
+      listen("tray://memory", () => requestMemoryDialog()).then((u) => {
+        unlisten = u;
+      }),
+    );
+    return () => unlisten?.();
+  }, []);
+
   useEffect(() => {
     if (!settings) return;
     const locale = resolveLocale(settings.locale);
@@ -136,6 +150,7 @@ export default function App() {
 
   return (
     <Shell screen={screen} onNavigate={navigate}>
+      <MemoryHost />
       {rateFreed !== null && !settings.rate_prompt_done && (
         <RatePrompt
           freed={rateFreed}

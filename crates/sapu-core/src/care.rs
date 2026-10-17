@@ -120,6 +120,34 @@ pub fn recommended_free_bytes(disk_total: u64) -> u64 {
     (disk_total / 10).max(FLOOR.min(disk_total / 4))
 }
 
+/// How much room a disk has left, the one scale the status bar, the
+/// tray and notifications agree on. `Low` below 20 % free, `Critical`
+/// below 5 %.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpaceLevel {
+    Ok,
+    Low,
+    Critical,
+}
+
+/// Level for `free` bytes left on a disk of `total` bytes. An empty or
+/// unknown disk (`total == 0`) is `Ok`: nothing to warn about.
+pub fn space_level(free: u64, total: u64) -> SpaceLevel {
+    if total == 0 {
+        return SpaceLevel::Ok;
+    }
+    let free = u128::from(free);
+    let total = u128::from(total);
+    if free * 100 < total * 5 {
+        SpaceLevel::Critical
+    } else if free * 100 < total * 20 {
+        SpaceLevel::Low
+    } else {
+        SpaceLevel::Ok
+    }
+}
+
 pub fn score(scan: &ScanResult, clean: &CleanReport) -> SpaceScore {
     let disk_total = scan.disk_total_bytes.unwrap_or(scan.total_bytes).max(1);
     let free = scan.disk_free_bytes.unwrap_or(0);
@@ -332,6 +360,21 @@ mod tests {
         assert_eq!(recommended_free_bytes(120 * GB), 20 * GB);
         assert_eq!(recommended_free_bytes(40 * GB), 10 * GB);
         assert_eq!(recommended_free_bytes(0), 0);
+    }
+
+    #[test]
+    fn space_level_thresholds() {
+        assert_eq!(space_level(500, 1000), SpaceLevel::Ok);
+        assert_eq!(space_level(200, 1000), SpaceLevel::Ok); // exactly 20 % is still ok
+        assert_eq!(space_level(199, 1000), SpaceLevel::Low);
+        assert_eq!(space_level(50, 1000), SpaceLevel::Low); // exactly 5 % is low
+        assert_eq!(space_level(49, 1000), SpaceLevel::Critical);
+        assert_eq!(space_level(0, 1000), SpaceLevel::Critical);
+        assert_eq!(space_level(0, 0), SpaceLevel::Ok);
+        // No overflow on multi-terabyte disks.
+        let tb = 1024u64.pow(4);
+        assert_eq!(space_level(3 * tb, 100 * tb), SpaceLevel::Critical);
+        assert_eq!(space_level(30 * tb, 100 * tb), SpaceLevel::Ok);
     }
 
     #[test]

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Trash2, Usb } from "lucide-react";
+import { Copy, HardDrive, HeartPulse, History, Search, ShieldCheck, Sparkles, Trash2, Usb, Wind } from "lucide-react";
+import { requestMemoryDialog } from "@/features/memory/memoryBus";
 import { cleanApi } from "@/lib/cleanApi";
 import { EmptyTrashDialog } from "@/features/clean/EmptyTrashDialog";
 import { api } from "@/lib/api";
@@ -60,6 +61,7 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
   const used = main ? main.total_bytes - main.available_bytes : 0;
   const pct = main && main.total_bytes > 0 ? Math.round((used / main.total_bytes) * 100) : 0;
   const freeAnimated = useCountUp(main?.available_bytes ?? 0);
+  const memPct = snap ? Math.round((snap.mem_used_bytes / Math.max(1, snap.mem_total_bytes)) * 100) : 0;
 
   return (
     <div className="grid max-w-[1280px] gap-6">
@@ -98,6 +100,12 @@ export function HomeView({ onNavigate, onScanNow }: { onNavigate: (s: Screen) =>
               <Button variant="ghost" size="lg" onClick={() => setEmptying(true)}>
                 <Trash2 aria-hidden className="h-5 w-5" />
                 {t("home.empty_trash", { size: formatBytes(trash.bytes, lang) })}
+              </Button>
+            )}
+            {memPct >= 80 && (
+              <Button variant="ghost" size="lg" onClick={requestMemoryDialog} title={t("memory.free_hint")}>
+                <Wind aria-hidden className="h-5 w-5" />
+                {t("memory.free_button")}
               </Button>
             )}
             {!previous && <span className="num text-sm text-fg-muted">{t("home.hero_never")}</span>}

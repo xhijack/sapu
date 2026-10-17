@@ -60,8 +60,8 @@ export const mock = {
     mem_used_bytes: 9.92 * 1024 ** 3,
     swap_used_bytes: 1.1 * 1024 ** 3,
     disks: [
-      { name: "Macintosh HD", mount: "/", total_bytes: 494 * 1024 ** 3, available_bytes: 61 * 1024 ** 3, removable: false, file_system: "apfs", recommended_free_bytes: 49.4 * 1024 ** 3 },
-      { name: "Backup", mount: "/Volumes/Backup", total_bytes: 2 * 1024 ** 4, available_bytes: 0.8 * 1024 ** 4, removable: true, file_system: "exfat", recommended_free_bytes: 0.2 * 1024 ** 4 },
+      { name: "Macintosh HD", mount: "/", total_bytes: 494 * 1024 ** 3, available_bytes: 61 * 1024 ** 3, removable: false, file_system: "apfs", recommended_free_bytes: 49.4 * 1024 ** 3, level: "ok" },
+      { name: "Backup", mount: "/Volumes/Backup", total_bytes: 2 * 1024 ** 4, available_bytes: 0.8 * 1024 ** 4, removable: true, file_system: "exfat", recommended_free_bytes: 0.2 * 1024 ** 4, level: "ok" },
     ],
     os_name: "macOS 26.0",
   } as SystemSnapshot,

@@ -216,7 +216,8 @@
     "ai_provider": "Tidak bisa menghubungi penyedia AI. Periksa alamat, model, atau API key.",
     "ai_bad_answer": "Jawaban AI tidak bisa dibaca. Coba lagi.",
     "ai_keychain": "Tidak bisa mengakses keychain sistem.",
-    "app_running": "Aplikasi masih berjalan. Tutup dulu, lalu coba lagi."
+    "app_running": "Aplikasi masih berjalan. Tutup dulu, lalu coba lagi.",
+    "unsupported": "Tidak tersedia di sistem ini."
   },
   "scan": {
     "title": "Pindai",
@@ -749,5 +750,40 @@
     "body_soon": "Kalau Sapu membantu, ceritakan ke teman. Tautan untuk memberi bintang di toko aplikasi akan tersedia setelah Sapu terbit di sana.",
     "later": "Nanti saja",
     "go": "Beri bintang"
+  },
+  "memory": {
+    "title": "Memori",
+    "intro": "Aplikasi mana yang memakai memori, dan dua cara aman untuk melegakannya.",
+    "used": "{{used}} terpakai dari {{total}} ({{pct}}%)",
+    "swap": "Swap terpakai {{size}}",
+    "level_normal": "Memori lega",
+    "level_elevated": "Memori mulai penuh",
+    "level_high": "Memori hampir penuh",
+    "honest": "macOS, Windows, dan Linux sengaja memakai memori yang menganggur sebagai cache. Angka tinggi saja bukan masalah; yang terasa adalah saat aplikasi melambat dan swap membesar.",
+    "processes": "Pemakai memori terbesar",
+    "helpers": "{{count}} proses",
+    "not_quittable": "Milik sistem atau Sapu sendiri; tidak bisa dicentang",
+    "select_hint": "Centang aplikasi yang ingin ditutup. Hanya aplikasi milikmu yang bisa dipilih.",
+    "quit_button": "Tutup aplikasi terpilih ({{count}})",
+    "confirm_title": "Tutup {{count}} aplikasi?",
+    "confirm_body": "Sapu meminta aplikasi ini menutup diri dengan baik-baik, seperti saat kamu memilih Keluar. Pekerjaan yang belum disimpan bisa hilang; aplikasi biasanya akan bertanya dulu.",
+    "confirm_button": "Ya, tutup",
+    "quitting": "Mengirim permintaan tutup…",
+    "outcome_requested": "{{name}}: diminta menutup",
+    "outcome_refused": "{{name}}: tidak bisa ditutup dari sini",
+    "outcome_failed": "{{name}}: gagal ({{message}})",
+    "outcome_note": "Kalau aplikasi bertanya soal menyimpan, jawab di aplikasinya. Daftar di atas diperbarui beberapa detik lagi.",
+    "purge_title": "Kosongkan cache disk (opsional)",
+    "purge_body": "Menjalankan perintah purge bawaan Apple dengan izin administrator. Ini hanya membuang cache file; macOS akan mengisinya lagi dalam beberapa menit, jadi efeknya lebih ke angka daripada ke kecepatan.",
+    "purge_button": "Kosongkan cache disk (purge)…",
+    "purge_running": "Menunggu izin administrator…",
+    "purge_done": "Cache dikosongkan: memori terpakai {{before}} → {{after}}.",
+    "purge_cancelled": "Dibatalkan; tidak ada yang diubah.",
+    "purge_failed": "purge gagal: {{message}}",
+    "not_done": "Yang sengaja tidak Sapu lakukan: trik \"menggelembungkan\" memori agar aplikasi lain dipaksa ke swap. Angkanya turun sebentar, komputer justru melambat.",
+    "refresh": "Segarkan",
+    "empty": "Tidak ada proses yang bisa ditampilkan.",
+    "free_button": "Bebaskan memori",
+    "free_hint": "Lihat aplikasi yang memakai memori dan tutup yang tidak dipakai."
   }
 }
